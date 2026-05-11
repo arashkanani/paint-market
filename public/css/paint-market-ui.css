@@ -1,0 +1,39 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap");
+
+/* Native <select> dropdown: solid surface + explicit option colors (fixes Windows/light-on-light). */
+.paint-market-header-select {
+  font-family: "DM Sans", "Noto Sans Arabic", system-ui, sans-serif;
+  background-color: rgb(15 23 42);
+  color: rgb(248 250 252);
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, rgb(148 163 184) 50%), linear-gradient(135deg, rgb(148 163 184) 50%, transparent 50%);
+  background-position: calc(100% - 1rem) calc(50% + 3px), calc(100% - 0.65rem) calc(50% + 3px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-inline-end: 2rem;
+}
+
+html[lang="ar"] .paint-market-header-select,
+html[lang="ar"] [data-pm-t] {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+}
+
+.paint-market-header-select option {
+  background-color: rgb(15 23 42);
+  color: rgb(248 250 252);
+}
+
+.paint-market-header-select:focus {
+  outline: none;
+}
+
+html[dir="rtl"] .paint-market-header-select {
+  background-position: 0.65rem calc(50% + 3px), 1rem calc(50% + 3px);
+  padding-inline-end: 0.65rem;
+  padding-inline-start: 2rem;
+}
+
+html[lang="ar"] body {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+}

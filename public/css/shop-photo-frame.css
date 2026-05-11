@@ -1,0 +1,57 @@
+/* Matte behind object-contain shop photos — visible letterboxing stays on-brand */
+
+.shop-photo-frame {
+  position: relative;
+  --mat-deep: #d8e6e9;
+  --mat-mid: #ecf8f6;
+  --mat-light: #f8fcfb;
+  background-color: var(--mat-mid);
+  background-image:
+    repeating-linear-gradient(
+      -21deg,
+      transparent 0,
+      transparent 13px,
+      rgba(255, 255, 255, 0.28) 13px,
+      rgba(255, 255, 255, 0.28) 14px
+    ),
+    repeating-linear-gradient(
+      21deg,
+      transparent 0,
+      transparent 18px,
+      rgba(45, 212, 191, 0.04) 18px,
+      rgba(45, 212, 191, 0.04) 19px
+    ),
+    radial-gradient(
+      ellipse 120% 90% at 8% -10%,
+      rgba(248, 250, 252, 0.95) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 100% 80% at 100% 100%,
+      rgba(204, 251, 241, 0.55) 0%,
+      transparent 52%
+    ),
+    radial-gradient(
+      circle at 78% 12%,
+      rgba(94, 234, 212, 0.22) 0%,
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 12% 88%,
+      rgba(45, 212, 191, 0.12) 0%,
+      transparent 42%
+    ),
+    linear-gradient(
+      145deg,
+      var(--mat-light) 0%,
+      var(--mat-mid) 38%,
+      var(--mat-deep) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 0 48px rgba(13, 148, 136, 0.05);
+}
+
+.shop-photo-frame > img {
+  z-index: 1;
+}

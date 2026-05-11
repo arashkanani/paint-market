@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paint Showroom Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
+  <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <style>
+    body { font-family: "DM Sans", system-ui, sans-serif; }
+    .ad-carousel-strip::-webkit-scrollbar { display: none; }
+    .ad-carousel-strip { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen" data-pm-page-title="index_metaTitle">
+  <header class="sticky top-0 z-30 bg-slate-950/85 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3 justify-between gap-y-2">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0">
+        <label class="flex items-center gap-2 shrink-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
+          <select
+            class="paint-market-country paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 shadow-sm focus:ring-2 focus:ring-teal-500/50"
+            aria-label="Country"
+          ></select>
+        </label>
+        <label class="flex items-center gap-2 shrink-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_city">City</span>
+          <select
+            class="paint-market-city paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[9rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+            aria-label="City"
+          ></select>
+        </label>
+        <label class="flex items-center gap-2 shrink-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
+          <select
+            class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+            aria-label="Language"
+          ></select>
+        </label>
+      </div>
+      <nav class="flex flex-wrap items-center gap-2 text-sm shrink-0">
+        <a class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-white/10" href="/paint/dashboard.html" data-pm-t="index_nav_dashboard">Shop dashboard</a>
+        <a class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-white/10" href="/paint/register.html" data-pm-t="index_nav_register">Register shop</a>
+        <a class="px-3 py-1.5 rounded-lg bg-teal-500 text-slate-950 hover:bg-teal-400 font-semibold" href="/paint/login.html" data-pm-t="index_nav_login">Login</a>
+        <a class="px-3 py-1.5 rounded-lg text-slate-200 hover:bg-white/10 hidden sm:inline" href="/paint/admin.html" data-pm-t="index_nav_admin">Admin</a>
+      </nav>
+    </div>
+    <div class="bg-white border-t border-slate-200">
+      <div class="max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0">
+        <a href="/paint/" class="text-lg font-semibold tracking-tight text-teal-700 hover:text-teal-800 shrink-0" data-pm-t="index_nav_brand">Paint Showroom Hub</a>
+        <div class="relative flex-1 min-w-[min(100%,14rem)] max-w-full hidden" id="searchWrap">
+          <label class="sr-only" for="searchInput" data-pm-t="index_search_label">Search catalog & shops</label>
+          <input
+            id="searchInput"
+            autocomplete="off"
+            type="search"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 px-3.5 py-2.5 text-sm shadow-sm outline-none ring-teal-500/30 focus:ring-2 focus:bg-white focus:border-teal-300"
+            data-pm-ph="index_search_ph"
+            placeholder="Type a product name, brand word, or city / area…"
+          />
+          <div id="suggestPanel" class="absolute z-50 left-0 right-0 mt-1.5 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl hidden max-h-80 overflow-auto"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8 space-y-10">
+    <section id="phaseBanner" class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950 hidden" data-error-api="">
+      <p id="phaseBannerTitle" class="font-semibold mb-1" data-pm-t="index_phase_title">Shop onboarding phase</p>
+      <p id="phaseBannerBody" class="text-amber-900/90" data-pm-t="index_phase_body">Only paint shops can register and use the dashboard. Customer browsing unlocks when an admin enables public access.</p>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden" aria-labelledby="homeAdHeading">
+      <div class="flex items-center gap-3 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+        <h2 id="homeAdHeading" class="text-xs font-semibold uppercase tracking-wide text-slate-600" data-pm-t="index_ad_label">Advertising</h2>
+      </div>
+      <div
+        class="relative w-full aspect-[21/9] min-h-[9.5rem] sm:min-h-[11rem] max-h-[clamp(11rem,32vw,18rem)] bg-slate-800 overflow-hidden flex flex-col justify-center text-slate-300 text-sm"
+      >
+        <div
+          id="adCarouselStrip"
+          class="ad-carousel-strip flex flex-1 min-h-0 w-full h-full snap-x snap-mandatory overflow-x-auto scroll-smooth"
+          tabindex="0"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Advertisements"
+        ></div>
+        <button
+          type="button"
+          id="adCarouselPrev"
+          class="absolute left-1 sm:left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-800 shadow-md hover:bg-white disabled:pointer-events-none disabled:opacity-0 hidden"
+          aria-label="Previous ad"
+        >
+          <span class="block text-lg font-bold leading-none" aria-hidden="true">‹</span>
+        </button>
+        <button
+          type="button"
+          id="adCarouselNext"
+          class="absolute right-1 sm:right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-800 shadow-md hover:bg-white disabled:pointer-events-none disabled:opacity-0 hidden"
+          aria-label="Next ad"
+        >
+          <span class="block text-lg font-bold leading-none" aria-hidden="true">›</span>
+        </button>
+        <div id="adCarouselDots" class="absolute bottom-2 inset-x-0 z-10 flex justify-center gap-1.5"></div>
+      </div>
+    </section>
+
+    <section id="shopsSection" class="space-y-4 hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h2 class="text-xl font-semibold" data-pm-t="index_shops_h2">Shops</h2>
+          <p class="text-sm text-slate-600" data-pm-t="index_shops_sub">Open a showroom for the catalog. If the shop pinned a location, use Directions on map for turn-by-turn in Google Maps.</p>
+          <p class="mt-1.5 text-xs text-teal-800/90" data-pm-t="index_shops_fav_hint">Use the heart on a shop to save it — your favourites appear first. Saved only on this device.</p>
+        </div>
+        <p id="indexShopsSortHint" class="text-xs text-slate-500" data-pm-t="index_shops_sort_hint">Sorted by last catalog update</p>
+      </div>
+      <div id="shopGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </section>
+
+    <section id="lockedShops" class="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600 hidden">
+      <p class="font-medium text-slate-800" data-pm-t="index_locked_title">Customer view is locked</p>
+      <p class="mt-2 text-sm max-w-md mx-auto" data-pm-t="index_locked_body">While marketing teams onboard shops, the public directory stays hidden. Shop owners can still sign in to build their catalog.</p>
+      <div class="mt-5 flex flex-wrap gap-2 justify-center">
+        <a class="px-4 py-2 rounded-lg bg-teal-700 text-white text-sm" href="/paint/register.html" data-pm-t="index_locked_register">Register a shop</a>
+        <a class="px-4 py-2 rounded-lg border border-slate-200 text-sm" href="/paint/login.html" data-pm-t="index_locked_login">Shop login</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
+
+  <script src="/paint/js/paint-i18n.js"></script>
+  <script src="/paint/js/common.js"></script>
+  <script>
+    const shopGrid = document.getElementById("shopGrid");
+    const shopsSection = document.getElementById("shopsSection");
+    const lockedShops = document.getElementById("lockedShops");
+    const phaseBanner = document.getElementById("phaseBanner");
+    const phaseBannerTitle = document.getElementById("phaseBannerTitle");
+    const phaseBannerBody = document.getElementById("phaseBannerBody");
+    const searchWrap = document.getElementById("searchWrap");
+    const searchInput = document.getElementById("searchInput");
+    const suggestPanel = document.getElementById("suggestPanel");
+    const adCarouselStrip = document.getElementById("adCarouselStrip");
+    const adCarouselPrev = document.getElementById("adCarouselPrev");
+    const adCarouselNext = document.getElementById("adCarouselNext");
+    const adCarouselDots = document.getElementById("adCarouselDots");
+    let indexLastCustomerEnabled = false;
+    let indexShopListShowLastUpdate = true;
+    let indexLastShops = [];
+    let indexAdAutoplayTimer = null;
+    let indexAdCurrent = 0;
+    let indexAdCount = 0;
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      }[c]));
+    }
+
+    function syncIndexShopsSortHint() {
+      const el = document.getElementById("indexShopsSortHint");
+      if (!el) return;
+      el.classList.toggle("hidden", !indexShopListShowLastUpdate);
+    }
+
+    function clearAdAutoplay() {
+      if (indexAdAutoplayTimer) {
+        clearInterval(indexAdAutoplayTimer);
+        indexAdAutoplayTimer = null;
+      }
+    }
+
+    function syncVideoPlayback(activeIndex) {
+      [...adCarouselStrip.children].forEach((slide, i) => {
+        const v = slide.querySelector("video");
+        if (!v) return;
+        if (i === activeIndex) v.play().catch(() => {});
+        else {
+          v.pause();
+          try {
+            v.currentTime = 0;
+          } catch (_) {
+            /* ignore */
+          }
+        }
+      });
+    }
+
+    function rebuildAdDots() {
+      adCarouselDots.innerHTML = "";
+      for (let i = 0; i < indexAdCount; i++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className =
+          "h-2 w-2 rounded-full transition shrink-0 " +
+          (i === indexAdCurrent ? "bg-white ring-2 ring-teal-300/70 scale-110" : "bg-white/45 hover:bg-white/85");
+        b.setAttribute("aria-label", `Slide ${i + 1}`);
+        const j = i;
+        b.addEventListener("click", () => goAdSlide(j));
+        adCarouselDots.appendChild(b);
+      }
+    }
+
+    function goAdSlide(i) {
+      if (!indexAdCount) return;
+      const w = adCarouselStrip.clientWidth;
+      if (w <= 0) return;
+      indexAdCurrent = ((i % indexAdCount) + indexAdCount) % indexAdCount;
+      adCarouselStrip.scrollTo({ left: indexAdCurrent * w, behavior: "smooth" });
+      rebuildAdDots();
+      syncVideoPlayback(indexAdCurrent);
+      scheduleAdAutoplay();
+    }
+
+    function scheduleAdAutoplay() {
+      clearAdAutoplay();
+      if (indexAdCount < 2) return;
+      indexAdAutoplayTimer = setInterval(() => {
+        goAdSlide(indexAdCurrent + 1);
+      }, 6000);
+    }
+
+    let _adResizeT = null;
+    function _adCarouselResize() {
+      if (!indexAdCount) return false;
+      const w = adCarouselStrip.clientWidth;
+      if (w <= 0) return false;
+      adCarouselStrip.scrollTo({ left: indexAdCurrent * w, behavior: "auto" });
+      return true;
+    }
+    window.addEventListener("resize", () => {
+      clearTimeout(_adResizeT);
+      _adResizeT = setTimeout(() => _adCarouselResize(), 120);
+    });
+
+    function showAdCarouselPlaceholder(markup) {
+      clearAdAutoplay();
+      indexAdCount = 0;
+      indexAdCurrent = 0;
+      adCarouselStrip.innerHTML = "";
+      adCarouselDots.innerHTML = "";
+      adCarouselPrev.classList.add("hidden");
+      adCarouselNext.classList.add("hidden");
+      const cell = document.createElement("div");
+      cell.className = "flex min-w-full w-full h-full shrink-0 snap-center snap-always items-center justify-center px-4 text-sm";
+      cell.innerHTML = markup;
+      adCarouselStrip.appendChild(cell);
+    }
+
+    function buildAdSlide(ad) {
+      const slide = document.createElement("div");
+      slide.className =
+        "relative min-w-full w-full h-full shrink-0 snap-center snap-always overflow-hidden bg-black flex items-stretch justify-stretch";
+      slide.setAttribute("role", "group");
+      slide.setAttribute("aria-roledescription", "slide");
+      if (ad.kind === "video") {
+        const v = document.createElement("video");
+        v.className = "absolute inset-0 h-full w-full object-cover bg-black";
+        v.src = ad.media_url;
+        v.muted = true;
+        v.loop = true;
+        v.playsInline = true;
+        v.controls = true;
+        slide.appendChild(v);
+      } else {
+        const img = document.createElement("img");
+        img.src = ad.media_url;
+        img.alt = esc(ad.title || paintMarketT("index_ad_alt"));
+        img.className = "absolute inset-0 h-full w-full object-cover object-center";
+        slide.appendChild(img);
+      }
+      return slide;
+    }
+
+    async function loadAds(clientEnabled) {
+      const msgDisabled = `<span class="px-4 text-center">${esc(paintMarketT("index_ad_when_disabled"))}</span>`;
+      const msgEmpty = `<span class="px-4 text-center text-slate-400">${esc(paintMarketT("index_ad_upload_hint"))}</span>`;
+      if (!clientEnabled) {
+        showAdCarouselPlaceholder(msgDisabled);
+        return;
+      }
+      const data = await PaintApi.ads();
+      const ads = data.ads || [];
+      if (!ads.length) {
+        showAdCarouselPlaceholder(msgEmpty);
+        return;
+      }
+      clearAdAutoplay();
+      adCarouselStrip.innerHTML = "";
+      adCarouselDots.innerHTML = "";
+      ads.forEach((ad) => {
+        adCarouselStrip.appendChild(buildAdSlide(ad));
+      });
+      indexAdCount = ads.length;
+      indexAdCurrent = 0;
+      requestAnimationFrame(() => {
+        adCarouselStrip.scrollTo({ left: 0, behavior: "auto" });
+        rebuildAdDots();
+        syncVideoPlayback(0);
+        if (indexAdCount > 1) {
+          adCarouselPrev.classList.remove("hidden");
+          adCarouselNext.classList.remove("hidden");
+          scheduleAdAutoplay();
+        } else {
+          adCarouselPrev.classList.add("hidden");
+          adCarouselNext.classList.add("hidden");
+        }
+      });
+    }
+
+    adCarouselPrev.addEventListener("click", (e) => {
+      e.preventDefault();
+      goAdSlide(indexAdCurrent - 1);
+    });
+    adCarouselNext.addEventListener("click", (e) => {
+      e.preventDefault();
+      goAdSlide(indexAdCurrent + 1);
+    });
+    let _adStripScrollT = null;
+    adCarouselStrip.addEventListener(
+      "scroll",
+      () => {
+        if (!indexAdCount) return;
+        clearTimeout(_adStripScrollT);
+        _adStripScrollT = setTimeout(() => {
+          const w = adCarouselStrip.clientWidth;
+          if (w <= 0) return;
+          const ix = Math.round(adCarouselStrip.scrollLeft / w);
+          const bounded = Math.max(0, Math.min(ix, indexAdCount - 1));
+          if (bounded !== indexAdCurrent) {
+            indexAdCurrent = bounded;
+            rebuildAdDots();
+            syncVideoPlayback(indexAdCurrent);
+            scheduleAdAutoplay();
+          }
+        }, 80);
+      },
+      { passive: true }
+    );
+
+    function shopHasMapPin(s) {
+      const la = s.lat != null ? Number(s.lat) : NaN;
+      const ln = s.lng != null ? Number(s.lng) : NaN;
+      return Number.isFinite(la) && Number.isFinite(ln);
+    }
+
+    function googleDirectionsUrl(lat, lng) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}`;
+    }
+
+    function renderShops(shops) {
+      shopGrid.innerHTML = "";
+      const ordered =
+        typeof paintMarketSortShopsFavoritesFirst === "function"
+          ? paintMarketSortShopsFavoritesFirst(shops)
+          : [...shops];
+      for (const s of ordered) {
+        const card = document.createElement("article");
+        card.className =
+          "group rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition flex flex-col";
+        const main = document.createElement("a");
+        main.href = `/paint/shop.html?slug=${encodeURIComponent(s.slug)}`;
+        main.className = "block flex-1 min-w-0";
+        const imgUrl = s.photo_url || `https://placehold.co/600x360/134e4a/f8fafc?text=${encodeURIComponent(s.name)}`;
+        const locHint = esc(s.location_text || "") || "";
+        const addrHint = esc(s.address || "") || "";
+        const lastUpHtml = indexShopListShowLastUpdate
+          ? `<p class="text-xs text-slate-500">${esc(paintMarketT("index_last_update"))} ${esc(s.last_catalog_update || paintMarketT("index_last_update_na"))}</p>`
+          : "";
+        main.innerHTML = `
+          <div class="relative aspect-square shop-photo-frame overflow-hidden border-b border-teal-900/10">
+            <img src="${esc(imgUrl)}" alt="" class="absolute inset-0 w-full h-full object-contain object-center p-2 group-hover:scale-[1.02] transition duration-500" loading="lazy" />
+          </div>
+          <div class="p-4 space-y-1">
+            <p class="font-semibold text-slate-900 rounded-md border border-green-100/70 bg-green-50 px-2 py-1.5">${esc(s.name)}</p>
+            <p class="text-sm text-slate-700 line-clamp-2 rounded-md border border-green-100/70 bg-green-50 px-2 py-1.5">${locHint}${locHint && addrHint ? " · " : ""}${addrHint}</p>
+            ${lastUpHtml}
+          </div>`;
+        card.appendChild(main);
+        const photoEl = main.querySelector(".relative.aspect-square");
+        if (photoEl && s.slug && typeof paintMarketFavoriteApplyButton === "function") {
+          const favBtn = document.createElement("button");
+          favBtn.type = "button";
+          paintMarketFavoriteApplyButton(favBtn, s.slug, "card");
+          photoEl.insertAdjacentElement("afterbegin", favBtn);
+        }
+        if (shopHasMapPin(s)) {
+          const la = Number(s.lat);
+          const ln = Number(s.lng);
+          const mapRow = document.createElement("div");
+          mapRow.className =
+            "grid grid-cols-2 divide-x divide-teal-100 border-t border-teal-100 text-xs font-semibold shrink-0";
+          const showroom = document.createElement("a");
+          showroom.href = main.href;
+          showroom.className = "py-2.5 text-center text-slate-600 hover:bg-slate-50";
+          showroom.textContent = paintMarketT("index_card_showroom");
+          const dir = document.createElement("a");
+          dir.href = googleDirectionsUrl(la, ln);
+          dir.target = "_blank";
+          dir.rel = "noopener noreferrer";
+          dir.className = "py-2.5 text-center text-teal-800 hover:bg-teal-50";
+          dir.textContent = paintMarketT("index_card_directions");
+          dir.title = paintMarketT("index_card_directions_title");
+          mapRow.appendChild(showroom);
+          mapRow.appendChild(dir);
+          card.appendChild(mapRow);
+        }
+        shopGrid.appendChild(card);
+      }
+    }
+
+    const runSuggest = debounce(async () => {
+      const q = searchInput.value.trim();
+      if (q.length < 1) {
+        suggestPanel.classList.add("hidden");
+        suggestPanel.innerHTML = "";
+        return;
+      }
+      const data = await PaintApi.suggest(q);
+      const parts = [];
+      if (data.products?.length) {
+        parts.push(`<p class="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">${esc(paintMarketT("index_suggest_products"))}</p>`);
+        for (const p of data.products) {
+          parts.push(`<div class="px-3 py-2 text-sm border-t border-slate-100">
+            <div class="font-medium text-slate-900">${esc(p.name)}</div>
+            <div class="text-xs text-slate-500">${esc(p.brand_name)} · ${esc(p.category_name)}</div>
+          </div>`);
+        }
+      }
+      if (data.shops?.length) {
+        parts.push(`<p class="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">${esc(paintMarketT("index_suggest_shops"))}</p>`);
+        for (const s of data.shops) {
+          const pin = shopHasMapPin(s);
+          const lat = Number(s.lat);
+          const lng = Number(s.lng);
+          const dir = pin ? googleDirectionsUrl(lat, lng) : "";
+          parts.push(`<div class="flex gap-2 items-stretch border-t border-slate-100">
+            <a class="flex-1 min-w-0 px-3 py-2 text-sm hover:bg-slate-50" href="/paint/shop.html?slug=${encodeURIComponent(s.slug)}">
+              <div class="font-medium text-slate-900">${esc(s.name)}</div>
+              <div class="text-xs text-slate-500 line-clamp-2">${esc([s.location_text, s.address].filter(Boolean).join(" · "))}</div>
+            </a>
+            ${
+              pin
+                ? `<a href="${dir}" target="_blank" rel="noopener noreferrer" class="shrink-0 flex items-center px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-teal-800 bg-teal-50 hover:bg-teal-100 border-l border-teal-100" title="${esc(paintMarketT("index_suggest_maps_title"))}"> ${esc(paintMarketT("index_suggest_map"))} </a>`
+                : ""
+            }
+          </div>`);
+        }
+      }
+      if (!parts.length) {
+        parts.push(`<div class="px-3 py-4 text-sm text-slate-500">${esc(paintMarketT("index_suggest_nomatch"))}</div>`);
+      }
+      suggestPanel.innerHTML = parts.join("");
+      suggestPanel.classList.remove("hidden");
+    }, 220);
+
+    searchInput.addEventListener("input", runSuggest);
+    document.addEventListener("click", (e) => {
+      if (!searchWrap.contains(e.target)) suggestPanel.classList.add("hidden");
+    });
+
+    document.addEventListener("paint-market-lang-change", () => {
+      if (phaseBanner.dataset.errorApi === "1") phaseBannerTitle.textContent = paintMarketT("index_err_api");
+      else if (!phaseBanner.classList.contains("hidden")) {
+        phaseBannerTitle.textContent = paintMarketT("index_phase_title");
+        phaseBannerBody.textContent = paintMarketT("index_phase_body");
+        phaseBannerBody.classList.remove("hidden");
+      }
+      loadAds(indexLastCustomerEnabled).catch(() => {});
+      syncIndexShopsSortHint();
+      if (indexLastShops.length && !shopsSection.classList.contains("hidden")) renderShops(indexLastShops);
+      if (searchInput.value.trim().length >= 1) runSuggest();
+    });
+
+    document.addEventListener("paint-market-favorites-change", () => {
+      if (indexLastShops.length && !shopsSection.classList.contains("hidden")) renderShops(indexLastShops);
+    });
+
+    (async () => {
+      try {
+        const settings = await PaintApi.settings();
+        const enabled = !!settings.customerAccessEnabled;
+        indexLastCustomerEnabled = enabled;
+        indexShopListShowLastUpdate = settings.shopsListShowLastUpdate !== false;
+        syncIndexShopsSortHint();
+        phaseBanner.dataset.errorApi = "";
+        if (!enabled) {
+          phaseBanner.classList.remove("hidden");
+          phaseBannerBody.classList.remove("hidden");
+          lockedShops.classList.remove("hidden");
+          searchWrap.classList.add("hidden");
+          indexLastShops = [];
+        } else {
+          phaseBanner.classList.add("hidden");
+          shopsSection.classList.remove("hidden");
+          searchWrap.classList.remove("hidden");
+          const shopsData = await PaintApi.publicShops();
+          indexLastShops = shopsData.shops || [];
+          renderShops(indexLastShops);
+        }
+        await loadAds(enabled);
+      } catch (e) {
+        console.error(e);
+        phaseBanner.dataset.errorApi = "1";
+        phaseBannerTitle.textContent = paintMarketT("index_err_api");
+        phaseBannerBody.classList.add("hidden");
+        phaseBanner.classList.remove("hidden");
+      }
+    })();
+  </script>
+</body>
+</html>

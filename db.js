@@ -1,0 +1,350 @@
+const path = require("path");
+const fs = require("fs");
+const sqlite3 = require("sqlite3").verbose();
+
+const DB_PATH = path.join(__dirname, "data", "paint_market.sqlite");
+
+function openDb() {
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return new sqlite3.Database(DB_PATH);
+}
+
+function run(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function onRun(err) {
+      if (err) reject(err);
+      else resolve({ lastID: this.lastID, changes: this.changes });
+    });
+  });
+}
+
+function get(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
+function all(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+}
+
+function slugify(s) {
+  return String(s)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+const CATEGORY_DEFS = [
+  { slug: "building_paints", name: "Building paints", sort_order: 1 },
+  { slug: "steel_workshop_paints", name: "Steel workshop paints", sort_order: 2 },
+  { slug: "carpentry_workshop_paints", name: "Carpentry workshop paints", sort_order: 3 },
+  { slug: "thinner", name: "Thinner", sort_order: 4 },
+  { slug: "industrial", name: "Industrial", sort_order: 5 }
+];
+
+const BRAND_DEFS = [
+  { slug: "national", name: "National", sort_order: 1 },
+  { slug: "jotun", name: "Jotun", sort_order: 2 },
+  { slug: "asian", name: "Asian", sort_order: 3 },
+  { slug: "arabpaint", name: "Arabpaint", sort_order: 4 },
+  { slug: "hempel", name: "Hempel", sort_order: 5 },
+  { slug: "sigma", name: "Sigma", sort_order: 6 },
+  { slug: "wellcoat", name: "Wellcoat", sort_order: 7 },
+  { slug: "fap", name: "FAP", sort_order: 8 },
+  { slug: "ritver", name: "Ritver", sort_order: 9 },
+  { slug: "fabula", name: "Fabula", sort_order: 10 }
+];
+
+const PRODUCT_STEMS = {
+  building_paints: [
+    "Interior premium emulsion",
+    "Exterior weather-shield acrylic",
+    "Washable matt finish",
+    "Silk interior topcoat"
+  ],
+  steel_workshop_paints: [
+    "Anti-corrosion primer",
+    "Quick enamel topcoat",
+    "Zinc-rich shop primer",
+    "Two-pack epoxy shop coat"
+  ],
+  carpentry_workshop_paints: [
+    "Clear satin wood varnish",
+    "Polyurethane wood topcoat",
+    "Undercoat wood primer",
+    "High-build interior lacquer"
+  ],
+  thinner: ["Standard cellulose thinner", "Epoxy-compliant reducer", "PU thinner", "Acrylic reducer"],
+  industrial: ["High-build tank lining", "Chemical-resistant coating", "Floor epoxy system", "Heat-resistant enamel"]
+};
+
+async function seedMasterCatalog(db) {
+  const catRows = await all(db, "SELECT id, slug FROM catalog_categories");
+  const brandRows = await all(db, "SELECT id, slug, name FROM brands");
+  const catBySlug = Object.fromEntries(catRows.map((r) => [r.slug, r.id]));
+  const brandBySlug = Object.fromEntries(brandRows.map((r) => [r.slug, r]));
+
+  let ord = 0;
+  for (const b of BRAND_DEFS) {
+    const brand = brandBySlug[b.slug];
+    if (!brand) continue;
+    for (const c of CATEGORY_DEFS) {
+      const catId = catBySlug[c.slug];
+      const stems = PRODUCT_STEMS[c.slug] || ["General coating"];
+      const picks = stems.slice(0, 2);
+      for (const stem of picks) {
+        ord += 1;
+        const name = `${brand.name} ${stem}`;
+        const slug = slugify(`${brand.slug}-${c.slug}-${stem}`);
+        const popularity = 10 + ((ord * 7) % 41);
+        const image = `https://placehold.co/480x480/0f766e/f8fafc/png?text=${encodeURIComponent(brand.name.slice(0, 8))}`;
+        await run(
+          db,
+          `INSERT OR IGNORE INTO master_products (brand_id, category_id, name, slug, description, default_image_url, popularity_score, sort_index)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            brand.id,
+            catId,
+            name,
+            slug,
+            `${name}. Representative catalogue line for shops to price (1 / 3.6 / 18 L). Photo can be replaced by the shop.`,
+            image,
+            popularity,
+            ord
+          ]
+        );
+      }
+    }
+  }
+}
+
+async function migrate(db) {
+  await run(db, "PRAGMA foreign_keys = ON");
+  await run(db, "PRAGMA journal_mode = WAL");
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK (role IN ('admin','shop')),
+      shop_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS shops (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      location_text TEXT NOT NULL DEFAULT '',
+      address TEXT NOT NULL DEFAULT '',
+      phone TEXT NOT NULL DEFAULT '',
+      photo_url TEXT,
+      last_catalog_update TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS catalog_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS brands (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS master_products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      brand_id INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+      category_id INTEGER NOT NULL REFERENCES catalog_categories(id) ON DELETE CASCADE,
+      created_by_shop_id INTEGER REFERENCES shops(id) ON DELETE SET NULL,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      description TEXT NOT NULL DEFAULT '',
+      default_image_url TEXT,
+      popularity_score INTEGER NOT NULL DEFAULT 0,
+      sort_index INTEGER NOT NULL DEFAULT 0
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS shop_listings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      master_product_id INTEGER NOT NULL REFERENCES master_products(id) ON DELETE CASCADE,
+      available INTEGER NOT NULL DEFAULT 0,
+      price_amount REAL,
+      currency TEXT NOT NULL DEFAULT 'IRR',
+      capacity_ltr REAL NOT NULL CHECK (capacity_ltr IN (1, 3.6, 18)),
+      custom_photo_url TEXT,
+      view_count INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(shop_id, master_product_id, capacity_ltr)
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS ads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kind TEXT NOT NULL CHECK (kind IN ('image','video')),
+      media_url TEXT NOT NULL,
+      title TEXT NOT NULL DEFAULT '',
+      duration_seconds INTEGER,
+      active INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TEXT NOT NULL
+    )`
+  );
+
+  await run(
+    db,
+    `CREATE INDEX IF NOT EXISTS idx_listings_shop ON shop_listings(shop_id)`
+  );
+  await run(
+    db,
+    `CREATE INDEX IF NOT EXISTS idx_listings_product ON shop_listings(master_product_id)`
+  );
+  const masterCols = await all(db, "PRAGMA table_info(master_products)");
+  if (!masterCols.some((c) => c.name === "created_by_shop_id")) {
+    await run(db, "ALTER TABLE master_products ADD COLUMN created_by_shop_id INTEGER REFERENCES shops(id) ON DELETE SET NULL");
+  }
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_master_products_brand ON master_products(brand_id)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_master_products_cat ON master_products(category_id)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_master_products_creator ON master_products(created_by_shop_id)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_shops_slug ON shops(slug)`);
+
+  const shopCols = await all(db, "PRAGMA table_info(shops)");
+  if (!shopCols.some((c) => c.name === "lat")) {
+    await run(db, "ALTER TABLE shops ADD COLUMN lat REAL");
+  }
+  if (!shopCols.some((c) => c.name === "lng")) {
+    await run(db, "ALTER TABLE shops ADD COLUMN lng REAL");
+  }
+
+  const setting = await get(db, "SELECT value FROM site_settings WHERE key = 'customer_access_enabled'");
+  if (!setting) {
+    await run(
+      db,
+      "INSERT INTO site_settings (key, value) VALUES ('customer_access_enabled', '0')"
+    );
+  }
+
+  const shopsListLu = await get(db, "SELECT value FROM site_settings WHERE key = 'shops_list_show_last_update'");
+  if (!shopsListLu) {
+    await run(
+      db,
+      "INSERT INTO site_settings (key, value) VALUES ('shops_list_show_last_update', '1')"
+    );
+  }
+
+  const deprecPerCapPhoto = await get(db, "SELECT 1 AS x FROM site_settings WHERE key = 'per_capacity_photos_deprecated'");
+  if (!deprecPerCapPhoto) {
+    await run(db, "UPDATE shop_listings SET custom_photo_url = NULL WHERE custom_photo_url IS NOT NULL");
+    await run(
+      db,
+      "INSERT INTO site_settings (key, value) VALUES ('per_capacity_photos_deprecated', '1')"
+    );
+  }
+
+  const catCount = await get(db, "SELECT COUNT(*) AS c FROM catalog_categories");
+  if (catCount.c === 0) {
+    for (const c of CATEGORY_DEFS) {
+      await run(
+        db,
+        "INSERT INTO catalog_categories (slug, name, sort_order) VALUES (?, ?, ?)",
+        [c.slug, c.name, c.sort_order]
+      );
+    }
+  }
+
+  const brandCount = await get(db, "SELECT COUNT(*) AS c FROM brands");
+  if (brandCount.c === 0) {
+    for (const b of BRAND_DEFS) {
+      await run(db, "INSERT INTO brands (slug, name, sort_order) VALUES (?, ?, ?)", [
+        b.slug,
+        b.name,
+        b.sort_order
+      ]);
+    }
+  }
+
+  const masterCount = await get(db, "SELECT COUNT(*) AS c FROM master_products");
+  if (masterCount.c === 0) {
+    await seedMasterCatalog(db);
+  }
+
+  const admin = await get(db, "SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+  if (!admin) {
+    const { hashPassword } = require("./auth");
+    const h = await hashPassword("admin123");
+    await run(db, "INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'admin')", [
+      "admin@local.test",
+      h
+    ]);
+  }
+}
+
+async function touchShopCatalogUpdate(db, shopId) {
+  await run(db, "UPDATE shops SET last_catalog_update = datetime('now') WHERE id = ?", [shopId]);
+}
+
+module.exports = {
+  DB_PATH,
+  openDb,
+  run,
+  get,
+  all,
+  migrate,
+  touchShopCatalogUpdate,
+  slugify,
+  BRAND_DEFS,
+  CATEGORY_DEFS
+};

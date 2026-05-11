@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
+  <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
+</head>
+<body class="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100 text-slate-900 min-h-screen" data-pm-page-title="dash_metaTitle">
+  <header class="border-b border-white/20 bg-slate-950/80 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap gap-3 items-center justify-between">
+      <div class="flex flex-wrap items-start gap-x-5 gap-y-2 min-w-0">
+        <label class="flex items-center gap-2 shrink-0 pt-0.5">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
+          <select
+            class="paint-market-country paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 shadow-sm focus:ring-2 focus:ring-teal-500/50"
+            aria-label="Country"
+          ></select>
+        </label>
+        <label class="flex items-center gap-2 shrink-0 pt-0.5">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_city">City</span>
+          <select
+            class="paint-market-city paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[9rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+            aria-label="City"
+          ></select>
+        </label>
+        <label class="flex items-center gap-2 shrink-0 pt-0.5">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
+          <select
+            class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+            aria-label="Language"
+          ></select>
+        </label>
+        <div class="min-w-0">
+        <p class="text-xs uppercase tracking-wide text-slate-300" data-pm-t="dash_hdr_logged">Logged in shop</p>
+        <p id="shopTitle" class="text-lg font-semibold text-white">Loading…</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <a class="text-sm px-3 py-1.5 rounded-lg border border-white/20 text-slate-200" href="/paint/" data-pm-t="dash_home">Home</a>
+        <button id="logoutBtn" type="button" class="text-sm px-3 py-1.5 rounded-lg bg-teal-500 text-slate-950 font-semibold" data-pm-t="dash_logout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <div class="flex flex-wrap gap-6 items-start justify-between">
+        <div class="flex gap-4 items-center">
+          <div class="shop-photo-frame relative w-28 h-28 flex-shrink-0 rounded-xl overflow-hidden border border-teal-900/15 shadow-sm">
+            <img id="shopPhoto" alt="" class="absolute inset-0 w-full h-full object-contain object-center p-1.5 hidden" />
+            <span id="shopPhotoPlaceholder" class="flex items-center justify-center h-full text-xs text-slate-400 text-center p-2" data-pm-t="dash_photo_placeholder">No photo yet</span>
+          </div>
+          <div>
+            <p class="text-sm font-semibold" data-pm-t="dash_showcase_title">Showcase photo</p>
+            <p class="text-xs text-slate-500 max-w-xs" data-pm-t="dash_showcase_hint">Appears on the home grid when customer access launches.</p>
+            <label class="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-teal-800 cursor-pointer">
+              <input id="shopPhotoInput" type="file" accept="image/*" class="hidden" />
+              <span class="px-3 py-1.5 rounded-lg border border-teal-200 bg-teal-50" data-pm-t="dash_upload_image">Upload image</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex-1 min-w-[260px] space-y-3">
+          <p class="text-sm font-semibold" data-pm-t="dash_loc_title">Location & contact — shown to customers</p>
+          <p class="text-xs text-slate-500 max-w-xl" data-pm-t="dash_loc_hint">Customers find you by city/area search; street notes appear under your showroom and on the hub shop list.</p>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <input id="fldLocation" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_ph_city" placeholder="City / area — used in search" />
+            <input id="fldPhone" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_ph_phone" placeholder="Phone" />
+            <textarea id="fldAddress" rows="3" class="sm:col-span-2 rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_ph_address" placeholder="Address or directions"></textarea>
+            <div class="sm:col-span-2 space-y-2">
+              <p class="text-xs font-semibold text-slate-700" data-pm-t="dash_map_pin">Map pin (optional)</p>
+              <p class="text-xs text-slate-500 max-w-xl" data-pm-t="dash_map_hint">Tap the map or drag the marker to set where customers find you. Saved together with profile; shown on your public showroom.</p>
+              <div id="shopMapPicker" class="h-64 sm:h-80 w-full rounded-xl border border-slate-200 z-0"></div>
+              <div class="flex flex-wrap gap-2 items-center">
+                <button type="button" id="mapGeoBtn" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-teal-200 bg-teal-50 text-teal-900 hover:bg-teal-100" data-pm-t="dash_map_use_loc">
+                  Use my location
+                </button>
+                <button type="button" id="mapClearPinBtn" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50" data-pm-t="dash_map_clear">
+                  Clear pin
+                </button>
+                <span id="mapCoordsLabel" class="text-xs text-slate-500 font-mono"></span>
+              </div>
+              <input type="hidden" id="fldLat" value="" />
+              <input type="hidden" id="fldLng" value="" />
+            </div>
+          </div>
+          <button id="saveProfile" type="button" class="px-4 py-2 rounded-lg bg-teal-700 text-white text-sm" data-pm-t="dash_save_profile">Save profile</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-3">
+      <div class="flex flex-wrap gap-3 items-center justify-between">
+        <div>
+          <h2 class="text-xl font-semibold" data-pm-t="dash_catalog_h2">Catalogue</h2>
+          <p class="text-sm text-slate-600" data-pm-t="dash_catalog_hint">Brands follow admin priority; inside each brand the category order matches your brief (building → steel → carpentry → thinner → industrial). Mark stock, add IRR price per pack.</p>
+        </div>
+        <input id="filterInput" type="search" data-pm-ph="dash_filter_ph" placeholder="Filter products…" class="rounded-lg border border-slate-200 px-3 py-2 text-sm min-w-[200px]" />
+      </div>
+      <div id="catalogMount" class="space-y-4"></div>
+    </section>
+  </main>
+
+  <dialog id="productDialog" class="rounded-xl p-6 max-w-md w-[92vw]">
+    <form method="dialog" class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <p id="productDialogTitle" class="font-semibold" data-pm-t="dash_dialog_add_title">Add product</p>
+        <button value="cancel" class="text-xs font-semibold px-2.5 py-1 rounded-md border border-slate-200" data-pm-t="dash_close">Close</button>
+      </div>
+      <p id="productDialogHint" class="text-xs text-slate-600"></p>
+      <input id="pdBrandId" type="hidden" />
+      <input id="pdCategoryId" type="hidden" />
+
+      <div class="grid gap-2">
+        <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_name">Name</label>
+        <input id="pdName" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_name" placeholder="Product name" />
+      </div>
+
+      <div class="grid gap-2">
+        <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_desc">Description (optional)</label>
+        <textarea id="pdDesc" rows="3" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_desc" placeholder="Short description"></textarea>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div class="grid gap-2">
+          <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_capacity">Capacity</label>
+          <select id="pdCapacity" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            <option value="1">1 L</option>
+            <option value="3.6">3.6 L</option>
+            <option value="18">18 L</option>
+          </select>
+        </div>
+        <div class="grid gap-2">
+          <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_price">Price (IRR)</label>
+          <input id="pdPrice" type="number" step="1" inputmode="numeric" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="e.g. 250000" />
+        </div>
+      </div>
+
+      <div class="grid gap-2">
+        <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_photo">Photo (optional)</label>
+        <input id="pdPhoto" type="file" accept="image/*" class="block w-full text-sm" />
+      </div>
+
+      <div class="flex gap-2 justify-end pt-2">
+        <button value="cancel" class="px-3 py-2 rounded-lg border border-slate-200 text-sm" data-pm-t="dash_cancel">Cancel</button>
+        <button id="pdSubmit" type="button" class="px-4 py-2 rounded-lg bg-emerald-700 text-white text-sm font-semibold" data-pm-t="dash_add_btn">Add</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="toastTpl"><div class="fixed bottom-6 right-6 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg"></div></template>
+  <script src="/paint/js/paint-i18n.js"></script>
+  <script src="/paint/js/common.js"></script>
+  <script src="/paint/js/theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      }[c]));
+    }
+
+    let state = null;
+    /** @type {"loading"|"shop"|"missing"|"error"} */
+    let dashTitleMode = "loading";
+    let dashShopDisplayName = "";
+
+    const shopTitle = document.getElementById("shopTitle");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const catalogMount = document.getElementById("catalogMount");
+    const shopPhotoEl = document.getElementById("shopPhoto");
+    const shopPhotoPlaceholder = document.getElementById("shopPhotoPlaceholder");
+    const shopPhotoInput = document.getElementById("shopPhotoInput");
+
+    const DEFAULT_MAP_CENTER = [35.6892, 51.3890];
+    let shopMapPick = null;
+    let shopMarkerPick = null;
+
+    function syncCoordsLabel() {
+      const la = document.getElementById("fldLat").value.trim();
+      const ln = document.getElementById("fldLng").value.trim();
+      document.getElementById("mapCoordsLabel").textContent =
+        la && ln ? `${Number(la).toFixed(5)}, ${Number(ln).toFixed(5)}` : paintMarketT("dash_map_no_pin");
+    }
+
+    function placePickMarker(lat, lng) {
+      document.getElementById("fldLat").value = lat.toFixed(6);
+      document.getElementById("fldLng").value = lng.toFixed(6);
+      syncCoordsLabel();
+      if (!shopMapPick) return;
+      if (!shopMarkerPick) {
+        shopMarkerPick = L.marker([lat, lng], { draggable: true }).addTo(shopMapPick);
+        shopMarkerPick.on("dragend", () => {
+          const p = shopMarkerPick.getLatLng();
+          document.getElementById("fldLat").value = p.lat.toFixed(6);
+          document.getElementById("fldLng").value = p.lng.toFixed(6);
+          syncCoordsLabel();
+        });
+      } else {
+        shopMarkerPick.setLatLng([lat, lng]);
+      }
+    }
+
+    function clearPickMarker() {
+      document.getElementById("fldLat").value = "";
+      document.getElementById("fldLng").value = "";
+      syncCoordsLabel();
+      if (shopMarkerPick && shopMapPick) {
+        shopMapPick.removeLayer(shopMarkerPick);
+        shopMarkerPick = null;
+      }
+    }
+
+    function setupShopMapPicker() {
+      const el = document.getElementById("shopMapPicker");
+      if (!el || typeof L === "undefined" || shopMapPick) return;
+      shopMapPick = L.map(el, { zoomControl: true }).setView(DEFAULT_MAP_CENTER, 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(shopMapPick);
+
+      shopMapPick.on("click", (ev) => {
+        placePickMarker(ev.latlng.lat, ev.latlng.lng);
+      });
+
+      const la = Number(document.getElementById("fldLat").value);
+      const ln = Number(document.getElementById("fldLng").value);
+      if (Number.isFinite(la) && Number.isFinite(ln)) {
+        shopMapPick.setView([la, ln], 14);
+        placePickMarker(la, ln);
+      }
+      shopMapPick.whenReady(() => setTimeout(() => shopMapPick.invalidateSize(), 60));
+    }
+
+    async function bootstrap() {
+      const me = await PaintApi.me();
+      if (!me.user) {
+        window.location.href = "/paint/login.html";
+        return;
+      }
+      if (me.user.role === "admin") {
+        window.location.href = "/paint/admin.html";
+        return;
+      }
+      if (!me.shop) {
+        dashTitleMode = "missing";
+        dashShopDisplayName = "";
+        shopTitle.textContent = paintMarketT("dash_missing_shop");
+        return;
+      }
+      dashTitleMode = "shop";
+      dashShopDisplayName = me.shop.name;
+      shopTitle.textContent = dashShopDisplayName;
+      if (me.shop.photo_url) {
+        shopPhotoEl.src = me.shop.photo_url;
+        shopPhotoEl.classList.remove("hidden");
+        shopPhotoPlaceholder.classList.add("hidden");
+      }
+      document.getElementById("fldLocation").value = me.shop.location_text || "";
+      document.getElementById("fldPhone").value = me.shop.phone || "";
+      document.getElementById("fldAddress").value = me.shop.address || "";
+      const plat = me.shop.lat != null ? Number(me.shop.lat) : NaN;
+      const plng = me.shop.lng != null ? Number(me.shop.lng) : NaN;
+      document.getElementById("fldLat").value =
+        Number.isFinite(plat) && Number.isFinite(plng) ? String(plat) : "";
+      document.getElementById("fldLng").value =
+        Number.isFinite(plat) && Number.isFinite(plng) ? String(plng) : "";
+      syncCoordsLabel();
+      setTimeout(() => setupShopMapPicker(), 120);
+
+      document.getElementById("mapGeoBtn").onclick = () => {
+        if (!navigator.geolocation) {
+          toast(paintMarketT("dash_toast_geo_unsupported"));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            placePickMarker(pos.coords.latitude, pos.coords.longitude);
+            if (shopMapPick) shopMapPick.setView([pos.coords.latitude, pos.coords.longitude], 15);
+          },
+          () => toast(paintMarketT("dash_toast_geo_denied")),
+          { enableHighAccuracy: true, timeout: 15000 }
+        );
+      };
+      document.getElementById("mapClearPinBtn").onclick = () => clearPickMarker();
+
+      state = await PaintApi.shopCatalog();
+      renderCatalog();
+    }
+
+    function toast(msg) {
+      const el = document.createElement("div");
+      el.className = "fixed bottom-6 right-6 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50";
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+
+    function showErr(prefix, e) {
+      const status = e && e.status ? ` ${e.status}` : "";
+      const path = e && e.path ? ` ${e.path}` : "";
+      const msg = e && e.message ? e.message : "Error";
+      console.error(prefix, e);
+      toast(`${prefix}:${status}${path} — ${msg}`);
+    }
+
+    logoutBtn.onclick = async () => {
+      await PaintApi.logout();
+      window.location.href = "/paint/";
+    };
+
+    shopPhotoInput.addEventListener("change", async () => {
+      const f = shopPhotoInput.files?.[0];
+      if (!f) return;
+      try {
+        const data = await PaintApi.uploadShopPhoto(f);
+        shopPhotoEl.src = data.photoUrl;
+        shopPhotoEl.classList.remove("hidden");
+        shopPhotoPlaceholder.classList.add("hidden");
+        toast(paintMarketT("dash_toast_photo_updated"));
+      } catch (e) {
+        toast(e.message || paintMarketT("dash_toast_upload_fail"));
+      } finally {
+        shopPhotoInput.value = "";
+      }
+    });
+
+    document.getElementById("saveProfile").onclick = async () => {
+      try {
+        const latStr = document.getElementById("fldLat").value.trim();
+        const lngStr = document.getElementById("fldLng").value.trim();
+        let lat = null;
+        let lng = null;
+        if (latStr || lngStr) {
+          if (!latStr || !lngStr) {
+            toast(paintMarketT("dash_toast_coords_need_both"));
+            return;
+          }
+          lat = Number(latStr);
+          lng = Number(lngStr);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            toast(paintMarketT("dash_toast_coords_invalid"));
+            return;
+          }
+        }
+        await PaintApi.patchShopProfile({
+          location: document.getElementById("fldLocation").value,
+          phone: document.getElementById("fldPhone").value,
+          address: document.getElementById("fldAddress").value,
+          lat,
+          lng
+        });
+        toast(paintMarketT("dash_toast_profile_saved"));
+      } catch (e) {
+        toast(e.message || paintMarketT("dash_toast_save_fail"));
+      }
+    };
+
+    async function persistListingsBatch(payloads) {
+      await Promise.all(payloads.map((pl) => PaintApi.putListing(pl)));
+      state = await PaintApi.shopCatalog();
+      renderCatalog();
+      toast(paintMarketT("dash_toast_prices_saved"));
+    }
+
+    const productDialog = document.getElementById("productDialog");
+    const pdHint = document.getElementById("productDialogHint");
+    const pdBrandId = document.getElementById("pdBrandId");
+    const pdCategoryId = document.getElementById("pdCategoryId");
+    const pdName = document.getElementById("pdName");
+    const pdDesc = document.getElementById("pdDesc");
+    const pdCapacity = document.getElementById("pdCapacity");
+    const pdPrice = document.getElementById("pdPrice");
+    const pdPhoto = document.getElementById("pdPhoto");
+    const pdSubmit = document.getElementById("pdSubmit");
+
+    function openAddProductDialog(brand, category) {
+      pdHint.textContent = `${brand.name} / ${category.name}`;
+      pdBrandId.value = String(brand.id);
+      pdCategoryId.value = String(category.id);
+      pdName.value = "";
+      pdDesc.value = "";
+      pdCapacity.value = "1";
+      pdPrice.value = "";
+      pdPhoto.value = "";
+      productDialog.showModal();
+    }
+
+    pdSubmit.addEventListener("click", async () => {
+      const brandId = Number(pdBrandId.value);
+      const categoryId = Number(pdCategoryId.value);
+      const name = pdName.value.trim();
+      const description = pdDesc.value.trim();
+      const capacity = Number(pdCapacity.value);
+      const priceAmount = Number(pdPrice.value || 0);
+      if (!Number.isFinite(brandId) || !Number.isFinite(categoryId) || name.length < 2) {
+        toast(paintMarketT("dash_toast_name_required"));
+        return;
+      }
+      if (!Number.isFinite(capacity) || ![1, 3.6, 18].includes(capacity)) {
+        toast(paintMarketT("dash_toast_capacity_bad"));
+        return;
+      }
+      if (!Number.isFinite(priceAmount) || priceAmount <= 0) {
+        toast(paintMarketT("dash_toast_price_bad"));
+        return;
+      }
+      pdSubmit.disabled = true;
+      try {
+        let photoUrl = "";
+        const f = pdPhoto.files?.[0];
+        if (f) {
+          const up = await PaintApi.uploadProductPhoto(f);
+          photoUrl = up.photoUrl || "";
+        }
+        const created = await PaintApi.createProduct({
+          brandId,
+          categoryId,
+          name,
+          description,
+          defaultImageUrl: photoUrl
+        });
+        const productId = created?.product?.id;
+        if (!productId) throw new Error("Product create failed");
+        await PaintApi.putListing({
+          masterProductId: productId,
+          capacityLtr: capacity,
+          available: true,
+          priceAmount,
+          customPhotoUrl: null
+        });
+        productDialog.close();
+        state = await PaintApi.shopCatalog();
+        renderCatalog();
+        toast(paintMarketT("dash_toast_product_added"));
+      } catch (e) {
+        showErr(paintMarketT("dash_err_add_prefix"), e);
+      } finally {
+        pdSubmit.disabled = false;
+      }
+    });
+
+    async function editProduct(product) {
+      const name = prompt(paintMarketT("dash_prompt_name"), product.name || "");
+      if (!name || !name.trim()) return;
+      const description = prompt(paintMarketT("dash_prompt_desc"), product.description || "") || "";
+      try {
+        await PaintApi.patchProduct(product.id, {
+          name: name.trim(),
+          description: description.trim(),
+          defaultImageUrl: product.default_image_url || ""
+        });
+        state = await PaintApi.shopCatalog();
+        renderCatalog();
+        toast(paintMarketT("dash_toast_product_updated"));
+      } catch (e) {
+        toast(e.message || paintMarketT("dash_toast_product_update_fail"));
+      }
+    }
+
+    async function deleteProduct(product) {
+      if (!confirm(paintMarketTf("dash_confirm_delete", { name: product.name || "" }))) return;
+      try {
+        await PaintApi.deleteProduct(product.id);
+        state = await PaintApi.shopCatalog();
+        renderCatalog();
+        toast(paintMarketT("dash_toast_product_deleted"));
+      } catch (e) {
+        toast(e.message || paintMarketT("dash_toast_product_delete_fail"));
+      }
+    }
+
+    function listingFor(productId, cap) {
+      return state.listingKey?.[`${productId}:${cap}`] || null;
+    }
+
+    function renderCatalog() {
+      const brands = [...state.brands].sort((a, b) => a.sort_order - b.sort_order);
+      const cats = [...state.categories].sort((a, b) => a.sort_order - b.sort_order);
+      const catSlugOf = {};
+      cats.forEach((c) => {
+        catSlugOf[c.id] = c.slug;
+      });
+      const filt = document.getElementById("filterInput").value.trim().toLowerCase();
+      catalogMount.innerHTML = "";
+      for (const b of brands) {
+        const wrap = document.createElement("section");
+        wrap.className = "rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm";
+        wrap.innerHTML = PaintTheme.brandStripeFragment(esc(b.name), b.slug, esc(String(b.sort_order)));
+        const inner = document.createElement("div");
+        inner.className = "divide-y divide-slate-100";
+        for (const c of cats) {
+          let products = state.products.filter((p) => p.brand_id === b.id && p.category_id === c.id);
+          if (filt) products = products.filter((p) => p.name.toLowerCase().includes(filt));
+          const block = document.createElement("div");
+          block.className = "space-y-3 p-4";
+          block.innerHTML = `${PaintTheme.categoryHeaderFragment(esc(c.name), c.slug)}
+            <div class="flex justify-end">
+              <button type="button" class="addProductBtn text-[11px] font-semibold px-2.5 py-1 rounded-md bg-emerald-700 text-white"></button>
+            </div>`;
+          const apBtn = block.querySelector(".addProductBtn");
+          apBtn.textContent = paintMarketT("dash_cat_add_btn");
+          apBtn.addEventListener("click", () => openAddProductDialog(b, c));
+          const list = document.createElement("div");
+          list.className =
+            "grid grid-cols-[repeat(auto-fill,minmax(9.9rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))] gap-2";
+          if (!products.length) {
+            const empty = document.createElement("p");
+            empty.className = "text-xs text-slate-500";
+            empty.textContent = paintMarketT("dash_no_products");
+            list.appendChild(empty);
+          }
+          for (const p of products) {
+            const card = document.createElement("div");
+            card.className =
+              "aspect-square flex flex-col rounded-lg border border-slate-200 border-t-[3px] bg-white p-0 shadow-sm overflow-hidden";
+            const cs = PaintTheme.categoryTheme(catSlugOf[p.category_id] || "");
+            card.style.borderTopColor = cs.accent;
+            const img = p.default_image_url;
+            const brandGrad = PaintTheme.brandBarGradient(p.brand_slug || b.slug);
+            const brandLabel = esc(p.brand_name || b.name);
+            card.innerHTML = `
+              <div class="shrink-0 rounded-sm px-0.5 py-px text-[9px] sm:text-[10px] font-bold uppercase tracking-wide truncate text-center leading-tight"
+                style="background:${brandGrad};color:#fafaf9;text-shadow:0 1px 2px rgba(0,0,0,0.45);box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),inset 0 -1px 0 rgba(0,0,0,0.12)">${brandLabel}</div>
+              <p class="shrink-0 text-[11px] sm:text-[12px] font-semibold text-slate-900 leading-snug line-clamp-2 pt-px px-px">${esc(p.name)}</p>
+              <div class="flex-1 flex gap-px min-h-0 overflow-hidden pt-0">
+                <div class="w-[50%] max-w-[4.5rem] shrink-0 self-stretch flex min-h-0 items-stretch relative z-10">
+                  <div class="h-full aspect-square max-w-full min-h-0 bg-slate-100 overflow-hidden">
+                    <img src="${esc(img)}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                </div>
+                <div class="prod-prices flex-1 min-w-0 flex flex-col justify-center gap-0 overflow-hidden pr-px min-h-0"></div>
+              </div>`;
+            const capacities = [
+              [1, "1L"],
+              [3.6, "3.6L"],
+              [18, "18L"]
+            ];
+            const row = document.createElement("div");
+            row.className = "shrink-0 flex flex-col gap-0 border-t border-slate-100 pt-0.5 mt-0 leading-none";
+            const refs = [];
+
+            capacities.forEach(([cap, label]) => {
+              const listing = listingFor(p.id, cap);
+              const grp = document.createElement("div");
+              grp.className = "flex items-center gap-0.5 w-full min-w-0";
+              const chkId = `p-${p.id}-${cap}`;
+              grp.innerHTML = `
+                <input type="checkbox" id="${chkId}" class="shrink-0 scale-[0.72]" ${listing?.available ? "checked" : ""} />
+                <label for="${chkId}" class="text-[8px] font-bold text-slate-700 tabular-nums w-5 shrink-0 cursor-pointer">${label}</label>
+                <input type="number" step="1" inputmode="numeric" class="priceInp flex-1 min-w-0 h-4 rounded-sm border border-slate-200 px-0.5 text-[10px] tabular-nums leading-none py-0 font-semibold"
+                  placeholder="" ${listing?.available ? "" : "disabled"} />`;
+              const chk = grp.querySelector("input[type=checkbox]");
+              const price = grp.querySelector(".priceInp");
+              if (listing?.price_amount != null && listing.price_amount !== "") price.value = listing.price_amount;
+              chk.addEventListener("change", () => {
+                price.disabled = !chk.checked;
+                if (!chk.checked) price.value = "";
+              });
+              refs.push({ cap, chk, price });
+              row.appendChild(grp);
+            });
+
+            if (Number(p.editable) === 1) {
+              const actions = document.createElement("div");
+              actions.className = "shrink-0 grid grid-cols-2 gap-px mt-px";
+              actions.innerHTML = `
+                <button type="button" class="editProductBtn text-[9px] font-semibold py-0.5 rounded-sm border border-slate-300 text-slate-700 bg-white">${esc(
+                  paintMarketT("dash_edit")
+                )}</button>
+                <button type="button" class="delProductBtn text-[9px] font-semibold py-0.5 rounded-sm bg-rose-600 text-white">${esc(
+                  paintMarketT("dash_delete")
+                )}</button>`;
+              actions.querySelector(".editProductBtn").addEventListener("click", () => editProduct(p));
+              actions.querySelector(".delProductBtn").addEventListener("click", () => deleteProduct(p));
+              row.appendChild(actions);
+            }
+
+            const saveBtn = document.createElement("button");
+            saveBtn.type = "button";
+            saveBtn.className =
+              "w-full shrink-0 text-[10px] font-semibold py-0.5 mt-px rounded-sm bg-teal-700 text-white leading-tight";
+            saveBtn.textContent = paintMarketT("dash_save");
+            saveBtn.addEventListener("click", async () => {
+              const payloads = refs.map(({ cap, chk, price }) => ({
+                masterProductId: p.id,
+                capacityLtr: cap,
+                available: chk.checked,
+                priceAmount: chk.checked ? Number(price.value || 0) : null,
+                customPhotoUrl: null
+              }));
+              try {
+                await persistListingsBatch(payloads);
+              } catch (e) {
+                toast(e.message || paintMarketT("dash_toast_listing_save_fail"));
+              }
+            });
+            row.appendChild(saveBtn);
+            const priceCol = card.querySelector(".prod-prices");
+            if (priceCol) priceCol.appendChild(row);
+            else card.appendChild(row);
+            list.appendChild(card);
+          }
+          block.appendChild(list);
+          inner.appendChild(block);
+        }
+        if (!inner.children.length) continue;
+        wrap.appendChild(inner);
+        catalogMount.appendChild(wrap);
+      }
+    }
+
+    document.getElementById("filterInput").addEventListener("input", () => renderCatalog());
+
+    function refreshDashboardTitleForLang() {
+      if (dashTitleMode === "shop" && dashShopDisplayName) shopTitle.textContent = dashShopDisplayName;
+      else if (dashTitleMode === "missing") shopTitle.textContent = paintMarketT("dash_missing_shop");
+      else if (dashTitleMode === "error") shopTitle.textContent = paintMarketT("dash_load_err");
+      else shopTitle.textContent = paintMarketT("dash_loading");
+    }
+
+    document.addEventListener("paint-market-lang-change", () => {
+      refreshDashboardTitleForLang();
+      syncCoordsLabel();
+      if (state) renderCatalog();
+    });
+
+    refreshDashboardTitleForLang();
+
+    bootstrap().catch((e) => {
+      console.error(e);
+      dashTitleMode = "error";
+      shopTitle.textContent = paintMarketT("dash_load_err");
+    });
+  </script>
+</body>
+</html>
