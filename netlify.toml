@@ -1,0 +1,19 @@
+# Netlify: static UI lives in `public/` (includes index.html at site root).
+# App was built for Express under /paint — rewrites keep /paint/* URLs working.
+[build]
+  publish = "public"
+
+[[redirects]]
+  from = "/paint"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/paint/"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/paint/*"
+  to = "/:splat"
+  status = 200

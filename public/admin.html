@@ -157,15 +157,28 @@
             <p class="text-xs text-slate-500 uppercase">${esc(ad.kind)}</p>
             <a class="text-xs text-teal-700 break-all" href="${esc(ad.media_url)}">${esc(ad.media_url)}</a>
           </div>
-          <button data-action="toggle-active" data-id="${ad.id}" data-will-activate="${ad.active ? "0" : "1"}" class="text-xs px-3 py-1 rounded-full border">${esc(ad.active ? paintMarketT("admin_ad_disable") : paintMarketT("admin_ad_enable"))}</button>`;
+          <div class="flex flex-wrap gap-2 items-center">
+          <button data-action="toggle-active" data-id="${ad.id}" data-will-activate="${ad.active ? "0" : "1"}" class="text-xs px-3 py-1 rounded-full border">${esc(ad.active ? paintMarketT("admin_ad_disable") : paintMarketT("admin_ad_enable"))}</button>
+          <button data-action="delete" data-id="${ad.id}" class="text-xs px-3 py-1 rounded-full border border-rose-200 text-rose-700 hover:bg-rose-50">${esc(paintMarketT("admin_ad_delete"))}</button>
+          </div>`;
         adTable.appendChild(row);
       }
 
-      adTable.querySelectorAll("button[data-action]").forEach((btn) =>
+      adTable.querySelectorAll('button[data-action="toggle-active"]').forEach((btn) =>
         btn.addEventListener("click", async () => {
           await guard();
           const makeActive = btn.getAttribute("data-will-activate") === "1";
           await PaintApi.adminPatchAd(Number(btn.dataset.id), { active: makeActive });
+          const refreshed = await PaintApi.adminAds();
+          renderAds(refreshed.ads || []);
+        })
+      );
+
+      adTable.querySelectorAll('button[data-action="delete"]').forEach((btn) =>
+        btn.addEventListener("click", async () => {
+          if (!confirm(paintMarketT("admin_ad_delete_confirm"))) return;
+          await guard();
+          await PaintApi.adminDeleteAd(Number(btn.dataset.id));
           const refreshed = await PaintApi.adminAds();
           renderAds(refreshed.ads || []);
         })
@@ -260,6 +273,15 @@
         }
         alert(msg);
       }
+    });
+
+    document.getElementById("adMedia").addEventListener("change", () => {
+      const file = document.getElementById("adMedia").files?.[0];
+      if (!file) return;
+      const isVideo =
+        String(file.type || "").toLowerCase().startsWith("video/") ||
+        /\.(mp4|webm|mov|m4v|ogv)$/i.test(file.name || "");
+      if (isVideo) document.getElementById("adKind").value = "video";
     });
 
     document.getElementById("adUploadBtn").addEventListener("click", async () => {

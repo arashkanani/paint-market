@@ -64,6 +64,86 @@ function publicUrlForUpload(subpath) {
   return `/paint/uploads/${subpath.replace(/\\/g, "/")}`;
 }
 
+const AD_VIDEO_EXTS = new Set([".mp4", ".webm", ".mov", ".m4v", ".ogv"]);
+
+function inferAdKindFromUpload(file, requestedKind) {
+  const req = String(requestedKind || "").toLowerCase() === "video" ? "video" : "image";
+  if (!file) return req;
+  const mime = String(file.mimetype || "").toLowerCase();
+  const ext = path.extname(String(file.originalname || "")).toLowerCase();
+  if (mime.startsWith("video/") || AD_VIDEO_EXTS.has(ext)) return "video";
+  if (mime.startsWith("image/")) return "image";
+  return req;
+}
+
+function uploadPathFromMediaUrl(mediaUrl) {
+  const u = String(mediaUrl || "").trim();
+  if (!u.startsWith("/paint/uploads/")) return null;
+  const rel = u.slice("/paint/uploads/".length).replace(/^\/+/, "");
+  if (!rel || rel.includes("..")) return null;
+  const abs = path.join(ROOT, "uploads", rel);
+  const uploadsRoot = path.join(ROOT, "uploads");
+  const normalized = path.normalize(abs);
+  if (!normalized.startsWith(path.normalize(uploadsRoot + path.sep)) && normalized !== path.normalize(uploadsRoot)) {
+    return null;
+  }
+  return normalized;
+}
+
+function tryUnlinkUpload(mediaUrl) {
+  const p = uploadPathFromMediaUrl(mediaUrl);
+  if (!p) return;
+  try {
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  } catch {
+    /* ignore */
+  }
+}
+
+function parsePricesMapProductIds(raw) {
+  const src = String(raw || "").trim();
+  if (!src) return [];
+  const ids = [];
+  const seen = new Set();
+  for (const part of src.split(",")) {
+    const n = Number(part);
+    if (!Number.isFinite(n) || n <= 0 || seen.has(n)) continue;
+    seen.add(n);
+    ids.push(n);
+  }
+  return ids.slice(0, 48);
+}
+
+function buildPricesMapProductFilter({ productId, productIds, productName, q }) {
+  const name = String(productName || "").trim();
+  if (name) {
+    return { sql: " AND mp.name = ? COLLATE NOCASE", params: [name] };
+  }
+  if (Number.isFinite(productId) && productId > 0) {
+    return { sql: " AND mp.id = ?", params: [productId] };
+  }
+  const ids = Array.isArray(productIds) ? productIds.filter((n) => Number.isFinite(n) && n > 0) : [];
+  if (ids.length) {
+    return { sql: ` AND mp.id IN (${ids.map(() => "?").join(", ")})`, params: ids };
+  }
+  const words = String(q || "")
+    .trim()
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!words.length) return { sql: "", params: [] };
+  const parts = [];
+  const params = [];
+  for (const w of words) {
+    const like = `%${w}%`;
+    parts.push(
+      "(mp.name LIKE ? COLLATE NOCASE OR IFNULL(mp.description, '') LIKE ? COLLATE NOCASE OR b.name LIKE ? COLLATE NOCASE OR c.name LIKE ? COLLATE NOCASE)"
+    );
+    params.push(like, like, like, like);
+  }
+  return { sql: ` AND (${parts.join(" AND ")})`, params };
+}
+
 async function getSessionUser(db, req) {
   const cookies = parseCookies(req);
   const token = cookies.paint_session;
@@ -357,6 +437,91 @@ async function main() {
         [like, like, like]
       );
       res.json({ products, shops });
+    })
+  );
+
+  app.get(
+    "/paint/api/public/search/prices-map",
+    asyncHandler(async (req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ shops: [], query: "", productId: null });
+        return;
+      }
+      const q = String(req.query.q || "").trim();
+      const productId = Number(req.query.productId);
+      const productIds = parsePricesMapProductIds(req.query.productIds);
+      const allBrands = String(req.query.allBrands || "") === "1";
+      const hasProduct = Number.isFinite(productId) && productId > 0;
+      if (!q && !hasProduct && !productIds.length) {
+        res.json({ shops: [], query: q, productId: null, productIds: [], allBrands: false, productName: null });
+        return;
+      }
+      let productName = null;
+      if (hasProduct && allBrands) {
+        const row = await dbm.get(db, "SELECT name FROM master_products WHERE id = ?", [productId]);
+        if (row && row.name) productName = String(row.name).trim();
+      }
+      const { sql: productFilter, params } = buildPricesMapProductFilter({
+        productId: hasProduct && !productName ? productId : null,
+        productName,
+        productIds: hasProduct || productName ? [] : productIds,
+        q: hasProduct || productName || productIds.length ? "" : q
+      });
+      const rows = await dbm.all(
+        db,
+        `SELECT s.id AS shop_id, s.name AS shop_name, s.slug AS shop_slug,
+                s.lat, s.lng, s.location_text, s.address,
+                mp.id AS product_id, mp.name AS product_name,
+                b.slug AS brand_slug, b.name AS brand_name,
+                sl.capacity_ltr, sl.price_amount, sl.id AS listing_id
+         FROM shop_listings sl
+         JOIN shops s ON s.id = sl.shop_id
+         JOIN master_products mp ON mp.id = sl.master_product_id
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         WHERE sl.available = 1
+           AND sl.price_amount IS NOT NULL
+           AND s.lat IS NOT NULL AND s.lng IS NOT NULL
+           ${productFilter}
+         ORDER BY s.name ASC, b.sort_order ASC, mp.name ASC, sl.capacity_ltr ASC`,
+        params
+      );
+      const byShop = new Map();
+      for (const r of rows) {
+        const la = Number(r.lat);
+        const ln = Number(r.lng);
+        if (!Number.isFinite(la) || !Number.isFinite(ln)) continue;
+        if (!byShop.has(r.shop_id)) {
+          byShop.set(r.shop_id, {
+            id: r.shop_id,
+            name: r.shop_name,
+            slug: r.shop_slug,
+            lat: la,
+            lng: ln,
+            location_text: r.location_text,
+            address: r.address,
+            offers: []
+          });
+        }
+        byShop.get(r.shop_id).offers.push({
+          productId: r.product_id,
+          productName: r.product_name,
+          brandSlug: r.brand_slug,
+          brandName: r.brand_name,
+          capacityLtr: r.capacity_ltr,
+          priceAmount: r.price_amount,
+          listingId: r.listing_id
+        });
+      }
+      res.json({
+        query: q,
+        productId: hasProduct ? productId : null,
+        productIds: hasProduct ? [productId] : productIds,
+        allBrands: Boolean(productName),
+        productName,
+        shops: [...byShop.values()]
+      });
     })
   );
 
@@ -862,12 +1027,32 @@ async function main() {
     })
   );
 
+  app.delete(
+    "/paint/api/admin/ads/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id <= 0) {
+        res.status(400).json({ error: "Valid ad id required" });
+        return;
+      }
+      const ad = await dbm.get(db, "SELECT * FROM ads WHERE id = ?", [id]);
+      if (!ad) {
+        res.status(404).json({ error: "Ad not found" });
+        return;
+      }
+      await dbm.run(db, "DELETE FROM ads WHERE id = ?", [id]);
+      tryUnlinkUpload(ad.media_url);
+      res.json({ ok: true });
+    })
+  );
+
   app.post(
     "/paint/api/admin/upload-ad",
     uploadAd.single("media"),
     asyncHandler(async (req, res) => {
       await requireRole(db, req, "admin");
-      const kind = String(req.body?.kind || "image") === "video" ? "video" : "image";
+      const kind = inferAdKindFromUpload(req.file, req.body?.kind);
       const title = String(req.body?.title || "");
       const duration = Number(req.body?.durationSeconds || (kind === "video" ? 5 : 0)) || (kind === "video" ? 5 : null);
       if (!req.file) {

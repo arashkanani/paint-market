@@ -108,6 +108,20 @@ const PaintApi = {
   suggest(q) {
     return this.request(`/public/search/suggest?q=${encodeURIComponent(q)}`);
   },
+  searchPricesMap(opts = {}) {
+    const q = opts.q != null ? String(opts.q).trim() : "";
+    const productId = opts.productId != null ? Number(opts.productId) : NaN;
+    const qs = new URLSearchParams();
+    if (q) qs.set("q", q);
+    if (Number.isFinite(productId) && productId > 0) qs.set("productId", String(productId));
+    if (opts.allBrands) qs.set("allBrands", "1");
+    if (Array.isArray(opts.productIds) && opts.productIds.length) {
+      const ids = [...new Set(opts.productIds.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0))];
+      if (ids.length) qs.set("productIds", ids.join(","));
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/public/search/prices-map${suffix}`);
+  },
   ads() {
     return this.request("/public/ads");
   },
@@ -156,6 +170,9 @@ const PaintApi = {
   },
   adminPatchAd(id, body) {
     return this.request(`/admin/ads/${id}`, { method: "PATCH", body });
+  },
+  adminDeleteAd(id) {
+    return this.request(`/admin/ads/${id}`, { method: "DELETE" });
   },
   adminCustomerAccess(enabled) {
     return this.request("/admin/customer-access", { method: "PATCH", body: { enabled } });
@@ -426,6 +443,12 @@ function paintMarketApplyDomI18n() {
   document.querySelectorAll("select.paint-market-city").forEach((el) => {
     el.setAttribute("aria-label", paintMarketT("hdr_ariaCity"));
   });
+  document.querySelectorAll("select.paint-market-shop-country").forEach((el) => {
+    el.setAttribute("aria-label", paintMarketT("hdr_ariaCountry"));
+  });
+  document.querySelectorAll("select.paint-market-shop-city").forEach((el) => {
+    el.setAttribute("aria-label", paintMarketT("hdr_ariaCity"));
+  });
   document.querySelectorAll("select.paint-market-lang").forEach((el) => {
     el.setAttribute("aria-label", paintMarketT("hdr_ariaLang"));
   });
@@ -459,6 +482,107 @@ function paintMarketSyncLangSelects() {
 function paintMarketCityCodesForCountry(country) {
   const list = PAINT_MARKET_CITIES_BY_COUNTRY[country] || PAINT_MARKET_CITIES_BY_COUNTRY.AE;
   return list.map((x) => x.code);
+}
+
+function paintMarketShopCityRows(country) {
+  const list = PAINT_MARKET_CITIES_BY_COUNTRY[country] || PAINT_MARKET_CITIES_BY_COUNTRY.AE;
+  return list.filter((row) => row.code);
+}
+
+function paintMarketShopCityLabel(country, cityCode) {
+  const code = String(cityCode || "").trim().toLowerCase();
+  const row = (PAINT_MARKET_CITIES_BY_COUNTRY[country] || []).find((x) => x.code === code);
+  return row ? pmCityLabel(row) : "";
+}
+
+function paintMarketParseShopLocationText(locationText) {
+  const raw = String(locationText || "").trim();
+  if (!raw) return { country: paintMarketCountryGet(), cityCode: "", area: "" };
+  const lower = raw.toLowerCase();
+  for (const country of PAINT_MARKET_ALLOW_COUNTRY) {
+    for (const row of paintMarketShopCityRows(country)) {
+      const names = [row.labelEn, row.labelAr, row.code.replace(/-/g, " ")];
+      for (const name of names) {
+        const n = String(name || "").trim().toLowerCase();
+        if (!n) continue;
+        if (lower === n) return { country, cityCode: row.code, area: "" };
+        const sep = `${n} · `;
+        if (lower.startsWith(sep)) return { country, cityCode: row.code, area: raw.slice(sep.length).trim() };
+      }
+    }
+  }
+  return { country: paintMarketCountryGet(), cityCode: "", area: raw };
+}
+
+function paintMarketComposeShopLocationText(country, cityCode, area) {
+  const label = paintMarketShopCityLabel(country, cityCode);
+  const extra = String(area || "").trim();
+  if (label && extra) return `${label} · ${extra}`;
+  if (label) return label;
+  return extra;
+}
+
+function paintMarketFillShopCountrySelects(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll("select.paint-market-shop-country").forEach((sel) => {
+    if (sel.dataset.pmShopCountryFilled === "1") return;
+    sel.dataset.pmShopCountryFilled = "1";
+    sel.replaceChildren(
+      ...PAINT_MARKET_COUNTRIES.map((row) => {
+        const opt = document.createElement("option");
+        opt.value = row.code;
+        opt.textContent = pmCountryLabel(row);
+        return opt;
+      })
+    );
+  });
+}
+
+function paintMarketFillShopCitySelect(country, selectEl) {
+  if (!selectEl) return;
+  const cur = selectEl.value;
+  selectEl.replaceChildren(
+    ...paintMarketShopCityRows(country).map((row) => {
+      const opt = document.createElement("option");
+      opt.value = row.code;
+      opt.textContent = pmCityLabel(row);
+      return opt;
+    })
+  );
+  if (cur && [...selectEl.options].some((o) => o.value === cur)) selectEl.value = cur;
+  else if (selectEl.options.length) selectEl.value = selectEl.options[0].value;
+}
+
+function paintMarketFillShopCitySelects(root, country) {
+  const scope = root && root.querySelectorAll ? root : document;
+  const c = country || paintMarketCountryGet();
+  scope.querySelectorAll("select.paint-market-shop-city").forEach((sel) => paintMarketFillShopCitySelect(c, sel));
+}
+
+function paintMarketInitShopLocationForm(root, locationText) {
+  const scope = root && root.querySelectorAll ? root : document;
+  paintMarketFillShopCountrySelects(scope);
+  const parsed = paintMarketParseShopLocationText(locationText);
+  scope.querySelectorAll("select.paint-market-shop-country").forEach((sel) => {
+    sel.value = parsed.country;
+  });
+  paintMarketFillShopCitySelects(scope, parsed.country);
+  scope.querySelectorAll("select.paint-market-shop-city").forEach((sel) => {
+    if (parsed.cityCode) sel.value = parsed.cityCode;
+  });
+  const areaEl = scope.querySelector("[data-pm-shop-location-area], #fldLocationArea, [name='locationArea']");
+  if (areaEl) areaEl.value = parsed.area;
+}
+
+function paintMarketReadShopLocationFields(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  const countrySel = scope.querySelector("select.paint-market-shop-country");
+  const citySel = scope.querySelector("select.paint-market-shop-city");
+  const areaEl = scope.querySelector("[data-pm-shop-location-area], #fldLocationArea, [name='locationArea']");
+  const country = countrySel ? countrySel.value : paintMarketCountryGet();
+  const cityCode = citySel ? citySel.value : "";
+  const area = areaEl ? areaEl.value : "";
+  return paintMarketComposeShopLocationText(country, cityCode, area);
 }
 
 function paintMarketCityGet() {
@@ -563,6 +687,11 @@ function paintMarketGeoBindDelegated() {
       paintMarketCitySet(t.value);
       return;
     }
+    if (t.matches("select.paint-market-shop-country")) {
+      const root = t.closest("form, #dashProfilePanel, main") || document;
+      paintMarketFillShopCitySelects(root, t.value);
+      return;
+    }
     if (t.matches("select.paint-market-lang")) {
       paintMarketLangSet(t.value);
     }
@@ -591,6 +720,8 @@ window.paintMarketCitySet = paintMarketCitySet;
 window.paintMarketLangGet = paintMarketLangGet;
 window.paintMarketLangSet = paintMarketLangSet;
 window.paintMarketGeoInit = paintMarketGeoInit;
+window.paintMarketInitShopLocationForm = paintMarketInitShopLocationForm;
+window.paintMarketReadShopLocationFields = paintMarketReadShopLocationFields;
 window.paintMarketT = paintMarketT;
 window.paintMarketTf = paintMarketTf;
 window.paintMarketFavoritesGet = paintMarketFavoritesGet;

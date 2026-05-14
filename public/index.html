@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body { font-family: "DM Sans", system-ui, sans-serif; }
     .ad-carousel-strip::-webkit-scrollbar { display: none; }
@@ -52,17 +53,27 @@
     <div class="bg-white border-t border-slate-200">
       <div class="max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0">
         <a href="/paint/" class="text-lg font-semibold tracking-tight text-teal-700 hover:text-teal-800 shrink-0" data-pm-t="index_nav_brand">Paint Showroom Hub</a>
-        <div class="relative flex-1 min-w-[min(100%,14rem)] max-w-full hidden" id="searchWrap">
-          <label class="sr-only" for="searchInput" data-pm-t="index_search_label">Search catalog & shops</label>
-          <input
-            id="searchInput"
-            autocomplete="off"
-            type="search"
-            class="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 px-3.5 py-2.5 text-sm shadow-sm outline-none ring-teal-500/30 focus:ring-2 focus:bg-white focus:border-teal-300"
-            data-pm-ph="index_search_ph"
-            placeholder="Type a product name, brand word, or city / area…"
-          />
-          <div id="suggestPanel" class="absolute z-50 left-0 right-0 mt-1.5 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl hidden max-h-80 overflow-auto"></div>
+        <div class="relative flex flex-1 min-w-[min(100%,14rem)] max-w-full hidden items-stretch gap-2" id="searchWrap">
+          <div class="relative flex-1 min-w-0">
+            <label class="sr-only" for="searchInput" data-pm-t="index_search_label">Search catalog & shops</label>
+            <input
+              id="searchInput"
+              autocomplete="off"
+              type="search"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 px-3.5 py-2.5 text-sm shadow-sm outline-none ring-teal-500/30 focus:ring-2 focus:bg-white focus:border-teal-300"
+              data-pm-ph="index_search_ph"
+              placeholder="Type a product name, brand word, or city / area…"
+            />
+            <div id="suggestPanel" class="absolute z-50 left-0 right-0 mt-1.5 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl hidden max-h-80 overflow-auto"></div>
+          </div>
+          <button
+            type="button"
+            id="searchMapPricesBtn"
+            class="shrink-0 self-stretch px-3 py-2.5 rounded-xl border border-teal-200 bg-teal-50 text-teal-900 text-xs sm:text-sm font-semibold hover:bg-teal-100"
+            data-pm-t="index_search_map_prices"
+          >
+            Prices on map
+          </button>
         </div>
       </div>
     </div>
@@ -131,10 +142,27 @@
     </section>
   </main>
 
+  <dialog id="searchPriceMapDialog" class="rounded-2xl border border-slate-200 bg-white p-0 max-w-4xl w-[min(96vw,56rem)] shadow-2xl backdrop:bg-slate-950/50">
+    <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+      <h2 id="searchPriceMapTitle" class="text-base font-semibold text-slate-900" data-pm-t="index_search_map_title">Shop prices on map</h2>
+      <div class="flex items-center gap-3">
+        <label id="searchPriceMapAllBrandsWrap" class="hidden items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
+          <input type="checkbox" id="searchPriceMapAllBrands" class="rounded border-slate-300 text-teal-700 focus:ring-teal-600" />
+          <span data-pm-t="index_search_map_all_brands">All brands for this item</span>
+        </label>
+        <button type="button" id="searchPriceMapClose" class="text-sm font-semibold px-3 py-1.5 rounded-lg border border-slate-200" data-pm-t="index_search_map_close">Close</button>
+      </div>
+    </div>
+    <p id="searchPriceMapStatus" class="px-4 py-2 text-sm text-slate-600 hidden"></p>
+    <div id="searchPriceMapCanvas" class="h-[min(70vh,28rem)] w-full"></div>
+  </dialog>
+
   <footer class="max-w-6xl mx-auto px-4 py-10 text-xs text-slate-500" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
 
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>
+  <script src="/paint/js/theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     const shopGrid = document.getElementById("shopGrid");
     const shopsSection = document.getElementById("shopsSection");
@@ -145,6 +173,18 @@
     const searchWrap = document.getElementById("searchWrap");
     const searchInput = document.getElementById("searchInput");
     const suggestPanel = document.getElementById("suggestPanel");
+    const searchMapPricesBtn = document.getElementById("searchMapPricesBtn");
+    const searchPriceMapDialog = document.getElementById("searchPriceMapDialog");
+    const searchPriceMapCanvas = document.getElementById("searchPriceMapCanvas");
+    const searchPriceMapStatus = document.getElementById("searchPriceMapStatus");
+    const searchPriceMapClose = document.getElementById("searchPriceMapClose");
+    const searchPriceMapAllBrandsWrap = document.getElementById("searchPriceMapAllBrandsWrap");
+    const searchPriceMapAllBrands = document.getElementById("searchPriceMapAllBrands");
+    const INDEX_MAP_DEFAULT_CENTER = [25.2048, 55.2708];
+    let indexSearchPriceMap = null;
+    let indexSearchPriceLayers = [];
+    let searchPriceMapProductId = null;
+    let searchPriceMapQuery = "";
     const adCarouselStrip = document.getElementById("adCarouselStrip");
     const adCarouselPrev = document.getElementById("adCarouselPrev");
     const adCarouselNext = document.getElementById("adCarouselNext");
@@ -164,6 +204,218 @@
         "\"": "&quot;",
         "'": "&#039;"
       }[c]));
+    }
+
+    function formatMapIrr(amount) {
+      const v = Number(amount);
+      if (!Number.isFinite(v)) return "";
+      return `${Math.round(v).toLocaleString("en-US")} IRR`;
+    }
+
+    function formatMapCapacity(cap) {
+      const n = Number(cap);
+      if (n === 1) return "1 L";
+      if (n === 3.6) return "3.6 L";
+      if (n === 18) return "18 L";
+      return `${n} L`;
+    }
+
+    function clearSearchPriceMapLayers() {
+      if (!indexSearchPriceMap) return;
+      for (const layer of indexSearchPriceLayers) {
+        indexSearchPriceMap.removeLayer(layer);
+      }
+      indexSearchPriceLayers = [];
+    }
+
+    function buildPriceMarkerHtml(offers) {
+      const sorted = [...offers].sort((a, b) => {
+        const brandCmp = String(a.brandName || "").localeCompare(String(b.brandName || ""));
+        if (brandCmp !== 0) return brandCmp;
+        const prodCmp = String(a.productName || "").localeCompare(String(b.productName || ""));
+        if (prodCmp !== 0) return prodCmp;
+        return Number(a.capacityLtr) - Number(b.capacityLtr);
+      });
+      const chips = sorted
+        .map((o) => {
+          const bg =
+            typeof PaintTheme !== "undefined" && PaintTheme.brandBarGradient
+              ? PaintTheme.brandBarGradient(o.brandSlug || "")
+              : "#0f766e";
+          return `<div class="pm-map-price-chip" style="background:${esc(bg)}">
+            <span class="pm-map-price-cap">${esc(o.brandName || "")} · ${esc(formatMapCapacity(o.capacityLtr))}</span>
+            <span class="pm-map-price-amt">${esc(formatMapIrr(o.priceAmount))}</span>
+          </div>`;
+        })
+        .join("");
+      return `<div class="pm-map-price-stack">${chips}</div>`;
+    }
+
+    function createPriceMarkerIcon(offers) {
+      const n = Math.max(1, offers.length);
+      const h = n * 30 + 8;
+      const w = 112;
+      return L.divIcon({
+        className: "pm-map-price-marker",
+        html: buildPriceMarkerHtml(offers),
+        iconSize: [w, h],
+        iconAnchor: [w / 2, h]
+      });
+    }
+
+    function ensureSearchPriceMap() {
+      if (indexSearchPriceMap || typeof L === "undefined") return indexSearchPriceMap;
+      indexSearchPriceMap = L.map(searchPriceMapCanvas, { zoomControl: true }).setView(INDEX_MAP_DEFAULT_CENTER, 10);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(indexSearchPriceMap);
+      return indexSearchPriceMap;
+    }
+
+    function renderSearchPriceMap(shops) {
+      const map = ensureSearchPriceMap();
+      if (!map) return;
+      clearSearchPriceMapLayers();
+      const bounds = [];
+      for (const shop of shops) {
+        const offers = shop.offers || [];
+        if (!offers.length) continue;
+        const lat = Number(shop.lat);
+        const lng = Number(shop.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        const marker = L.marker([lat, lng], { icon: createPriceMarkerIcon(offers) });
+        const lines = offers
+          .map(
+            (o) =>
+              `<div class="text-sm"><span class="font-semibold">${esc(o.brandName || "")}</span> · ${esc(
+                o.productName || ""
+              )} · ${esc(formatMapCapacity(o.capacityLtr))} — ${esc(formatMapIrr(o.priceAmount))}</div>`
+          )
+          .join("");
+        marker.bindPopup(
+          `<div class="space-y-1">
+            <p class="font-semibold text-slate-900">${esc(shop.name || "")}</p>
+            ${lines}
+            <p class="pt-1"><a class="text-teal-700 font-semibold" href="/paint/shop.html?slug=${encodeURIComponent(
+              shop.slug || ""
+            )}">${esc(paintMarketT("index_card_showroom"))}</a></p>
+          </div>`
+        );
+        marker.addTo(map);
+        indexSearchPriceLayers.push(marker);
+        bounds.push([lat, lng]);
+      }
+      if (bounds.length === 1) map.setView(bounds[0], 13);
+      else if (bounds.length > 1) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
+      else map.setView(INDEX_MAP_DEFAULT_CENTER, 10);
+      setTimeout(() => map.invalidateSize(), 80);
+    }
+
+    function syncSearchPriceMapAllBrandsControl(productId) {
+      const hasProduct = Number.isFinite(productId) && productId > 0;
+      if (!searchPriceMapAllBrandsWrap || !searchPriceMapAllBrands) return;
+      searchPriceMapAllBrandsWrap.classList.toggle("hidden", !hasProduct);
+      searchPriceMapAllBrandsWrap.classList.toggle("flex", hasProduct);
+      if (!hasProduct) searchPriceMapAllBrands.checked = false;
+    }
+
+    async function loadSearchPriceMapData(q, productId, allBrands) {
+      const pid = Number.isFinite(productId) && productId > 0 ? productId : null;
+      const lookup = (payload) => PaintApi.searchPricesMap(payload);
+      const suggestProductIds = async () => {
+        if (!q || pid) return [];
+        const sug = await PaintApi.suggest(q);
+        return [...new Set((sug.products || []).map((p) => Number(p.id)).filter((n) => Number.isFinite(n) && n > 0))];
+      };
+      try {
+        let data;
+        if (pid) {
+          data = await lookup({ productId: pid, allBrands: Boolean(allBrands) });
+        } else {
+          data = await lookup({ q });
+          if (!(data.shops || []).length) {
+            const ids = await suggestProductIds();
+            if (ids.length) data = await lookup({ productIds: ids });
+          }
+        }
+        return data;
+      } catch (e) {
+        if (e && e.status === 404 && q && !pid) {
+          const ids = await suggestProductIds();
+          if (ids.length) return lookup({ productIds: ids });
+        }
+        throw e;
+      }
+    }
+
+    async function refreshSearchPriceMap() {
+      if (!searchPriceMapDialog || !searchPriceMapDialog.open) return;
+      if (searchPriceMapStatus) {
+        searchPriceMapStatus.textContent = paintMarketT("index_search_map_loading");
+        searchPriceMapStatus.classList.remove("hidden");
+      }
+      try {
+        const allBrands = Boolean(searchPriceMapAllBrands && searchPriceMapAllBrands.checked);
+        const data = await loadSearchPriceMapData(searchPriceMapQuery, searchPriceMapProductId, allBrands);
+        const shops = data.shops || [];
+        if (searchPriceMapStatus) {
+          if (!shops.length) {
+            searchPriceMapStatus.textContent = paintMarketT("index_search_map_empty");
+            searchPriceMapStatus.classList.remove("hidden");
+          } else searchPriceMapStatus.classList.add("hidden");
+        }
+        renderSearchPriceMap(shops);
+      } catch (e) {
+        console.error(e);
+        if (searchPriceMapStatus) {
+          const msg =
+            e && e.status === 404
+              ? paintMarketT("index_search_map_unavailable")
+              : (e && e.message) || paintMarketT("index_err_api");
+          searchPriceMapStatus.textContent = msg;
+          searchPriceMapStatus.classList.remove("hidden");
+        }
+      }
+    }
+
+    async function openSearchPriceMap(opts = {}) {
+      const q = opts.q != null ? String(opts.q).trim() : searchInput.value.trim();
+      const productId = opts.productId != null ? Number(opts.productId) : NaN;
+      const hasProduct = Number.isFinite(productId) && productId > 0;
+      if (!q && !hasProduct) return;
+      if (!searchPriceMapDialog) return;
+      searchPriceMapQuery = q;
+      searchPriceMapProductId = hasProduct ? productId : null;
+      const allBrands = opts.allBrands != null ? Boolean(opts.allBrands) : hasProduct;
+      syncSearchPriceMapAllBrandsControl(searchPriceMapProductId);
+      if (searchPriceMapAllBrands) searchPriceMapAllBrands.checked = allBrands;
+      if (searchPriceMapStatus) {
+        searchPriceMapStatus.textContent = paintMarketT("index_search_map_loading");
+        searchPriceMapStatus.classList.remove("hidden");
+      }
+      searchPriceMapDialog.showModal();
+      try {
+        const data = await loadSearchPriceMapData(q, searchPriceMapProductId, allBrands);
+        const shops = data.shops || [];
+        if (searchPriceMapStatus) {
+          if (!shops.length) {
+            searchPriceMapStatus.textContent = paintMarketT("index_search_map_empty");
+            searchPriceMapStatus.classList.remove("hidden");
+          } else searchPriceMapStatus.classList.add("hidden");
+        }
+        renderSearchPriceMap(shops);
+      } catch (e) {
+        console.error(e);
+        if (searchPriceMapStatus) {
+          const msg =
+            e && e.status === 404
+              ? paintMarketT("index_search_map_unavailable")
+              : (e && e.message) || paintMarketT("index_err_api");
+          searchPriceMapStatus.textContent = msg;
+          searchPriceMapStatus.classList.remove("hidden");
+        }
+      }
     }
 
     function syncIndexShopsSortHint() {
@@ -256,20 +508,34 @@
       adCarouselStrip.appendChild(cell);
     }
 
+    function adCarouselMediaIsVideo(ad) {
+      if (ad && String(ad.kind || "").toLowerCase() === "video") return true;
+      const u = String(ad.media_url || "").split("?")[0].toLowerCase();
+      return /\.(mp4|webm|mov|m4v|ogv)$/.test(u);
+    }
+
     function buildAdSlide(ad) {
       const slide = document.createElement("div");
       slide.className =
         "relative min-w-full w-full h-full shrink-0 snap-center snap-always overflow-hidden bg-black flex items-stretch justify-stretch";
       slide.setAttribute("role", "group");
       slide.setAttribute("aria-roledescription", "slide");
-      if (ad.kind === "video") {
+      if (adCarouselMediaIsVideo(ad)) {
         const v = document.createElement("video");
         v.className = "absolute inset-0 h-full w-full object-cover bg-black";
         v.src = ad.media_url;
         v.muted = true;
         v.loop = true;
+        v.autoplay = true;
         v.playsInline = true;
+        v.setAttribute("playsinline", "");
+        v.setAttribute("webkit-playsinline", "");
+        v.preload = "auto";
         v.controls = true;
+        v.addEventListener("canplay", () => {
+          const ix = [...adCarouselStrip.children].indexOf(slide);
+          if (ix === indexAdCurrent) v.play().catch(() => {});
+        });
         slide.appendChild(v);
       } else {
         const img = document.createElement("img");
@@ -429,10 +695,16 @@
       const parts = [];
       if (data.products?.length) {
         parts.push(`<p class="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">${esc(paintMarketT("index_suggest_products"))}</p>`);
+        parts.push(`<div class="px-3 py-2 border-t border-teal-100 bg-teal-50/50">
+          <button type="button" class="index-suggest-map-all w-full text-left text-sm font-semibold text-teal-800 hover:text-teal-900">${esc(paintMarketT("index_search_map_prices"))}</button>
+        </div>`);
         for (const p of data.products) {
-          parts.push(`<div class="px-3 py-2 text-sm border-t border-slate-100">
-            <div class="font-medium text-slate-900">${esc(p.name)}</div>
-            <div class="text-xs text-slate-500">${esc(p.brand_name)} · ${esc(p.category_name)}</div>
+          parts.push(`<div class="flex gap-2 items-stretch border-t border-slate-100">
+            <div class="flex-1 min-w-0 px-3 py-2 text-sm">
+              <div class="font-medium text-slate-900">${esc(p.name)}</div>
+              <div class="text-xs text-slate-500">${esc(p.brand_name)} · ${esc(p.category_name)}</div>
+            </div>
+            <button type="button" class="index-product-map shrink-0 flex items-center px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-teal-800 bg-teal-50 hover:bg-teal-100 border-l border-teal-100" data-product-id="${esc(String(p.id))}" title="${esc(paintMarketT("index_search_map_for_product"))}">${esc(paintMarketT("index_search_map_prices"))}</button>
           </div>`);
         }
       }
@@ -464,6 +736,34 @@
     }, 220);
 
     searchInput.addEventListener("input", runSuggest);
+    if (searchMapPricesBtn) {
+      searchMapPricesBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openSearchPriceMap({ q: searchInput.value.trim() });
+      });
+    }
+    suggestPanel.addEventListener("click", (e) => {
+      const allBtn = e.target.closest(".index-suggest-map-all");
+      if (allBtn) {
+        e.preventDefault();
+        openSearchPriceMap({ q: searchInput.value.trim() });
+        return;
+      }
+      const prodBtn = e.target.closest(".index-product-map");
+      if (prodBtn) {
+        e.preventDefault();
+        const pid = Number(prodBtn.getAttribute("data-product-id"));
+        openSearchPriceMap({ q: searchInput.value.trim(), productId: pid });
+      }
+    });
+    if (searchPriceMapClose && searchPriceMapDialog) {
+      searchPriceMapClose.addEventListener("click", () => searchPriceMapDialog.close());
+    }
+    if (searchPriceMapAllBrands) {
+      searchPriceMapAllBrands.addEventListener("change", () => {
+        refreshSearchPriceMap();
+      });
+    }
     document.addEventListener("click", (e) => {
       if (!searchWrap.contains(e.target)) suggestPanel.classList.add("hidden");
     });

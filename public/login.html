@@ -11,29 +11,18 @@
 </head>
 <body class="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100 min-h-screen flex flex-col" data-pm-page-title="login_metaTitle">
   <header class="border-b border-white/20 bg-slate-950/90 backdrop-blur shrink-0 z-30">
-    <div class="max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-      <label class="flex items-center gap-2">
-        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
-        <select
-          class="paint-market-country paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 shadow-sm focus:ring-2 focus:ring-teal-500/50"
-          aria-label="Country"
-        ></select>
-      </label>
-      <label class="flex items-center gap-2">
-        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_city">City</span>
-        <select
-          class="paint-market-city paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[9rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
-          aria-label="City"
-        ></select>
-      </label>
-      <label class="flex items-center gap-2">
-        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
-        <select
-          class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
-          aria-label="Language"
-        ></select>
-      </label>
-      <a class="text-sm text-teal-300 hover:text-teal-200 font-medium" href="/paint/" data-pm-t="login_home">Home</a>
+    <div class="max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <p class="text-sm font-medium text-slate-200" data-pm-t="login_shop_portal">Shop portal</p>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
+          <select
+            class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+            aria-label="Language"
+          ></select>
+        </label>
+        <a class="text-sm text-teal-300 hover:text-teal-200 font-medium" href="/paint/" data-pm-t="login_home">Home</a>
+      </div>
     </div>
   </header>
   <div class="flex-1 flex items-center justify-center px-4 py-10">
