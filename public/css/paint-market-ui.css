@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,600&family=Noto+Sans+Arabic:wght@500;600;700;800&display=swap");
 
 /* Native <select> dropdown: solid surface + explicit option colors (fixes Windows/light-on-light). */
 .paint-market-header-select {
@@ -38,44 +38,879 @@ html[lang="ar"] body {
   font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
 }
 
+.pm-country-field {
+  align-items: center;
+}
+
+.pm-country-field .paint-market-header-select.paint-market-country {
+  min-width: 6.75rem;
+}
+
+/* Flag overlaid inside select / compact bar */
+.pm-select-with-flag {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pm-select-with-flag .pm-country-flag {
+  position: absolute;
+  inset-inline-start: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
+  margin: 0;
+}
+
+.pm-select-with-flag .paint-market-country,
+.pm-select-with-flag .pm-geo-dialog-select.paint-market-country {
+  width: 100%;
+  padding-inline-start: 2.35rem;
+}
+
+.pm-select-with-flag--header .paint-market-country {
+  min-width: 7.5rem;
+}
+
+.pm-country-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.pm-country-flag-img {
+  display: block;
+  width: 1.25rem;
+  height: 0.94rem;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+/* Mobile: one button → popup for country / city / language */
+.pm-geo-compact-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.55) 0%, rgba(8, 145, 178, 0.5) 45%, rgba(37, 99, 235, 0.55) 100%);
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-family: "DM Sans", "Noto Sans Arabic", system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.pm-geo-compact-btn:hover {
+  filter: brightness(1.08);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.pm-geo-compact-btn:active {
+  transform: scale(0.97);
+}
+
+.pm-geo-compact-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.25rem;
+}
+
+.pm-geo-compact-flag {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.pm-geo-compact-sep {
+  opacity: 0.55;
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Header: country + nav links on one row (mobile) */
+@media (max-width: 767px) {
+  .pm-header-bar {
+    gap: 0.35rem;
+  }
+
+  .pm-header-nav {
+    flex-shrink: 1;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .pm-header-nav-link {
+    font-size: 0.625rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    padding: 0.3rem 0.4rem;
+  }
+
+  .pm-geo-compact-btn {
+    padding: 0.28rem 0.4rem;
+    font-size: 0.625rem;
+  }
+
+  .pm-geo-compact-inner {
+    gap: 0.2rem;
+    min-height: 1.1rem;
+  }
+
+  .pm-geo-sym-city {
+    max-width: 2.75rem;
+  }
+
+  .pm-geo-sym-lang {
+    max-width: 1.75rem;
+  }
+}
+
+.pm-geo-sym-city {
+  max-width: 3.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+}
+
+.pm-geo-sym-lang {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+}
+
+.pm-geo-bar-desktop {
+  align-items: center;
+}
+
+.pm-geo-dialog {
+  border: none;
+  padding: 0;
+  max-width: min(92vw, 22.5rem);
+  width: 100%;
+  border-radius: 1.15rem;
+  box-shadow: 0 28px 60px -14px rgba(13, 148, 136, 0.45), 0 12px 28px -8px rgba(37, 99, 235, 0.35);
+  background: transparent;
+}
+
+.pm-geo-dialog::backdrop {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.72), rgba(13, 148, 136, 0.35));
+  backdrop-filter: blur(4px);
+}
+
+.pm-geo-dialog-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  color: #fff;
+  font-family: "DM Sans", "Noto Sans Arabic", system-ui, sans-serif;
+  background: linear-gradient(155deg, #0d9488 0%, #0891b2 38%, #2563eb 72%, #1d4ed8 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.pm-geo-dialog-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(16, 185, 129, 0.25), transparent 50%);
+  pointer-events: none;
+}
+
+.pm-geo-dialog-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pm-geo-dialog-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.pm-geo-dialog-done {
+  flex-shrink: 0;
+  padding: 0.45rem 0.85rem;
+  border: none;
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f766e;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.pm-geo-dialog-done:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.pm-geo-dialog-done:active {
+  transform: scale(0.97);
+}
+
+.pm-geo-dialog-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.pm-geo-dialog-field {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.pm-geo-dialog-field .pm-select-with-flag {
+  width: 100%;
+}
+
+.pm-geo-dialog-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+}
+
+.pm-geo-dialog-select {
+  width: 100%;
+  padding: 0.65rem 2rem 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background-color: rgba(255, 255, 255, 0.97);
+  color: rgb(15 23 42);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.3;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #0d9488 50%), linear-gradient(135deg, #0d9488 50%, transparent 50%);
+  background-position: calc(100% - 1rem) calc(50% + 3px), calc(100% - 0.65rem) calc(50% + 3px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pm-geo-dialog-select:focus {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35), 0 2px 10px rgba(15, 23, 42, 0.12);
+}
+
+.pm-geo-dialog-select option {
+  font-weight: 600;
+  background: #fff;
+  color: rgb(15 23 42);
+}
+
+.pm-geo-dialog-panel .pm-country-flag-img {
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.pm-geo-field-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+html[lang="ar"] .pm-geo-dialog-title,
+html[lang="ar"] .pm-geo-dialog-label,
+html[lang="ar"] .pm-geo-dialog-select,
+html[lang="ar"] .pm-geo-dialog-done,
+html[lang="ar"] .pm-geo-compact-btn {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+}
+
+html[dir="rtl"] .pm-geo-dialog-select {
+  background-position: 0.65rem calc(50% + 3px), 1rem calc(50% + 3px);
+  padding-inline-end: 0.85rem;
+  padding-inline-start: 2rem;
+}
+
+html[dir="rtl"] .pm-select-with-flag .pm-country-flag {
+  inset-inline-start: auto;
+  inset-inline-end: 0.55rem;
+}
+
+html[dir="rtl"] .pm-select-with-flag .paint-market-country,
+html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country {
+  padding-inline-start: 0.85rem;
+  padding-inline-end: 2.35rem;
+}
+
 .pm-map-price-stack {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  align-items: center;
+  gap: 1px;
+  align-items: stretch;
+  width: 100%;
   pointer-events: none;
 }
 
 .pm-map-price-chip {
-  min-width: 4.75rem;
-  max-width: 9.5rem;
-  padding: 2px 6px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.28);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 1px 0;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
   color: #fafaf9;
   text-align: center;
-  line-height: 1.15;
-  font-size: 10px;
+  line-height: 1.05;
   font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
 .pm-map-price-chip .pm-map-price-cap {
   display: block;
-  font-size: 9px;
+  font-size: 6px;
   font-weight: 600;
-  opacity: 0.92;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pm-map-price-chip .pm-map-price-amt {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  line-height: 1;
+}
+
+.pm-map-price-chip .pm-map-price-num {
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.02em;
+}
+
+.pm-map-price-chip .pm-map-price-cur {
+  font-size: 6px;
+  font-weight: 600;
+  opacity: 0.85;
+  letter-spacing: 0;
 }
 
 .leaflet-marker-icon.pm-map-price-marker {
   background: transparent;
   border: none;
+}
+
+.pm-search-cap {
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pm-search-cap:hover {
+  border-color: #5eead4;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.pm-search-cap.active {
+  border-color: #0d9488;
+  background: linear-gradient(135deg, #0d9488, #0891b2, #2563eb);
+  color: #f8fafc;
+}
+
+/* Shop theme — green → blue (matches geo settings) */
+:root {
+  --pm-shops-bg: color-mix(in srgb, #e2e8f0 90%, #64748b);
+  --pm-shops-title-bg: var(--pm-shops-bg);
+  --pm-shop-gradient: linear-gradient(155deg, #0d9488 0%, #0891b2 38%, #2563eb 72%, #1d4ed8 100%);
+  --pm-shop-gradient-bar: linear-gradient(
+    155deg,
+    color-mix(in srgb, #0d9488 60%, #fff) 0%,
+    color-mix(in srgb, #0891b2 60%, #fff) 38%,
+    color-mix(in srgb, #2563eb 60%, #fff) 72%,
+    color-mix(in srgb, #1d4ed8 60%, #fff) 100%
+  );
+  --pm-shop-gradient-soft: linear-gradient(
+    135deg,
+    rgba(13, 148, 136, 0.14) 0%,
+    rgba(8, 145, 178, 0.1) 45%,
+    rgba(37, 99, 235, 0.14) 100%
+  );
+  --pm-shop-shadow: 0 8px 24px -8px rgba(13, 148, 136, 0.35), 0 4px 12px -6px rgba(37, 99, 235, 0.2);
+}
+
+body[data-pm-page-title="index_metaTitle"] {
+  background: var(--pm-shops-bg);
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.pm-index-main {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--pm-index-header-h, 8.5rem));
+  min-height: 0;
+  overflow: hidden;
+  background: var(--pm-shops-bg);
+}
+
+.pm-index-ad-pin {
+  flex-shrink: 0;
+  max-height: 22rem;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height 0.32s ease,
+    opacity 0.22s ease,
+    margin 0.32s ease,
+    border-width 0.22s ease;
+}
+
+body[data-pm-index-ad-collapsed="1"] .pm-index-ad-pin {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-width: 0;
+  pointer-events: none;
+}
+
+.pm-index-ad-dismiss-hint {
+  text-shadow: 0 1px 3px rgba(15, 23, 42, 0.65);
+}
+
+body[data-pm-index-ad-collapsed="1"] .pm-index-ad-dismiss-hint {
+  display: none;
+}
+
+.pm-index-shops-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  background: var(--pm-shops-bg);
+}
+
+/* Same content width as #homeAdSection (no extra horizontal inset) */
+#homeAdSection,
+.pm-shops-section {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pm-shops-section {
+  border: none;
+  background: transparent;
+  padding-block: 1.1875rem;
+  padding-inline: 0;
+  box-shadow: none;
+}
+
+.pm-shops-section > div:first-child {
+  padding-inline: 0;
+}
+
+#shopGrid {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.475rem;
+}
+
+@media (min-width: 640px) {
+  #shopGrid {
+    gap: 0.95rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  #shopGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.1875rem;
+  }
+}
+
+.pm-shops-section__title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.62rem 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  line-height: 1.35;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: clamp(0.9375rem, 3vw, 1.0625rem);
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #1e293b;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+@media (min-width: 640px) {
+  .pm-shops-section__title-bar {
+    padding: 0.75rem 1.25rem;
+    border-radius: 1rem;
+    font-size: 1.0625rem;
+    letter-spacing: 0.025em;
+  }
+}
+
+html[lang="ar"] .pm-shops-section__title-bar {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: clamp(0.875rem, 3vw, 1rem);
+  font-weight: 800;
+}
+
+.pm-shop-card {
+  border: 1px solid #cbd5e1;
+  border-top-color: #f8fafc;
+  border-left-color: #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  overflow: visible;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(15, 23, 42, 0.07),
+    0 4px 10px rgba(15, 23, 42, 0.1),
+    0 10px 24px -4px rgba(15, 23, 42, 0.14),
+    0 18px 40px -8px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .pm-shop-card {
+    border-radius: 1rem;
+  }
+}
+
+.pm-shop-card:hover {
+  border-color: #94a3b8;
+  border-top-color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 2px 6px rgba(15, 23, 42, 0.08),
+    0 8px 18px rgba(15, 23, 42, 0.12),
+    0 16px 36px -4px rgba(15, 23, 42, 0.16),
+    0 24px 52px -10px rgba(13, 148, 136, 0.2),
+    0 0 0 1px rgba(37, 99, 235, 0.1);
+}
+
+@media (min-width: 640px) {
+  .pm-shop-card:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* Shop logo strip (home grid) — wide rectangle, not square */
+.pm-shop-card__logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 5 / 3;
+  padding: clamp(0.3rem, 2vw, 0.55rem);
+  border-radius: 0.75rem 0.75rem 0 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .pm-shop-card__logo {
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+.pm-shop-card__logo-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 88%;
+  max-height: 82%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.1));
+  transition: transform 0.25s ease;
+}
+
+.pm-shop-card:hover .pm-shop-card__logo-img {
+  transform: scale(1.05);
+}
+
+.pm-dash-logo-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-top-color: #f8fafc;
+  background: linear-gradient(180deg, #fff 0%, #f1f5f9 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.pm-dash-logo-preview__img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+.pm-shop-card__body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: transparent;
+}
+
+.pm-shop-card__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.28rem 0.4rem;
+  border-radius: 0 0 0.75rem 0.75rem;
+  line-height: 1.3;
+  background: var(--pm-shop-gradient-bar);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.pm-shop-card__dir {
+  flex: 0 0 25%;
+  max-width: 25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.15rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.45);
+  color: #0f172a;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  text-shadow: none;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.pm-shop-card__dir:hover {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.pm-shop-card__dir:active {
+  transform: scale(0.96);
+}
+
+.pm-shop-card__info {
+  flex: 1 1 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.35rem;
+  color: #0f172a;
+  text-shadow: none;
+  text-decoration: none;
+}
+
+.pm-shop-card__info:hover {
+  color: #1e3a8a;
+}
+
+@media (min-width: 640px) {
+  .pm-shop-card__row {
+    padding: 0.38rem 0.55rem;
+    gap: 0.3rem;
+    border-radius: 0 0 1rem 1rem;
+  }
+}
+
+.pm-shop-card__name {
+  max-width: 100%;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  .pm-shop-card__name {
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .pm-shop-card__dir {
+    font-size: 0.625rem;
+    padding: 0.28rem 0.2rem;
+  }
+}
+
+
+/* Shop detail page */
+.pm-shop-hero,
+.pm-shop-panel {
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  background: var(--pm-shop-gradient-soft);
+  box-shadow: var(--pm-shop-shadow);
+}
+
+.pm-shop-panel-title {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+  background: var(--pm-shop-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pm-shop-hero #shopName {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pm-shop-info-box {
+  border: 1px solid rgba(13, 148, 136, 0.18);
+  border-radius: 0.65rem;
+  padding: 0.45rem 0.55rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+}
+
+.pm-shop-info-box > p:first-child {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+  background: var(--pm-shop-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pm-shop-info-box > p:last-child {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.pm-shop-map-links a {
+  font-weight: 700;
+  color: #0d9488;
+}
+
+.pm-shop-map-links a:hover {
+  color: #1d4ed8;
+}
+
+.pm-shop-popular-tile {
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.pm-shop-popular-tile:hover {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+}
+
+.pm-shop-popular-tile span:last-child {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pm-shop-listing-section h2 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: var(--pm-shop-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+html[lang="ar"] .pm-shop-card__row,
+html[lang="ar"] .pm-shop-card__dir,
+html[lang="ar"] .pm-shop-card__info,
+html[lang="ar"] .pm-shop-card__name {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
 }

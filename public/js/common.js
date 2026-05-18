@@ -105,8 +105,21 @@ const PaintApi = {
     const qs = q ? `?q=${encodeURIComponent(q)}` : "";
     return this.request(`/public/shops${qs}`);
   },
-  suggest(q) {
-    return this.request(`/public/search/suggest?q=${encodeURIComponent(q)}`);
+  suggest(q, opts = {}) {
+    const qs = new URLSearchParams();
+    if (q) qs.set("q", String(q));
+    const cap = PaintApi.normalizeCapacityLtr(opts.capacityLtr);
+    if (cap != null) qs.set("capacityLtr", String(cap));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/public/search/suggest${suffix}`);
+  },
+  normalizeCapacityLtr(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    if (Math.abs(n - 1) < 0.001) return 1;
+    if (Math.abs(n - 3.6) < 0.001) return 3.6;
+    if (Math.abs(n - 18) < 0.001) return 18;
+    return null;
   },
   searchPricesMap(opts = {}) {
     const q = opts.q != null ? String(opts.q).trim() : "";
@@ -115,6 +128,8 @@ const PaintApi = {
     if (q) qs.set("q", q);
     if (Number.isFinite(productId) && productId > 0) qs.set("productId", String(productId));
     if (opts.allBrands) qs.set("allBrands", "1");
+    const cap = PaintApi.normalizeCapacityLtr(opts.capacityLtr);
+    if (cap != null) qs.set("capacityLtr", String(cap));
     if (Array.isArray(opts.productIds) && opts.productIds.length) {
       const ids = [...new Set(opts.productIds.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0))];
       if (ids.length) qs.set("productIds", ids.join(","));
@@ -133,6 +148,22 @@ const PaintApi = {
   },
   shopCatalog() {
     return this.request("/shop/catalog");
+  },
+  createBrand(body) {
+    return this.request("/shop/brands", { method: "POST", body });
+  },
+  shopCatalogPicks(brandId, categoryId) {
+    const qs = new URLSearchParams({
+      brandId: String(brandId),
+      categoryId: String(categoryId)
+    });
+    return this.request(`/shop/catalog-picks?${qs}`);
+  },
+  shopRecentEntries() {
+    return this.request("/shop/recent-entries");
+  },
+  trackProduct(productId) {
+    return this.request("/public/track/product", { method: "POST", body: { productId } });
   },
   createProduct(body) {
     return this.request("/shop/products", { method: "POST", body });
@@ -201,8 +232,15 @@ function debounce(fn, ms) {
 const PAINT_MARKET_COUNTRY_K = "paint_market_country";
 const PAINT_MARKET_CITY_K = "paint_market_city";
 const PAINT_MARKET_LANG_K = "paint_market_lang";
-const PAINT_MARKET_ALLOW_COUNTRY = ["AE", "OM"];
+const PAINT_MARKET_ALLOW_COUNTRY = ["AE", "OM", "SA"];
 const PAINT_MARKET_ALLOW_LANG = ["en", "ar"];
+
+/** @type {Record<string, string>} */
+const PAINT_MARKET_CURRENCY_BY_COUNTRY = {
+  AE: "AED",
+  OM: "OMR",
+  SA: "SAR"
+};
 
 /** @typedef {{ code: string, labelEn: string, labelAr: string }} PmCity */
 
@@ -229,14 +267,47 @@ const PAINT_MARKET_CITIES_BY_COUNTRY = {
     { code: "sur", labelEn: "Sur", labelAr: "صور" },
     { code: "ibri", labelEn: "Ibri", labelAr: "عبري" },
     { code: "duqm", labelEn: "Duqm", labelAr: "الدقم" }
+  ],
+  SA: [
+    { code: "", labelEn: "All cities", labelAr: "كل المدن" },
+    { code: "riyadh", labelEn: "Riyadh", labelAr: "الرياض" },
+    { code: "jeddah", labelEn: "Jeddah", labelAr: "جدة" },
+    { code: "dammam", labelEn: "Dammam", labelAr: "الدمام" },
+    { code: "khobar", labelEn: "Al Khobar", labelAr: "الخبر" },
+    { code: "makkah", labelEn: "Makkah", labelAr: "مكة" },
+    { code: "madinah", labelEn: "Madinah", labelAr: "المدينة" }
   ]
 };
 
-/** @type {{ code: string, labelEn: string, labelAr: string }[]} */
+/** @type {{ code: string, labelEn: string, labelAr: string, flag: string, flagUrl: string }[]} */
 const PAINT_MARKET_COUNTRIES = [
-  { code: "AE", labelEn: "UAE", labelAr: "الإمارات" },
-  { code: "OM", labelEn: "Oman", labelAr: "عُمان" }
+  {
+    code: "AE",
+    labelEn: "UAE",
+    labelAr: "الإمارات",
+    flag: "🇦🇪",
+    flagUrl: "https://flagcdn.com/w40/ae.png"
+  },
+  {
+    code: "OM",
+    labelEn: "Oman",
+    labelAr: "عُمان",
+    flag: "🇴🇲",
+    flagUrl: "https://flagcdn.com/w40/om.png"
+  },
+  {
+    code: "SA",
+    labelEn: "Saudi Arabia",
+    labelAr: "السعودية",
+    flag: "🇸🇦",
+    flagUrl: "https://flagcdn.com/w40/sa.png"
+  }
 ];
+
+function pmCountryRow(code) {
+  const c = String(code || "").trim().toUpperCase();
+  return PAINT_MARKET_COUNTRIES.find((r) => r.code === c) || PAINT_MARKET_COUNTRIES[0];
+}
 
 function pmCityLabel(row) {
   return paintMarketLangGet() === "ar" ? row.labelAr : row.labelEn;
@@ -250,6 +321,112 @@ function paintMarketCountryGet() {
   const v = localStorage.getItem(PAINT_MARKET_COUNTRY_K);
   if (PAINT_MARKET_ALLOW_COUNTRY.includes(v)) return v;
   return "AE";
+}
+
+function paintMarketCurrencyForCountry(country) {
+  const c = String(country || "").trim().toUpperCase();
+  return PAINT_MARKET_CURRENCY_BY_COUNTRY[c] || "AED";
+}
+
+function paintMarketCurrencyGet() {
+  return paintMarketCurrencyForCountry(paintMarketCountryGet());
+}
+
+function paintMarketCurrencyFromLocationText(locationText) {
+  return paintMarketCurrencyForCountry(paintMarketParseShopLocationText(locationText).country);
+}
+
+function paintMarketFormatPrice(amount, currency) {
+  const v = Number(amount);
+  const cur = String(currency || paintMarketCurrencyGet()).toUpperCase();
+  if (!Number.isFinite(v)) return "—";
+  if (cur === "OMR") {
+    return `${v.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} OMR`;
+  }
+  if (cur === "IRR") {
+    return `${Math.round(v).toLocaleString("en-US")} IRR`;
+  }
+  const rounded = Math.round(v * 100) / 100;
+  const fmt =
+    rounded % 1 === 0 && rounded >= 100
+      ? rounded.toLocaleString("en-US")
+      : rounded.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return `${fmt} ${cur}`;
+}
+
+function paintMarketFormatPriceAmountOnly(amount, currency) {
+  const v = Number(amount);
+  const cur = String(currency || paintMarketCurrencyGet()).toUpperCase();
+  if (!Number.isFinite(v)) return "—";
+  if (cur === "OMR") {
+    return v.toLocaleString("en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  }
+  if (cur === "IRR") {
+    return Math.round(v).toLocaleString("en-US");
+  }
+  const rounded = Math.round(v * 100) / 100;
+  return rounded % 1 === 0 && rounded >= 100
+    ? rounded.toLocaleString("en-US")
+    : rounded.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function paintMarketFormatPriceCompact(amount, currency) {
+  const v = Number(amount);
+  const cur = String(currency || paintMarketCurrencyGet()).toUpperCase();
+  if (!Number.isFinite(v)) return { num: "—", cur: "" };
+  if (cur === "IRR") {
+    const n = Math.round(v);
+    let num;
+    if (n >= 1_000_000) {
+      const m = n / 1_000_000;
+      num = m >= 10 ? `${Math.round(m)}M` : `${m.toFixed(1).replace(/\.0$/, "")}M`;
+    } else if (n >= 10_000) {
+      num = `${Math.round(n / 1000)}k`;
+    } else if (n >= 1000) {
+      num = `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+    } else {
+      num = String(n);
+    }
+    return { num, cur: "IRR" };
+  }
+  if (cur === "OMR") {
+    const num =
+      v >= 10
+        ? v.toFixed(1).replace(/\.0$/, "")
+        : v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+    return { num, cur: "OMR" };
+  }
+  const n = Math.round(v);
+  let num;
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    num = m >= 10 ? `${Math.round(m)}M` : `${m.toFixed(1).replace(/\.0$/, "")}M`;
+  } else if (n >= 10_000) {
+    num = `${Math.round(n / 1000)}k`;
+  } else if (n >= 1000) {
+    num = `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  } else {
+    num = String(n);
+  }
+  return { num, cur };
+}
+
+function paintMarketApplyCurrencyLabels(root) {
+  const scope = root && root.querySelectorAll ? root : document;
+  const countrySel = scope.querySelector("select.paint-market-shop-country");
+  const currency = countrySel
+    ? paintMarketCurrencyForCountry(countrySel.value)
+    : paintMarketCurrencyGet();
+  scope.querySelectorAll("[data-pm-currency-label]").forEach((el) => {
+    const key = el.getAttribute("data-pm-t");
+    if (!key) return;
+    el.textContent = paintMarketTf(key, { currency });
+  });
+  const pricePh = scope.querySelector("#pdPrice[data-pm-ph]");
+  if (pricePh) {
+    pricePh.placeholder =
+      currency === "OMR" ? "e.g. 5.500" : currency === "IRR" ? "e.g. 250000" : "e.g. 120";
+  }
 }
 
 function paintMarketLangGet() {
@@ -346,10 +523,31 @@ function paintMarketSortShopsFavoritesFirst(shops) {
 }
 
 function paintMarketFavoriteHeartSvg(liked) {
+  const ic = "h-[1.375rem] w-[1.375rem] shrink-0";
+  const heart =
+    "M12 20.35c-3.35-2.55-5.65-4.75-5.65-7.85 0-2.15 1.7-3.75 3.85-3.75 1.05 0 1.95.52 2.45 1.28.5-.76 1.4-1.28 2.45-1.28 2.15 0 3.85 1.6 3.85 3.75 0 3.1-2.3 5.3-5.65 7.85z";
+  const bucket =
+    "M9.9 11.1h4.2M10.15 11.1 9.5 14.35h5L14.55 11.1M11.15 11.1V9.85a.9.9 0 0 1 1.7 0V11.1M12 14.35v1.4";
   if (liked) {
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17l-.022.012-.007.003-.002.001h-.002z"/></svg>';
+    return (
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="' +
+      ic +
+      '" aria-hidden="true"><path fill="currentColor" d="' +
+      heart +
+      '"/><path fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' +
+      bucket +
+      '"/></svg>'
+    );
   }
-  return '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>';
+  return (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="' +
+    ic +
+    '" aria-hidden="true"><path stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" d="' +
+    heart +
+    '"/><path stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" d="' +
+    bucket +
+    '"/></svg>'
+  );
 }
 
 function paintMarketFavoriteApplyButton(btn, slug, variant) {
@@ -362,12 +560,12 @@ function paintMarketFavoriteApplyButton(btn, slug, variant) {
   btn.innerHTML = paintMarketFavoriteHeartSvg(on);
   if (variant === "inline") {
     btn.className =
-      "paint-market-fav-btn shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/10 text-teal-100 shadow-sm backdrop-blur-sm hover:bg-white/18 focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-400 " +
-      (on ? "!border-rose-300/60 !bg-rose-500/25 !text-rose-200" : "");
+      "paint-market-fav-btn shrink-0 inline-flex items-center justify-center border-0 bg-transparent p-0 text-sky-300 transition hover:text-blue-400 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-400 " +
+      (on ? "!text-blue-400" : "");
   } else {
     btn.className =
-      "paint-market-fav-btn pointer-events-auto absolute top-2 end-2 z-[5] flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-600 shadow-sm backdrop-blur-sm transition hover:bg-white hover:text-rose-600 focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-500 " +
-      (on ? "!border-rose-300 !text-rose-600 ring-2 ring-rose-200" : "");
+      "paint-market-fav-btn pointer-events-auto absolute top-2 end-2 z-[5] inline-flex items-center justify-center border-0 bg-transparent p-0.5 text-blue-500 drop-shadow-[0_1px_2px_rgba(255,255,255,0.85)] transition hover:scale-105 hover:text-blue-600 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-400 " +
+      (on ? "!text-blue-600" : "");
   }
 }
 
@@ -399,6 +597,8 @@ function paintMarketLangSet(code) {
   localStorage.setItem(PAINT_MARKET_LANG_K, next);
   paintMarketValidateCityForCountry();
   paintMarketApplyDomI18n();
+  paintMarketApplyCurrencyLabels(document);
+  paintMarketSyncGeoCompactBtn();
   try {
     document.dispatchEvent(new CustomEvent("paint-market-lang-change", { detail: { code: next } }));
   } catch {
@@ -418,6 +618,8 @@ function paintMarketApplyLangDom(lang) {
 function paintMarketApplyDomI18n() {
   paintMarketApplyLangDom(paintMarketLangGet());
   document.querySelectorAll("[data-pm-t]").forEach((el) => {
+    if (el.classList.contains("pm-geo-compact-btn")) return;
+    if (el.hasAttribute("data-pm-currency-label")) return;
     const k = el.getAttribute("data-pm-t");
     if (k) el.textContent = paintMarketT(k);
   });
@@ -572,6 +774,7 @@ function paintMarketInitShopLocationForm(root, locationText) {
   });
   const areaEl = scope.querySelector("[data-pm-shop-location-area], #fldLocationArea, [name='locationArea']");
   if (areaEl) areaEl.value = parsed.area;
+  paintMarketApplyCurrencyLabels(scope);
 }
 
 function paintMarketReadShopLocationFields(root) {
@@ -602,11 +805,125 @@ function paintMarketFillAllCountrySelects() {
   });
 }
 
+function paintMarketSyncCountryFlags() {
+  document.querySelectorAll("select.paint-market-country").forEach((sel) => {
+    const field = sel.closest(".pm-country-field");
+    const flag = field?.querySelector(".pm-country-flag");
+    if (!flag) return;
+    const row = pmCountryRow(sel.value);
+    flag.innerHTML = `<img src="${row.flagUrl}" alt="" width="20" height="15" class="pm-country-flag-img" loading="lazy" decoding="async" />`;
+    flag.title = pmCountryLabel(row);
+    field?.setAttribute("data-country", row.code);
+  });
+  paintMarketSyncGeoCompactBtn();
+}
+
+function paintMarketCityLabelCurrent() {
+  const country = paintMarketCountryGet();
+  const code = paintMarketCityGet();
+  if (!code) return paintMarketT("index_search_cap_all");
+  const row = (PAINT_MARKET_CITIES_BY_COUNTRY[country] || []).find((x) => x.code === code);
+  return row ? pmCityLabel(row) : paintMarketT("index_search_cap_all");
+}
+
+function paintMarketCountryLabelCurrent() {
+  return pmCountryLabel(pmCountryRow(paintMarketCountryGet()));
+}
+
+function paintMarketSyncGeoCompactBtn() {
+  const langShort = paintMarketLangGet() === "ar" ? "ع" : "En";
+  const cityLabel = paintMarketCityLabelCurrent();
+  document.querySelectorAll(".pm-geo-compact-btn").forEach((btn) => {
+    btn.setAttribute("aria-label", paintMarketT("hdr_geo_compact"));
+    const flagSlot = btn.querySelector(".pm-geo-compact-flag");
+    const citySlot = btn.querySelector(".pm-geo-sym-city");
+    const langSlot = btn.querySelector(".pm-geo-sym-lang");
+    const row = pmCountryRow(paintMarketCountryGet());
+    if (flagSlot) {
+      flagSlot.innerHTML = `<img src="${row.flagUrl}" alt="" width="18" height="13" class="pm-country-flag-img" loading="lazy" decoding="async" />`;
+    }
+    if (citySlot) {
+      citySlot.textContent = cityLabel.length > 6 ? `${cityLabel.slice(0, 5)}…` : cityLabel;
+      citySlot.title = cityLabel;
+    }
+    if (langSlot) langSlot.textContent = langShort;
+  });
+}
+
+function paintMarketEnsureGeoDialog() {
+  const stale = document.getElementById("pmGeoSettingsDialog");
+  if (stale && !stale.querySelector(".pm-select-with-flag")) stale.remove();
+  if (document.getElementById("pmGeoSettingsDialog")) return;
+  const dlg = document.createElement("dialog");
+  dlg.id = "pmGeoSettingsDialog";
+  dlg.className = "pm-geo-dialog";
+  dlg.innerHTML = `
+    <form method="dialog" class="pm-geo-dialog-panel">
+      <div class="pm-geo-dialog-head">
+        <h2 class="pm-geo-dialog-title" data-pm-t="hdr_geo_settings">Region &amp; language</h2>
+        <button type="submit" class="pm-geo-dialog-done" data-pm-t="hdr_geo_done">Done</button>
+      </div>
+      <div class="pm-geo-dialog-body">
+        <label class="pm-country-field pm-geo-dialog-field">
+          <span class="pm-geo-dialog-label">
+            <span class="pm-geo-field-icon" aria-hidden="true">🌍</span>
+            <span data-pm-t="hdr_country">Country</span>
+          </span>
+          <div class="pm-select-with-flag">
+            <span class="pm-country-flag" aria-hidden="true"></span>
+            <select class="paint-market-country pm-geo-dialog-select"></select>
+          </div>
+        </label>
+        <label class="pm-geo-dialog-field">
+          <span class="pm-geo-dialog-label">
+            <span class="pm-geo-field-icon" aria-hidden="true">📍</span>
+            <span data-pm-t="hdr_city">City</span>
+          </span>
+          <select class="paint-market-city pm-geo-dialog-select"></select>
+        </label>
+        <label class="pm-geo-dialog-field">
+          <span class="pm-geo-dialog-label">
+            <span class="pm-geo-field-icon" aria-hidden="true">🌐</span>
+            <span data-pm-t="hdr_language">Language</span>
+          </span>
+          <select class="paint-market-lang pm-geo-dialog-select"></select>
+        </label>
+      </div>
+    </form>`;
+  document.body.appendChild(dlg);
+}
+
+function paintMarketBindGeoCompactButtons() {
+  if (window.__paintMarketGeoCompactBound) return;
+  window.__paintMarketGeoCompactBound = true;
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".pm-geo-compact-btn");
+    if (!btn) return;
+    e.preventDefault();
+    paintMarketEnsureGeoDialog();
+    const dlg = document.getElementById("pmGeoSettingsDialog");
+    if (!dlg) return;
+    paintMarketFillAllCountrySelects();
+    paintMarketSyncAllCountrySelects();
+    paintMarketFillAllCitySelects();
+    paintMarketSyncAllCitySelects();
+    paintMarketFillLangSelects();
+    paintMarketSyncLangSelects();
+    paintMarketSyncCountryFlags();
+    dlg.querySelectorAll("[data-pm-t]").forEach((el) => {
+      const k = el.getAttribute("data-pm-t");
+      if (k) el.textContent = paintMarketT(k);
+    });
+    dlg.showModal();
+  });
+}
+
 function paintMarketSyncAllCountrySelects() {
   const v = paintMarketCountryGet();
   document.querySelectorAll("select.paint-market-country").forEach((el) => {
     el.value = v;
   });
+  paintMarketSyncCountryFlags();
 }
 
 function paintMarketSyncAllCitySelects() {
@@ -651,6 +968,7 @@ function paintMarketCountrySet(code) {
   paintMarketFillAllCitySelects();
   paintMarketSyncAllCitySelects();
   try {
+    paintMarketApplyCurrencyLabels(document);
     document.dispatchEvent(new CustomEvent("paint-market-country-change", { detail: { code: next } }));
   } catch {
     /* ignore */
@@ -665,6 +983,7 @@ function paintMarketCitySet(code) {
   const next = allowed.includes(raw) ? raw : "";
   localStorage.setItem(PAINT_MARKET_CITY_K, next);
   paintMarketSyncAllCitySelects();
+  paintMarketSyncGeoCompactBtn();
   try {
     document.dispatchEvent(new CustomEvent("paint-market-city-change", { detail: { code: next, country } }));
   } catch {
@@ -690,6 +1009,7 @@ function paintMarketGeoBindDelegated() {
     if (t.matches("select.paint-market-shop-country")) {
       const root = t.closest("form, #dashProfilePanel, main") || document;
       paintMarketFillShopCitySelects(root, t.value);
+      paintMarketApplyCurrencyLabels(root);
       return;
     }
     if (t.matches("select.paint-market-lang")) {
@@ -700,9 +1020,13 @@ function paintMarketGeoBindDelegated() {
 
 function paintMarketGeoInit() {
   paintMarketGeoBindDelegated();
+  paintMarketBindGeoCompactButtons();
   paintMarketFavoriteInitDelegated();
   paintMarketValidateCityForCountry();
+  paintMarketEnsureGeoDialog();
   paintMarketApplyDomI18n();
+  paintMarketApplyCurrencyLabels(document);
+  paintMarketSyncGeoCompactBtn();
 }
 
 /** @deprecated use paintMarketGeoInit */
@@ -714,14 +1038,25 @@ window.PaintApi = PaintApi;
 window.debounce = debounce;
 window.paintMarketCountryGet = paintMarketCountryGet;
 window.paintMarketCountrySet = paintMarketCountrySet;
+window.paintMarketCurrencyForCountry = paintMarketCurrencyForCountry;
+window.paintMarketCurrencyGet = paintMarketCurrencyGet;
+window.paintMarketCurrencyFromLocationText = paintMarketCurrencyFromLocationText;
+window.paintMarketFormatPrice = paintMarketFormatPrice;
+window.paintMarketFormatPriceAmountOnly = paintMarketFormatPriceAmountOnly;
+window.paintMarketFormatPriceCompact = paintMarketFormatPriceCompact;
+window.paintMarketApplyCurrencyLabels = paintMarketApplyCurrencyLabels;
 window.paintMarketCountryInit = paintMarketCountryInit;
 window.paintMarketCityGet = paintMarketCityGet;
 window.paintMarketCitySet = paintMarketCitySet;
+window.paintMarketCityLabelCurrent = paintMarketCityLabelCurrent;
+window.paintMarketCountryLabelCurrent = paintMarketCountryLabelCurrent;
 window.paintMarketLangGet = paintMarketLangGet;
 window.paintMarketLangSet = paintMarketLangSet;
 window.paintMarketGeoInit = paintMarketGeoInit;
 window.paintMarketInitShopLocationForm = paintMarketInitShopLocationForm;
 window.paintMarketReadShopLocationFields = paintMarketReadShopLocationFields;
+window.paintMarketParseShopLocationText = paintMarketParseShopLocationText;
+window.paintMarketShopCityLabel = paintMarketShopCityLabel;
 window.paintMarketT = paintMarketT;
 window.paintMarketTf = paintMarketTf;
 window.paintMarketFavoritesGet = paintMarketFavoritesGet;

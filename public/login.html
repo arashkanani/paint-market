@@ -14,13 +14,24 @@
     <div class="max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <p class="text-sm font-medium text-slate-200" data-pm-t="login_shop_portal">Shop portal</p>
       <div class="flex flex-wrap items-center gap-3">
-        <label class="flex items-center gap-2">
-          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
-          <select
-            class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
-            aria-label="Language"
-          ></select>
-        </label>
+        <button type="button" class="pm-geo-compact-btn md:hidden" aria-label="Country, city &amp; language">
+          <span class="pm-geo-compact-inner">
+            <span class="pm-geo-compact-flag" aria-hidden="true"></span>
+            <span class="pm-geo-compact-sep" aria-hidden="true">·</span>
+            <span class="pm-geo-sym-city" aria-hidden="true">⌖</span>
+            <span class="pm-geo-compact-sep" aria-hidden="true">·</span>
+            <span class="pm-geo-sym-lang" aria-hidden="true">En</span>
+          </span>
+        </button>
+        <div class="pm-geo-bar-desktop hidden md:flex flex-wrap items-center gap-3">
+          <label class="flex items-center gap-2">
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
+            <select
+              class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+              aria-label="Language"
+            ></select>
+          </label>
+        </div>
         <a class="text-sm text-teal-300 hover:text-teal-200 font-medium" href="/paint/" data-pm-t="login_home">Home</a>
       </div>
     </div>

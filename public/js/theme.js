@@ -161,6 +161,11 @@
     return linearBar(brandTriple(slug).bar);
   }
 
+  /** Dashboard picker: same gradient tile style as brands */
+  function categoryBarGradient(slug) {
+    return linearBar(categoryTheme(slug).stripe);
+  }
+
   /** Dashboard: ornate category heading */
   function categoryHeaderFragment(nameEsc, slug) {
     const c = categoryTheme(slug);
@@ -225,12 +230,12 @@
     const s = slug === undefined || slug === null ? "" : String(slug);
     if (s === "") {
       return {
-        background: "linear-gradient(132deg,#0f766e,#115e59,#134e4a)",
-        color: "#f0fdfa",
-        border: "1px solid rgba(255,255,255,0.22)",
+        background: "linear-gradient(155deg,#0d9488 0%,#0891b2 38%,#2563eb 72%,#1d4ed8 100%)",
+        color: "#ffffff",
+        border: "1px solid rgba(255,255,255,0.28)",
         boxShadow:
-          "0 3px 10px rgba(15,118,110,0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
-        textShadow: "0 1px 2px rgba(0,0,0,0.35)"
+          "0 4px 14px rgba(37,99,235,0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
+        textShadow: "0 1px 2px rgba(15,23,42,0.25)"
       };
     }
     const c = categoryTheme(s);
@@ -253,6 +258,7 @@
   global.PaintTheme = {
     brandTriple,
     brandBarGradient,
+    categoryBarGradient,
     categoryTheme,
     categoryHeaderFragment,
     brandStripeFragment,

@@ -13,28 +13,42 @@
 <body class="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100 text-slate-900 min-h-screen" data-pm-page-title="shop_metaTitle">
   <header class="border-b border-white/20 bg-slate-950/80 backdrop-blur">
     <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap gap-3 items-center justify-between">
-      <div class="flex flex-wrap items-start gap-x-5 gap-y-2 min-w-0">
-        <label class="flex items-center gap-2 shrink-0 pt-1">
-          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
-          <select
-            class="paint-market-country paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 shadow-sm focus:ring-2 focus:ring-teal-500/50"
-            aria-label="Country"
-          ></select>
-        </label>
-        <label class="flex items-center gap-2 shrink-0 pt-1">
-          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_city">City</span>
-          <select
-            class="paint-market-city paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[9rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
-            aria-label="City"
-          ></select>
-        </label>
-        <label class="flex items-center gap-2 shrink-0 pt-1">
-          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
-          <select
-            class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
-            aria-label="Language"
-          ></select>
-        </label>
+      <div class="flex flex-wrap items-start gap-x-3 gap-y-2 min-w-0">
+        <button type="button" class="pm-geo-compact-btn md:hidden shrink-0 mt-1" aria-label="Country, city &amp; language">
+          <span class="pm-geo-compact-inner">
+            <span class="pm-geo-compact-flag" aria-hidden="true"></span>
+            <span class="pm-geo-compact-sep" aria-hidden="true">·</span>
+            <span class="pm-geo-sym-city" aria-hidden="true">⌖</span>
+            <span class="pm-geo-compact-sep" aria-hidden="true">·</span>
+            <span class="pm-geo-sym-lang" aria-hidden="true">En</span>
+          </span>
+        </button>
+        <div class="pm-geo-bar-desktop hidden md:flex flex-wrap items-center gap-x-5 gap-y-2">
+          <label class="pm-country-field flex items-center gap-2 shrink-0">
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
+            <span class="pm-select-with-flag pm-select-with-flag--header">
+              <span class="pm-country-flag" aria-hidden="true"></span>
+              <select
+                class="paint-market-country paint-market-header-select rounded-lg border border-white/20 text-sm py-1.5 pe-2.5 ps-9 shadow-sm focus:ring-2 focus:ring-teal-500/50"
+                aria-label="Country"
+              ></select>
+            </span>
+          </label>
+          <label class="flex items-center gap-2 shrink-0">
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_city">City</span>
+            <select
+              class="paint-market-city paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[9rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+              aria-label="City"
+            ></select>
+          </label>
+          <label class="flex items-center gap-2 shrink-0">
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
+            <select
+              class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+              aria-label="Language"
+            ></select>
+          </label>
+        </div>
         <div class="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1">
           <div class="min-w-0 flex-1">
             <p class="text-xs uppercase tracking-wide text-slate-300" data-pm-t="shop_hdr_sub">Virtual showroom</p>
@@ -57,31 +71,31 @@
 
   <main class="max-w-[min(1920px,100%)] mx-auto px-3 sm:px-4 py-8 space-y-8">
     <div class="flex flex-col lg:flex-row lg:items-stretch gap-4 w-full max-w-full lg:w-fit">
-      <section class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50/80 shadow-sm p-2.5 sm:p-3 w-fit max-w-full min-w-0 flex-1 lg:flex-initial flex flex-col h-full lg:min-h-0">
+      <section class="pm-shop-hero rounded-2xl overflow-hidden p-2.5 sm:p-3 w-fit max-w-full min-w-0 flex-1 lg:flex-initial flex flex-col h-full lg:min-h-0">
       <div class="grid lg:grid-cols-[14rem_auto] gap-2.5 items-start justify-start">
         <div class="flex justify-center lg:justify-start">
-          <div class="shop-photo-frame relative aspect-square w-full max-w-[min(100%,12.5rem)] sm:max-w-[13.5rem] overflow-hidden rounded-2xl border border-teal-900/15 shadow-md">
-            <img id="heroImg" alt="" class="absolute inset-0 w-full h-full object-contain object-center p-2 opacity-95" loading="lazy" />
+          <div class="shop-photo-frame aspect-square w-full max-w-[min(100%,12.5rem)] sm:max-w-[13.5rem]">
+            <img id="heroImg" alt="" class="shop-photo-frame__img opacity-95" loading="lazy" />
           </div>
         </div>
         <div class="space-y-1 text-sm text-slate-600 w-full max-w-xl">
-          <div class="rounded-lg border border-slate-200/90 bg-slate-50/70 px-2 py-1.5">
-            <p class="text-[11px] font-semibold uppercase text-slate-500 mb-0.5" data-pm-t="shop_loc">Location</p>
+          <div class="pm-shop-info-box">
+            <p data-pm-t="shop_loc">Location</p>
             <p id="locationText"></p>
           </div>
-          <div class="rounded-lg border border-slate-200/90 bg-slate-50/70 px-2 py-1.5">
-            <p class="text-[11px] font-semibold uppercase text-slate-500 mb-0.5" data-pm-t="shop_addr">Address</p>
+          <div class="pm-shop-info-box">
+            <p data-pm-t="shop_addr">Address</p>
             <p id="addressText"></p>
           </div>
-          <div class="rounded-lg border border-slate-200/90 bg-slate-50/70 px-2 py-1.5">
-            <p class="text-[11px] font-semibold uppercase text-slate-500 mb-0.5" data-pm-t="shop_pulse">Catalogue pulse</p>
+          <div class="pm-shop-info-box">
+            <p data-pm-t="index_last_update">Last update:</p>
             <p id="lastUpdated"></p>
           </div>
-          <div id="shopMapInfo" class="hidden rounded-lg border border-slate-200/90 bg-slate-50/70 px-2 py-1.5">
-            <p class="text-[11px] font-semibold uppercase text-slate-500 mb-0.5" data-pm-t="shop_map_hint">Show on map</p>
-            <div class="flex flex-wrap gap-2 text-[11px] font-semibold">
-              <a id="openExtMap" href="#" target="_blank" rel="noopener noreferrer" class="text-teal-700 hover:text-teal-900 underline-offset-2 hover:underline" data-pm-t="shop_view_loc">View location</a>
-              <a id="openDirectionsMap" href="#" target="_blank" rel="noopener noreferrer" class="text-teal-800 hover:text-teal-950 underline-offset-2 hover:underline" data-pm-t="shop_get_directions">Get directions</a>
+          <div id="shopMapInfo" class="hidden pm-shop-info-box">
+            <p data-pm-t="shop_map_hint">Show on map</p>
+            <div class="pm-shop-map-links flex flex-wrap gap-2 text-[11px]">
+              <a id="openExtMap" href="#" target="_blank" rel="noopener noreferrer" class="underline-offset-2 hover:underline" data-pm-t="shop_view_loc">View location</a>
+              <a id="openDirectionsMap" href="#" target="_blank" rel="noopener noreferrer" class="underline-offset-2 hover:underline" data-pm-t="shop_get_directions">Get directions</a>
             </div>
           </div>
         </div>
@@ -89,10 +103,10 @@
     </section>
       <div
         id="popularPickWrap"
-        class="hidden shrink-0 rounded-2xl border border-slate-200 bg-slate-50/80 shadow-sm px-2.5 py-2 sm:px-3 sm:py-2.5 w-full max-w-full sm:w-auto sm:max-w-[19rem] lg:w-[min(100%,19rem)] flex flex-col h-full min-h-0 lg:min-h-full self-stretch"
+        class="pm-shop-panel hidden shrink-0 rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 w-full max-w-full sm:w-auto sm:max-w-[19rem] lg:w-[min(100%,19rem)] flex flex-col h-full min-h-0 lg:min-h-full self-stretch"
       >
         <div class="shrink-0">
-          <p class="text-[11px] font-semibold uppercase text-slate-500 mb-0.5" data-pm-t="shop_popular_here">Popular here</p>
+          <p class="pm-shop-panel-title" data-pm-t="shop_popular_here">Popular here</p>
           <p class="text-[10px] text-slate-500 mb-2" data-pm-t="shop_popular_sub">From customer taps in this showroom</p>
         </div>
         <div id="popularPickStrip" class="flex-1 min-h-[10rem] lg:min-h-0 grid grid-cols-3 gap-2 min-w-0 w-full [grid-template-rows:repeat(2,minmax(0,1fr))]"></div>
@@ -101,10 +115,10 @@
 
     <div id="errorBox" class="hidden rounded-xl border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3 text-sm"></div>
 
-    <section class="space-y-3">
+    <section class="pm-shop-listing-section space-y-3">
       <div class="flex flex-wrap gap-3 items-start justify-between">
         <div>
-          <h2 class="text-xl font-semibold" data-pm-t="shop_listed_h2">Listed products</h2>
+          <h2 class="text-xl" data-pm-t="shop_listed_h2">Listed products</h2>
           <p class="text-sm text-slate-600 max-w-3xl" data-pm-t="shop_listed_sub">Default order favours popular SKUs; change the sort or filter chips to explore.</p>
         </div>
         <label class="text-xs font-semibold text-slate-600 flex items-center gap-2">
@@ -271,7 +285,7 @@
         btn.type = "button";
         btn.title = tip;
         btn.className =
-          "group h-full w-full min-h-0 min-w-0 flex flex-col rounded-lg border border-slate-200/90 bg-slate-50/70 p-1.5 shadow-sm hover:border-teal-400/80 hover:bg-teal-50/40 transition outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-teal-500 text-left";
+          "pm-shop-popular-tile group h-full w-full min-h-0 min-w-0 flex flex-col rounded-lg p-1.5 shadow-sm transition outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-teal-500 text-left";
         btn.innerHTML = `
           <span class="flex-1 min-h-0 w-full rounded-md overflow-hidden bg-slate-100 ring-1 ring-slate-200/80">
             <img src="${imgUrl}" alt="" class="w-full h-full object-cover" loading="lazy" />
@@ -364,7 +378,11 @@
         card.style.borderTopColor = catMark.insetBar;
         const imgSrc = esc(row.default_image_url || "");
         const cap = formatCapacityLtr(row.capacity_ltr);
-        const priceStr = Math.round(Number(row.price_amount)).toLocaleString();
+        const cur = row.currency || (typeof paintMarketCurrencyGet === "function" ? paintMarketCurrencyGet() : "AED");
+        const priceStr =
+          typeof paintMarketFormatPrice === "function"
+            ? paintMarketFormatPrice(row.price_amount, cur).replace(/\s*(AED|OMR|SAR|IRR)\s*$/i, "").trim()
+            : Math.round(Number(row.price_amount)).toLocaleString();
         const brandGrad = PaintTheme.brandBarGradient(row.brand_slug || "");
         card.innerHTML = `
           <div class="flex-1 flex gap-px min-h-0 overflow-hidden p-0 bg-white">
@@ -421,7 +439,7 @@
         document.getElementById("locationText").textContent = shop.location_text || "—";
         document.getElementById("addressText").textContent = shop.address || "—";
         document.getElementById("lastUpdated").textContent =
-          shop.last_catalog_update || paintMarketT("shop_awaiting_listings");
+          shop.last_catalog_update || paintMarketT("index_last_update_na");
         setupPublicShopLinks(shop);
         const heroSrc = shop.photo_url || `https://placehold.co/1200x400/064e3b/f8fafc?text=${encodeURIComponent(shop.name)}`;
         heroImg.src = heroSrc;

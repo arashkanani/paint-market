@@ -11,6 +11,32 @@ const ROOT = __dirname;
 
 const CAPACITIES = new Set([1, 3.6, 18]);
 
+const PM_CURRENCY_BY_COUNTRY = { AE: "AED", OM: "OMR", SA: "SAR" };
+
+const PM_LOCATION_COUNTRY_HINTS = [
+  ["OM", ["muscat", "seeb", "salalah", "sohar", "nizwa", "sur", "ibri", "duqm", "مسقط", "السيب", "صلالة", "صحار", "نزوى", "صور", "عبري", "الدقم"]],
+  ["SA", ["riyadh", "jeddah", "dammam", "khobar", "makkah", "madinah", "الرياض", "جدة", "الدمام", "الخبر", "مكة", "المدينة"]],
+  ["AE", ["dubai", "abu dhabi", "sharjah", "al ain", "ajman", "ras al khaimah", "fujairah", "umm al quwain", "دبي", "أبو ظبي", "الشارقة", "العين", "عجمان"]]
+];
+
+function pmCountryFromLocationText(locationText) {
+  const lower = String(locationText || "").toLowerCase();
+  for (const [code, hints] of PM_LOCATION_COUNTRY_HINTS) {
+    for (const h of hints) {
+      if (lower.includes(h)) return code;
+    }
+  }
+  return "AE";
+}
+
+function pmCurrencyForCountry(country) {
+  return PM_CURRENCY_BY_COUNTRY[String(country || "").toUpperCase()] || "AED";
+}
+
+function pmCurrencyForLocationText(locationText) {
+  return pmCurrencyForCountry(pmCountryFromLocationText(locationText));
+}
+
 function parseCookies(req) {
   const raw = req.headers.cookie || "";
   const out = {};
@@ -98,6 +124,20 @@ function tryUnlinkUpload(mediaUrl) {
   } catch {
     /* ignore */
   }
+}
+
+function parseCapacityLtr(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  if (Math.abs(n - 1) < 0.001) return 1;
+  if (Math.abs(n - 3.6) < 0.001) return 3.6;
+  if (Math.abs(n - 18) < 0.001) return 18;
+  return null;
+}
+
+function buildCapacityListingFilter(capacityLtr) {
+  if (capacityLtr == null) return { sql: "", params: [] };
+  return { sql: " AND ABS(sl.capacity_ltr - ?) < 0.001", params: [capacityLtr] };
 }
 
 function parsePricesMapProductIds(raw) {
@@ -411,11 +451,23 @@ async function main() {
         return;
       }
       const q = String(req.query.q || "").trim();
+      const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
       if (q.length < 1) {
-        res.json({ products: [], shops: [] });
+        res.json({ products: [], shops: [], capacityLtr });
         return;
       }
       const like = `%${q}%`;
+      const { sql: capSql, params: capParams } = buildCapacityListingFilter(capacityLtr);
+      const productCapExists =
+        capacityLtr != null
+          ? ` AND EXISTS (
+             SELECT 1 FROM shop_listings sl
+             WHERE sl.master_product_id = mp.id
+               AND sl.available = 1
+               AND sl.price_amount IS NOT NULL
+               ${capSql}
+           )`
+          : "";
       const products = await dbm.all(
         db,
         `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, b.name AS brand_name, c.name AS category_name
@@ -423,20 +475,45 @@ async function main() {
          JOIN brands b ON b.id = mp.brand_id
          JOIN catalog_categories c ON c.id = mp.category_id
          WHERE mp.name LIKE ? COLLATE NOCASE
+           ${productCapExists}
          ORDER BY mp.popularity_score DESC, mp.name ASC
          LIMIT 12`,
-        [like]
+        capacityLtr != null ? [like, ...capParams] : [like]
       );
+      const shopCapExists =
+        capacityLtr != null
+          ? ` AND EXISTS (
+             SELECT 1 FROM shop_listings sl2
+             WHERE sl2.shop_id = s.id
+               AND sl2.available = 1
+               AND sl2.price_amount IS NOT NULL
+               AND ABS(sl2.capacity_ltr - ?) < 0.001
+           )`
+          : "";
       const shops = await dbm.all(
         db,
-        `SELECT id, name, slug, location_text, address, photo_url, lat, lng
-         FROM shops
-         WHERE name LIKE ? COLLATE NOCASE OR location_text LIKE ? COLLATE NOCASE OR address LIKE ? COLLATE NOCASE
-         ORDER BY datetime(COALESCE(last_catalog_update, created_at)) DESC
+        `SELECT DISTINCT s.id, s.name, s.slug, s.location_text, s.address, s.photo_url, s.lat, s.lng
+         FROM shops s
+         WHERE (
+           s.name LIKE ? COLLATE NOCASE
+           OR s.location_text LIKE ? COLLATE NOCASE
+           OR s.address LIKE ? COLLATE NOCASE
+           OR EXISTS (
+             SELECT 1 FROM shop_listings sl
+             JOIN master_products mp ON mp.id = sl.master_product_id
+             WHERE sl.shop_id = s.id
+               AND sl.available = 1
+               AND sl.price_amount IS NOT NULL
+               AND mp.name LIKE ? COLLATE NOCASE
+               ${capSql}
+           )
+         )
+         ${shopCapExists}
+         ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC
          LIMIT 8`,
-        [like, like, like]
+        capacityLtr != null ? [like, like, like, like, ...capParams, capacityLtr] : [like, like, like, like, ...capParams]
       );
-      res.json({ products, shops });
+      res.json({ products, shops, capacityLtr });
     })
   );
 
@@ -451,6 +528,7 @@ async function main() {
       const q = String(req.query.q || "").trim();
       const productId = Number(req.query.productId);
       const productIds = parsePricesMapProductIds(req.query.productIds);
+      const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
       const allBrands = String(req.query.allBrands || "") === "1";
       const hasProduct = Number.isFinite(productId) && productId > 0;
       if (!q && !hasProduct && !productIds.length) {
@@ -462,19 +540,20 @@ async function main() {
         const row = await dbm.get(db, "SELECT name FROM master_products WHERE id = ?", [productId]);
         if (row && row.name) productName = String(row.name).trim();
       }
-      const { sql: productFilter, params } = buildPricesMapProductFilter({
+      const { sql: productFilter, params: productParams } = buildPricesMapProductFilter({
         productId: hasProduct && !productName ? productId : null,
         productName,
         productIds: hasProduct || productName ? [] : productIds,
         q: hasProduct || productName || productIds.length ? "" : q
       });
+      const { sql: capacityFilter, params: capacityParams } = buildCapacityListingFilter(capacityLtr);
       const rows = await dbm.all(
         db,
         `SELECT s.id AS shop_id, s.name AS shop_name, s.slug AS shop_slug,
                 s.lat, s.lng, s.location_text, s.address,
                 mp.id AS product_id, mp.name AS product_name,
                 b.slug AS brand_slug, b.name AS brand_name,
-                sl.capacity_ltr, sl.price_amount, sl.id AS listing_id
+                sl.capacity_ltr, sl.price_amount, sl.currency, sl.id AS listing_id
          FROM shop_listings sl
          JOIN shops s ON s.id = sl.shop_id
          JOIN master_products mp ON mp.id = sl.master_product_id
@@ -484,8 +563,9 @@ async function main() {
            AND sl.price_amount IS NOT NULL
            AND s.lat IS NOT NULL AND s.lng IS NOT NULL
            ${productFilter}
+           ${capacityFilter}
          ORDER BY s.name ASC, b.sort_order ASC, mp.name ASC, sl.capacity_ltr ASC`,
-        params
+        [...productParams, ...capacityParams]
       );
       const byShop = new Map();
       for (const r of rows) {
@@ -511,6 +591,7 @@ async function main() {
           brandName: r.brand_name,
           capacityLtr: r.capacity_ltr,
           priceAmount: r.price_amount,
+          currency: r.currency || pmCurrencyForLocationText(r.location_text),
           listingId: r.listing_id
         });
       }
@@ -520,6 +601,7 @@ async function main() {
         productIds: hasProduct ? [productId] : productIds,
         allBrands: Boolean(productName),
         productName,
+        capacityLtr,
         shops: [...byShop.values()]
       });
     })
@@ -551,6 +633,31 @@ async function main() {
       await dbm.run(db, "UPDATE shop_listings SET view_count = view_count + 1 WHERE id = ?", [listingId]);
       await dbm.run(db, "UPDATE master_products SET popularity_score = popularity_score + 1 WHERE id = ?", [
         row.master_product_id
+      ]);
+      res.json({ ok: true });
+    })
+  );
+
+  app.post(
+    "/paint/api/public/track/product",
+    asyncHandler(async (req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ ok: false });
+        return;
+      }
+      const productId = Number((req.body || {}).productId);
+      if (!Number.isFinite(productId) || productId <= 0) {
+        res.status(400).json({ error: "productId required" });
+        return;
+      }
+      const row = await dbm.get(db, "SELECT id FROM master_products WHERE id = ?", [productId]);
+      if (!row) {
+        res.json({ ok: false });
+        return;
+      }
+      await dbm.run(db, "UPDATE master_products SET popularity_score = popularity_score + 1 WHERE id = ?", [
+        productId
       ]);
       res.json({ ok: true });
     })
@@ -726,6 +833,120 @@ async function main() {
     })
   );
 
+  app.post(
+    "/paint/api/shop/brands",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "shop");
+      const name = String((req.body || {}).name || "").trim();
+      if (name.length < 2) {
+        res.status(400).json({ error: "Brand name must be at least 2 characters" });
+        return;
+      }
+      let baseSlug = dbm.slugify(name);
+      if (!baseSlug) baseSlug = "brand";
+      let slug = baseSlug;
+      let suffix = 0;
+      while (await dbm.get(db, "SELECT id FROM brands WHERE slug = ?", [slug])) {
+        suffix += 1;
+        slug = `${baseSlug}-${suffix}`;
+      }
+      const maxRow = await dbm.get(db, "SELECT COALESCE(MAX(sort_order), 0) AS m FROM brands");
+      const sortOrder = Number(maxRow?.m || 0) + 1;
+      const ins = await dbm.run(db, "INSERT INTO brands (slug, name, sort_order) VALUES (?, ?, ?)", [
+        slug,
+        name,
+        sortOrder
+      ]);
+      const brand = await dbm.get(db, "SELECT id, slug, name, sort_order FROM brands WHERE id = ?", [
+        ins.lastID
+      ]);
+      res.json({ brand });
+    })
+  );
+
+  app.get(
+    "/paint/api/shop/catalog-picks",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "shop");
+      const brandId = Number(req.query.brandId);
+      const categoryId = Number(req.query.categoryId);
+      if (!Number.isFinite(brandId) || !Number.isFinite(categoryId)) {
+        res.status(400).json({ error: "brandId and categoryId are required" });
+        return;
+      }
+      const products = await dbm.all(
+        db,
+        `SELECT mp.id, mp.name, mp.slug, mp.description, mp.default_image_url, mp.popularity_score,
+                COUNT(DISTINCT CASE
+                  WHEN sl.available = 1 AND sl.price_amount IS NOT NULL THEN sl.shop_id
+                END) AS shop_count,
+                COALESCE(SUM(sl.view_count), 0) AS view_total
+         FROM master_products mp
+         LEFT JOIN shop_listings sl ON sl.master_product_id = mp.id
+         WHERE mp.brand_id = ? AND mp.category_id = ?
+         GROUP BY mp.id
+         ORDER BY shop_count DESC,
+                  (mp.popularity_score + COALESCE(SUM(sl.view_count), 0)) DESC,
+                  mp.name ASC`,
+        [brandId, categoryId]
+      );
+      res.json({ products });
+    })
+  );
+
+  app.get(
+    "/paint/api/shop/recent-entries",
+    asyncHandler(async (req, res) => {
+      const u = await requireRole(db, req, "shop");
+      const rows = await dbm.all(
+        db,
+        `SELECT mp.id AS product_id, mp.name AS product_name,
+                b.id AS brand_id, b.name AS brand_name,
+                c.id AS category_id, c.name AS category_name,
+                sl.capacity_ltr, sl.price_amount, sl.currency, sl.updated_at
+         FROM shop_listings sl
+         JOIN master_products mp ON mp.id = sl.master_product_id
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         WHERE sl.shop_id = ?
+           AND sl.available = 1
+           AND sl.price_amount IS NOT NULL
+           AND sl.updated_at >= datetime('now', '-3 hours')
+         ORDER BY sl.updated_at DESC`,
+        [u.shop_id]
+      );
+      const byProduct = new Map();
+      for (const r of rows) {
+        let entry = byProduct.get(r.product_id);
+        if (!entry) {
+          entry = {
+            productId: r.product_id,
+            productName: r.product_name,
+            brandId: r.brand_id,
+            brandName: r.brand_name,
+            categoryId: r.category_id,
+            categoryName: r.category_name,
+            lastUpdatedAt: r.updated_at,
+            listings: []
+          };
+          byProduct.set(r.product_id, entry);
+        }
+        entry.listings.push({
+          capacityLtr: r.capacity_ltr,
+          priceAmount: r.price_amount,
+          currency: r.currency
+        });
+        if (String(r.updated_at) > String(entry.lastUpdatedAt)) {
+          entry.lastUpdatedAt = r.updated_at;
+        }
+      }
+      const entries = [...byProduct.values()].sort((a, b) =>
+        String(b.lastUpdatedAt).localeCompare(String(a.lastUpdatedAt))
+      );
+      res.json({ entries });
+    })
+  );
+
   app.put(
     "/paint/api/shop/listings",
     asyncHandler(async (req, res) => {
@@ -752,6 +973,9 @@ async function main() {
         res.status(404).json({ error: "Unknown product" });
         return;
       }
+      const shopRow = await dbm.get(db, "SELECT location_text FROM shops WHERE id = ?", [u.shop_id]);
+      const listingCurrency = pmCurrencyForLocationText(shopRow?.location_text);
+
       const existing = await dbm.get(
         db,
         "SELECT id FROM shop_listings WHERE shop_id = ? AND master_product_id = ? AND capacity_ltr = ?",
@@ -761,9 +985,9 @@ async function main() {
         await dbm.run(
           db,
           `UPDATE shop_listings SET
-             available = ?, price_amount = ?, custom_photo_url = ?, updated_at = datetime('now')
+             available = ?, price_amount = ?, currency = ?, custom_photo_url = ?, updated_at = datetime('now')
            WHERE id = ?`,
-          [available, priceAmount, customPhotoUrl, existing.id]
+          [available, priceAmount, listingCurrency, customPhotoUrl, existing.id]
         );
         await dbm.touchShopCatalogUpdate(db, u.shop_id);
         const row = await dbm.get(db, "SELECT * FROM shop_listings WHERE id = ?", [existing.id]);
@@ -772,9 +996,9 @@ async function main() {
       }
       const inserted = await dbm.run(
         db,
-        `INSERT INTO shop_listings (shop_id, master_product_id, available, price_amount, capacity_ltr, custom_photo_url)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [u.shop_id, masterProductId, available, priceAmount, capacity, customPhotoUrl]
+        `INSERT INTO shop_listings (shop_id, master_product_id, available, price_amount, currency, capacity_ltr, custom_photo_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [u.shop_id, masterProductId, available, priceAmount, listingCurrency, capacity, customPhotoUrl]
       );
       await dbm.touchShopCatalogUpdate(db, u.shop_id);
       const row = await dbm.get(db, "SELECT * FROM shop_listings WHERE id = ?", [inserted.lastID]);
