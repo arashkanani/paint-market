@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="10699.600000000002" height="304" viewBox="0 0 10699.600000000002 304">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="24" y="18" font-family="Segoe UI,system-ui,sans-serif" font-size="14" font-weight="600" fill="#0f172a">Paint Market — UI element tree (by id)</text>
+  <text x="24" y="34" font-family="Segoe UI,system-ui,sans-serif" font-size="10" fill="#64748b">Generated 2026-05-20 · node scripts/build-objects-tree.mjs</text>
+  <g transform="translate(24, 48)">
+    <path d="M 5325.800000000001 28 V 36 H 50 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 181.8 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 313.6 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 442.3 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 595 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 747.7 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 747.7 72 V 80 H 738.4 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 1093.8 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 1093.8 72 V 80 H 891.1 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 1093.8 72 V 80 H 1031.3999999999999 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 1093.8 72 V 80 H 1165.5 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 1093.8 72 V 80 H 1299.6 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 2300.5 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 72 V 80 H 2300.5 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 1425.2 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 1563.2 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 1706.6000000000001 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 1843.8 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 1984.1 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2115.1 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2237.6 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2351.6 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2467.9 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2584.2 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2703.6 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2828.4 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 2947.8 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 3061.8 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 2300.5 116 V 124 H 3175.8 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 3412.3 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 3412.3 72 V 80 H 3298.3 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 3412.3 72 V 80 H 3420.8 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 3412.3 72 V 80 H 3534.8 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 3825.5000000000005 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 3825.5000000000005 72 V 80 H 3685.2000000000003 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 3825.5000000000005 72 V 80 H 3853.4000000000005 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 3825.5000000000005 72 V 80 H 3993.7000000000003 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 4458 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 4458 72 V 80 H 4134 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 4458 72 V 80 H 4299.1 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 4458 72 V 80 H 4473.500000000001 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 4458 72 V 80 H 4635.5 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 4458 72 V 80 H 4785.1 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 6553.100000000001 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 5015.700000000001 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5015.700000000001 116 V 124 H 4931.6 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5015.700000000001 116 V 124 H 5090.500000000001 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 5246.3 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 5392.8 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 5620.3 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5620.3 116 V 124 H 5539.3 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5620.3 116 V 124 H 5692 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 5830 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 5958.7 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 6087.4 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 6201.4 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 6327 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6327 116 V 124 H 6327 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 6452.599999999999 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6452.599999999999 116 V 124 H 6452.599999999999 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 6566.599999999999 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6566.599999999999 116 V 124 H 6566.599999999999 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 7110.5 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7110.5 116 V 124 H 6680.599999999999 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7110.5 116 V 124 H 6794.599999999999 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7110.5 116 V 124 H 7224.5 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7224.5 160 V 168 H 6910.9 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7224.5 160 V 168 H 7027.2 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7224.5 160 V 168 H 7141.2 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7224.5 160 V 168 H 7263.7 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7224.5 160 V 168 H 7391.599999999999 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7224.5 160 V 168 H 7525.7 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 7729.2 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7729.2 116 V 124 H 7672.2 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7672.2 160 V 168 H 7659.799999999999 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7729.2 116 V 124 H 7804 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 7920.3 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 7920.3 116 V 124 H 7920.3 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 8057.500000000001 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 8057.500000000001 116 V 124 H 8057.5 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 6553.100000000001 72 V 80 H 8192.400000000001 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 9155.900000000001 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9155.900000000001 72 V 80 H 8336.600000000002 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9155.900000000001 72 V 80 H 9165.2 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9165.2 116 V 124 H 8514.1 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9165.2 116 V 124 H 8766.400000000001 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 8766.400000000001 160 V 168 H 8685.400000000001 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 8766.400000000001 160 V 168 H 8847.400000000001 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9165.2 116 V 124 H 9006.300000000001 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9165.2 116 V 124 H 9168.300000000001 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9165.2 116 V 124 H 9429.900000000001 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9429.900000000001 160 V 168 H 9342.7 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9429.900000000001 160 V 168 H 9520.200000000003 V 176" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9165.2 116 V 124 H 9682.2 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9165.2 116 V 124 H 9831.800000000001 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 9155.900000000001 72 V 80 H 9984.500000000002 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 10303.500000000002 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 10303.500000000002 72 V 80 H 10121.7 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 10303.500000000002 72 V 80 H 10240.300000000001 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 10303.500000000002 72 V 80 H 10356.600000000002 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 10303.500000000002 72 V 80 H 10479.100000000002 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 5325.800000000001 28 V 36 H 10601.600000000002 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect x="5270.4000000000015" y="0" width="110.8" height="28" rx="6" fill="#1e40af" stroke="#2563eb" stroke-width="1.2"/>
+    <text x="5325.800000000001" y="18" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#fff">Shop dashboard</text>
+    <rect x="0" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="50" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">shopTitle</text>
+    <rect x="114" y="44" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="181.8" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashEditProfileBtn</text>
+    <rect x="263.6" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="313.6" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">logoutBtn</text>
+    <rect x="377.6" y="44" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="442.3" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashAddProductBtn</text>
+    <rect x="521" y="44" width="148" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="595" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashUpdateProductBtn</text>
+    <rect x="683" y="44" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="747.7" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashRecentSection</text>
+    <rect x="683" y="88" width="110.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="738.4" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashRecentList</text>
+    <rect x="1026" y="44" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1093.8" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashCatalogSection</text>
+    <rect x="826.4" y="88" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="891.1" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashCatalogFilter</text>
+    <rect x="969.8" y="88" width="123.2" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1031.3999999999999" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashCatalogCount</text>
+    <rect x="1107" y="88" width="117" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1165.5" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashCatalogList</text>
+    <rect x="1238" y="88" width="123.2" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1299.6" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashCatalogEmpty</text>
+    <rect x="2235.8" y="44" width="129.4" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="2300.5" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashProfileDialog</text>
+    <rect x="2238.9" y="88" width="123.2" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2300.5" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashProfilePanel</text>
+    <rect x="1375.2" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1425.2" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">shopPhoto</text>
+    <rect x="1489.2" y="132" width="148" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1563.2" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">shopPhotoPlaceholder</text>
+    <rect x="1651.2" y="132" width="110.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1706.6000000000001" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">shopPhotoInput</text>
+    <rect x="1776" y="132" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1843.8" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">fldLocationCountry</text>
+    <rect x="1925.6" y="132" width="117" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1984.1" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">fldLocationCity</text>
+    <rect x="2056.6" y="132" width="117" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2115.1" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">fldLocationArea</text>
+    <rect x="2187.6" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2237.6" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">fldPhone</text>
+    <rect x="2301.6" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2351.6" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">fldAddress</text>
+    <rect x="2415.6" y="132" width="104.60000000000001" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2467.9" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">shopMapPicker</text>
+    <rect x="2534.2" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2584.2" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">mapGeoBtn</text>
+    <rect x="2648.2" y="132" width="110.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2703.6" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">mapClearPinBtn</text>
+    <rect x="2773" y="132" width="110.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2828.4" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">mapCoordsLabel</text>
+    <rect x="2897.8" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="2947.8" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">fldLat</text>
+    <rect x="3011.8" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3061.8" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">fldLng</text>
+    <rect x="3125.8" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3175.8" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">saveProfile</text>
+    <rect x="3362.3" y="44" width="100" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="3412.3" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">brandDialog</text>
+    <rect x="3239.8" y="88" width="117" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3298.3" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">brandPickerList</text>
+    <rect x="3370.8" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3420.8" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">brandNewName</text>
+    <rect x="3484.8" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3534.8" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">brandAddBtn</text>
+    <rect x="3770.1000000000004" y="44" width="110.8" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="3825.5000000000005" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">categoryDialog</text>
+    <rect x="3598.8" y="88" width="172.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3685.2000000000003" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">categoryDialogBrandLabel</text>
+    <rect x="3785.6000000000004" y="88" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3853.4000000000005" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">categoryPickerList</text>
+    <rect x="3935.2000000000003" y="88" width="117" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="3993.7000000000003" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">categoryBackBtn</text>
+    <rect x="4387.1" y="44" width="141.8" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="4458" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productPickerDialog</text>
+    <rect x="4066.2000000000003" y="88" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="4134" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productPickerBrand</text>
+    <rect x="4215.8" y="88" width="166.6" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="4299.1" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productPickerContextSep</text>
+    <rect x="4396.400000000001" y="88" width="154.20000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="4473.500000000001" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productPickerCategory</text>
+    <rect x="4564.6" y="88" width="141.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="4635.5" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productPickerNewBtn</text>
+    <rect x="4720.400000000001" y="88" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="4785.1" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productPickerList</text>
+    <rect x="6500.800000000001" y="44" width="104.60000000000001" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="6553.100000000001" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialog</text>
+    <rect x="4932.400000000001" y="88" width="166.6" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5015.700000000001" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogContextRow</text>
+    <rect x="4863.8" y="132" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="4931.6" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogBrand</text>
+    <rect x="5013.400000000001" y="132" width="154.20000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5090.500000000001" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogCategory</text>
+    <rect x="5181.6" y="88" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5246.3" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogStep</text>
+    <rect x="5325" y="88" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5392.8" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogTitle</text>
+    <rect x="5552.5" y="88" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5620.3" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogIntro</text>
+    <rect x="5474.6" y="132" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5539.3" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogHint</text>
+    <rect x="5618" y="132" width="148" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5692" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">productDialogAddHint</text>
+    <rect x="5780" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5830" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdProductId</text>
+    <rect x="5894" y="88" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="5958.7" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdCurrentPhotoUrl</text>
+    <rect x="6037.4" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6087.4" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdBrandId</text>
+    <rect x="6151.4" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6201.4" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdCategoryId</text>
+    <rect x="6274.7" y="88" width="104.60000000000001" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6327" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdCategoryRow</text>
+    <rect x="6265.4" y="132" width="123.2" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6327" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdCategorySelect</text>
+    <rect x="6402.599999999999" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6452.599999999999" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdNameBlock</text>
+    <rect x="6402.599999999999" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6452.599999999999" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdName</text>
+    <rect x="6516.599999999999" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6566.599999999999" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdDescBlock</text>
+    <rect x="6516.599999999999" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6566.599999999999" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdDesc</text>
+    <rect x="7060.5" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7110.5" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdAddFields</text>
+    <rect x="6630.599999999999" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6680.599999999999" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdCapacity</text>
+    <rect x="6744.599999999999" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6794.599999999999" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdPrice</text>
+    <rect x="7174.5" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7224.5" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdRalBlock</text>
+    <rect x="6858.599999999999" y="176" width="104.60000000000001" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="6910.9" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdRalSelected</text>
+    <rect x="6977.2" y="176" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7027.2" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdRalCode</text>
+    <rect x="7091.2" y="176" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7141.2" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdRalGrid</text>
+    <rect x="7205.2" y="176" width="117" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7263.7" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdRalCustomName</text>
+    <rect x="7336.2" y="176" width="110.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7391.599999999999" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdRalCustomHex</text>
+    <rect x="7461" y="176" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7525.7" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdRalCustomAddBtn</text>
+    <rect x="7679.2" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7729.2" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdPhotoBlock</text>
+    <rect x="7604.4" y="132" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7672.2" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdPhotoPreviewWrap</text>
+    <rect x="7604.4" y="176" width="110.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7659.799999999999" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdPhotoPreview</text>
+    <rect x="7754" y="132" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7804" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdPhoto</text>
+    <rect x="7870.3" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7920.3" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdPickWrap</text>
+    <rect x="7868" y="132" width="104.60000000000001" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="7920.3" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdPickProduct</text>
+    <rect x="7995.900000000001" y="88" width="123.2" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8057.500000000001" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdUpdateListings</text>
+    <rect x="7986.6" y="132" width="141.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8057.5" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdUpdateListingRows</text>
+    <rect x="8142.400000000001" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8192.400000000001" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pdSubmit</text>
+    <rect x="9081.900000000001" y="44" width="148" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="9155.900000000001" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickDialog</text>
+    <rect x="8256.400000000001" y="88" width="160.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8336.600000000002" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickListWrap</text>
+    <rect x="9097.400000000001" y="88" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9165.2" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickEdit</text>
+    <rect x="8430.800000000001" y="132" width="166.6" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8514.1" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickEditLabel</text>
+    <rect x="8686.2" y="132" width="160.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8766.400000000001" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickCapBlock</text>
+    <rect x="8611.400000000001" y="176" width="148" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8685.400000000001" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickCapLtr</text>
+    <rect x="8773.400000000001" y="176" width="148" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="8847.400000000001" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickCapRal</text>
+    <rect x="8935.400000000001" y="132" width="141.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9006.300000000001" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickInput</text>
+    <rect x="9091.2" y="132" width="154.20000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9168.300000000001" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickRalCode</text>
+    <rect x="9355.900000000001" y="132" width="148" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9429.900000000001" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickRalBtn</text>
+    <rect x="9259.400000000001" y="176" width="166.6" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9342.7" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickRalSwatch</text>
+    <rect x="9440.000000000002" y="176" width="160.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9520.200000000003" y="194" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickRalLabel</text>
+    <rect x="9614.400000000001" y="132" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9682.2" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickBack</text>
+    <rect x="9764.000000000002" y="132" width="135.60000000000002" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9831.800000000001" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickSave</text>
+    <rect x="9913.600000000002" y="88" width="141.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="9984.500000000002" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">dashPriceQuickEmpty</text>
+    <rect x="10245.000000000002" y="44" width="117" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="10303.500000000002" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">ralPickerDialog</text>
+    <rect x="10069.400000000001" y="88" width="104.60000000000001" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="10121.7" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">ralPickerGrid</text>
+    <rect x="10188.000000000002" y="88" width="104.60000000000001" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="10240.300000000001" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">ralCustomName</text>
+    <rect x="10306.600000000002" y="88" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="10356.600000000002" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">ralCustomHex</text>
+    <rect x="10420.600000000002" y="88" width="117" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="10479.100000000002" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">ralCustomAddBtn</text>
+    <rect x="10551.600000000002" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="10601.600000000002" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">toastTpl</text>
+  </g>
+</svg>

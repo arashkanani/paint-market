@@ -1,0 +1,895 @@
+{
+  "id": "paint-market",
+  "tag": "app",
+  "label": "Paint Market",
+  "children": [
+    {
+      "id": "common.js",
+      "tag": "script",
+      "label": "Global (common.js)",
+      "children": [
+        {
+          "id": "pmGeoSettingsDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "geo-form",
+              "tag": "form",
+              "label": "form[method=dialog]",
+              "children": [
+                {
+                  "id": "selCountry",
+                  "tag": "select",
+                  "label": "select.paint-market-country",
+                  "children": []
+                },
+                {
+                  "id": "selCity",
+                  "tag": "select",
+                  "label": "select.paint-market-city",
+                  "children": []
+                },
+                {
+                  "id": "selLang",
+                  "tag": "select",
+                  "label": "select.paint-market-lang",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "admin.html",
+      "tag": "page",
+      "label": "Admin panel",
+      "children": [
+        {
+          "id": "logoutBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "customerToggleBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "customerToggleStatus",
+          "tag": "p",
+          "children": []
+        },
+        {
+          "id": "shopListLuToggleBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "shopListLuToggleStatus",
+          "tag": "p",
+          "children": []
+        },
+        {
+          "id": "brandList",
+          "tag": "div",
+          "children": []
+        },
+        {
+          "id": "adMedia",
+          "tag": "input",
+          "children": []
+        },
+        {
+          "id": "adKind",
+          "tag": "select",
+          "children": []
+        },
+        {
+          "id": "adDuration",
+          "tag": "input",
+          "children": []
+        },
+        {
+          "id": "adUploadBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "adTable",
+          "tag": "div",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "dashboard.html",
+      "tag": "page",
+      "label": "Shop dashboard",
+      "children": [
+        {
+          "id": "shopTitle",
+          "tag": "p",
+          "children": []
+        },
+        {
+          "id": "dashEditProfileBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "logoutBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "dashAddProductBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "dashUpdateProductBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "dashRecentSection",
+          "tag": "section",
+          "children": [
+            {
+              "id": "dashRecentList",
+              "tag": "div",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "dashCatalogSection",
+          "tag": "section",
+          "children": [
+            {
+              "id": "dashCatalogFilter",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "dashCatalogCount",
+              "tag": "p",
+              "children": []
+            },
+            {
+              "id": "dashCatalogList",
+              "tag": "div",
+              "children": []
+            },
+            {
+              "id": "dashCatalogEmpty",
+              "tag": "p",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "dashProfileDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "dashProfilePanel",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "shopPhoto",
+                  "tag": "img",
+                  "children": []
+                },
+                {
+                  "id": "shopPhotoPlaceholder",
+                  "tag": "span",
+                  "children": []
+                },
+                {
+                  "id": "shopPhotoInput",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "fldLocationCountry",
+                  "tag": "select",
+                  "children": []
+                },
+                {
+                  "id": "fldLocationCity",
+                  "tag": "select",
+                  "children": []
+                },
+                {
+                  "id": "fldLocationArea",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "fldPhone",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "fldAddress",
+                  "tag": "textarea",
+                  "children": []
+                },
+                {
+                  "id": "shopMapPicker",
+                  "tag": "div",
+                  "children": []
+                },
+                {
+                  "id": "mapGeoBtn",
+                  "tag": "button",
+                  "children": []
+                },
+                {
+                  "id": "mapClearPinBtn",
+                  "tag": "button",
+                  "children": []
+                },
+                {
+                  "id": "mapCoordsLabel",
+                  "tag": "span",
+                  "children": []
+                },
+                {
+                  "id": "fldLat",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "fldLng",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "saveProfile",
+                  "tag": "button",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "brandDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "brandPickerList",
+              "tag": "div",
+              "children": []
+            },
+            {
+              "id": "brandNewName",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "brandAddBtn",
+              "tag": "button",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "categoryDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "categoryDialogBrandLabel",
+              "tag": "p",
+              "children": []
+            },
+            {
+              "id": "categoryPickerList",
+              "tag": "div",
+              "children": []
+            },
+            {
+              "id": "categoryBackBtn",
+              "tag": "button",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "productPickerDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "productPickerBrand",
+              "tag": "button",
+              "children": []
+            },
+            {
+              "id": "productPickerContextSep",
+              "tag": "span",
+              "children": []
+            },
+            {
+              "id": "productPickerCategory",
+              "tag": "button",
+              "children": []
+            },
+            {
+              "id": "productPickerNewBtn",
+              "tag": "button",
+              "children": []
+            },
+            {
+              "id": "productPickerList",
+              "tag": "div",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "productDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "productDialogContextRow",
+              "tag": "h2",
+              "children": [
+                {
+                  "id": "productDialogBrand",
+                  "tag": "button",
+                  "children": []
+                },
+                {
+                  "id": "productDialogCategory",
+                  "tag": "button",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "productDialogStep",
+              "tag": "p",
+              "children": []
+            },
+            {
+              "id": "productDialogTitle",
+              "tag": "h2",
+              "children": []
+            },
+            {
+              "id": "productDialogIntro",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "productDialogHint",
+                  "tag": "p",
+                  "children": []
+                },
+                {
+                  "id": "productDialogAddHint",
+                  "tag": "p",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "pdProductId",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "pdCurrentPhotoUrl",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "pdBrandId",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "pdCategoryId",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "pdCategoryRow",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "pdCategorySelect",
+                  "tag": "select",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "pdNameBlock",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "pdName",
+                  "tag": "input",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "pdDescBlock",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "pdDesc",
+                  "tag": "textarea",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "pdAddFields",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "pdCapacity",
+                  "tag": "select",
+                  "children": []
+                },
+                {
+                  "id": "pdPrice",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "pdRalBlock",
+                  "tag": "div",
+                  "children": [
+                    {
+                      "id": "pdRalSelected",
+                      "tag": "p",
+                      "children": []
+                    },
+                    {
+                      "id": "pdRalCode",
+                      "tag": "input",
+                      "children": []
+                    },
+                    {
+                      "id": "pdRalGrid",
+                      "tag": "div",
+                      "children": []
+                    },
+                    {
+                      "id": "pdRalCustomName",
+                      "tag": "input",
+                      "children": []
+                    },
+                    {
+                      "id": "pdRalCustomHex",
+                      "tag": "input",
+                      "children": []
+                    },
+                    {
+                      "id": "pdRalCustomAddBtn",
+                      "tag": "button",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "pdPhotoBlock",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "pdPhotoPreviewWrap",
+                  "tag": "div",
+                  "children": [
+                    {
+                      "id": "pdPhotoPreview",
+                      "tag": "img",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "pdPhoto",
+                  "tag": "input",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "pdPickWrap",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "pdPickProduct",
+                  "tag": "select",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "pdUpdateListings",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "pdUpdateListingRows",
+                  "tag": "div",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "pdSubmit",
+              "tag": "button",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "dashPriceQuickDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "dashPriceQuickListWrap",
+              "tag": "div",
+              "children": []
+            },
+            {
+              "id": "dashPriceQuickEdit",
+              "tag": "div",
+              "children": [
+                {
+                  "id": "dashPriceQuickEditLabel",
+                  "tag": "p",
+                  "children": []
+                },
+                {
+                  "id": "dashPriceQuickCapBlock",
+                  "tag": "div",
+                  "children": [
+                    {
+                      "id": "dashPriceQuickCapLtr",
+                      "tag": "span",
+                      "children": []
+                    },
+                    {
+                      "id": "dashPriceQuickCapRal",
+                      "tag": "span",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "dashPriceQuickInput",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "dashPriceQuickRalCode",
+                  "tag": "input",
+                  "children": []
+                },
+                {
+                  "id": "dashPriceQuickRalBtn",
+                  "tag": "button",
+                  "children": [
+                    {
+                      "id": "dashPriceQuickRalSwatch",
+                      "tag": "span",
+                      "children": []
+                    },
+                    {
+                      "id": "dashPriceQuickRalLabel",
+                      "tag": "span",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "dashPriceQuickBack",
+                  "tag": "button",
+                  "children": []
+                },
+                {
+                  "id": "dashPriceQuickSave",
+                  "tag": "button",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "dashPriceQuickEmpty",
+              "tag": "p",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "ralPickerDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "ralPickerGrid",
+              "tag": "div",
+              "children": []
+            },
+            {
+              "id": "ralCustomName",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "ralCustomHex",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "ralCustomAddBtn",
+              "tag": "button",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "toastTpl",
+          "tag": "template",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "index.html",
+      "tag": "page",
+      "label": "Hub",
+      "children": [
+        {
+          "id": "searchWrap",
+          "tag": "div",
+          "children": [
+            {
+              "id": "searchInput",
+              "tag": "input",
+              "children": []
+            },
+            {
+              "id": "suggestPanel",
+              "tag": "div",
+              "children": []
+            },
+            {
+              "id": "searchMapPricesBtn",
+              "tag": "button",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "phaseBanner",
+          "tag": "section",
+          "children": [
+            {
+              "id": "phaseBannerTitle",
+              "tag": "p",
+              "children": []
+            },
+            {
+              "id": "phaseBannerBody",
+              "tag": "p",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "homeAdSection",
+          "tag": "section",
+          "children": [
+            {
+              "id": "adCarouselStrip",
+              "tag": "div",
+              "children": []
+            },
+            {
+              "id": "adCarouselPrev",
+              "tag": "button",
+              "children": []
+            },
+            {
+              "id": "adCarouselNext",
+              "tag": "button",
+              "children": []
+            },
+            {
+              "id": "adCarouselDots",
+              "tag": "div",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "indexShopsScroll",
+          "tag": "div",
+          "children": [
+            {
+              "id": "shopsSection",
+              "tag": "section",
+              "children": [
+                {
+                  "id": "shopsSectionTitle",
+                  "tag": "p",
+                  "children": []
+                },
+                {
+                  "id": "shopGrid",
+                  "tag": "div",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "lockedShops",
+              "tag": "section",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "searchPriceMapDialog",
+          "tag": "dialog",
+          "children": [
+            {
+              "id": "searchPriceMapTitle",
+              "tag": "h2",
+              "children": []
+            },
+            {
+              "id": "searchPriceMapAllBrandsWrap",
+              "tag": "label",
+              "children": [
+                {
+                  "id": "searchPriceMapAllBrands",
+                  "tag": "input",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "searchPriceMapClose",
+              "tag": "button",
+              "children": []
+            },
+            {
+              "id": "searchPriceMapStatus",
+              "tag": "p",
+              "children": []
+            },
+            {
+              "id": "searchPriceMapCanvas",
+              "tag": "div",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "login.html",
+      "tag": "page",
+      "label": "Shop login",
+      "children": [
+        {
+          "id": "form",
+          "tag": "form",
+          "children": []
+        },
+        {
+          "id": "error",
+          "tag": "p",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "register.html",
+      "tag": "page",
+      "label": "Shop register",
+      "children": [
+        {
+          "id": "form",
+          "tag": "form",
+          "children": []
+        },
+        {
+          "id": "error",
+          "tag": "p",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "shop.html",
+      "tag": "page",
+      "label": "Shop showroom",
+      "children": [
+        {
+          "id": "shopName",
+          "tag": "h1",
+          "children": []
+        },
+        {
+          "id": "shopFavBtn",
+          "tag": "button",
+          "children": []
+        },
+        {
+          "id": "heroImg",
+          "tag": "img",
+          "children": []
+        },
+        {
+          "id": "locationText",
+          "tag": "p",
+          "children": []
+        },
+        {
+          "id": "addressText",
+          "tag": "p",
+          "children": []
+        },
+        {
+          "id": "lastUpdated",
+          "tag": "p",
+          "children": []
+        },
+        {
+          "id": "shopMapInfo",
+          "tag": "div",
+          "children": [
+            {
+              "id": "openExtMap",
+              "tag": "a",
+              "children": []
+            },
+            {
+              "id": "openDirectionsMap",
+              "tag": "a",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "popularPickWrap",
+          "tag": "div",
+          "children": [
+            {
+              "id": "popularPickStrip",
+              "tag": "div",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "errorBox",
+          "tag": "div",
+          "children": []
+        },
+        {
+          "id": "sortSelect",
+          "tag": "select",
+          "children": []
+        },
+        {
+          "id": "listingMount",
+          "tag": "div",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

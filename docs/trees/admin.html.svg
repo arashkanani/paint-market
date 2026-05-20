@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1467.6" height="172" viewBox="0 0 1467.6 172">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="24" y="18" font-family="Segoe UI,system-ui,sans-serif" font-size="14" font-weight="600" fill="#0f172a">Paint Market — UI element tree (by id)</text>
+  <text x="24" y="34" font-family="Segoe UI,system-ui,sans-serif" font-size="10" fill="#64748b">Generated 2026-05-20 · node scripts/build-objects-tree.mjs</text>
+  <g transform="translate(24, 48)">
+    <path d="M 709.8 28 V 36 H 50 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 178.7 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 331.4 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 490.29999999999995 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 655.4000000000001 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 799.6 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 913.6 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 1027.6 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 1141.6 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 1255.6 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 709.8 28 V 36 H 1369.6 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect x="659.8" y="0" width="100" height="28" rx="6" fill="#1e40af" stroke="#2563eb" stroke-width="1.2"/>
+    <text x="709.8" y="18" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#fff">Admin panel</text>
+    <rect x="0" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="50" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">logoutBtn</text>
+    <rect x="114" y="44" width="129.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="178.7" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">customerToggleBtn</text>
+    <rect x="257.4" y="44" width="148" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="331.4" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">customerToggleStatus</text>
+    <rect x="419.4" y="44" width="141.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="490.29999999999995" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">shopListLuToggleBtn</text>
+    <rect x="575.2" y="44" width="160.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="655.4000000000001" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">shopListLuToggleStatus</text>
+    <rect x="749.6" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="799.6" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">brandList</text>
+    <rect x="863.6" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="913.6" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">adMedia</text>
+    <rect x="977.6" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1027.6" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">adKind</text>
+    <rect x="1091.6" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1141.6" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">adDuration</text>
+    <rect x="1205.6" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1255.6" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">adUploadBtn</text>
+    <rect x="1319.6" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="1369.6" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">adTable</text>
+  </g>
+</svg>

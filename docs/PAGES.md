@@ -278,6 +278,25 @@ Inside that dialog: country / city / language are `<select class="paint-market-c
 
 ## Object tree diagrams (graphical)
 
+### Standalone SVG / HTML (auto-generated)
+
+Open **`docs/objects-tree.html`** in a browser for an interactive tree plus diagrams. SVG files are generated from your HTML:
+
+| File | Purpose |
+| ---- | ------- |
+| [`docs/objects-tree.html`](objects-tree.html) | Collapsible tree + diagram picker |
+| [`docs/objects-tree-overview.svg`](objects-tree-overview.svg) | All pages, dialogs, main-surface summary |
+| [`docs/trees/*.svg`](trees/) | Full nested tree per page (e.g. `dashboard.html.svg`) |
+| [`docs/objects-tree.json`](objects-tree.json) | Machine-readable tree |
+
+Regenerate after HTML changes:
+
+```bash
+node scripts/build-objects-tree.mjs
+```
+
+### Mermaid (in this doc)
+
 These **Mermaid** trees match the `id` / `name` inventory above. Render this file in a Markdown preview that supports Mermaid (GitHub, VS Code, Cursor).
 
 ### Overview — pages and dialogs

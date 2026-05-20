@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="613" height="260" viewBox="0 0 613 260">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="24" y="18" font-family="Segoe UI,system-ui,sans-serif" font-size="14" font-weight="600" fill="#0f172a">Paint Market — UI element tree (by id)</text>
+  <text x="24" y="34" font-family="Segoe UI,system-ui,sans-serif" font-size="10" fill="#64748b">Generated 2026-05-20 · node scripts/build-objects-tree.mjs</text>
+  <g transform="translate(24, 48)">
+    <path d="M 282.5 28 V 36 H 282.5 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 282.5 72 V 80 H 282.5 V 88" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 282.5 116 V 124 H 95.7 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 282.5 116 V 124 H 291.8 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 282.5 116 V 124 H 478.6 V 132" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect x="214.7" y="0" width="135.60000000000002" height="28" rx="6" fill="#475569" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="282.5" y="18" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">Global (common.js)</text>
+    <text x="282.5" y="39" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#64748b">#common.js</text>
+    <rect x="211.6" y="44" width="141.8" height="28" rx="6" fill="#7c3aed" stroke="#6d28d9" stroke-width="1.2"/>
+    <text x="282.5" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">pmGeoSettingsDialog</text>
+    <rect x="211.6" y="88" width="141.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="282.5" y="106" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">form[method=dialog]</text>
+    <text x="282.5" y="127" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#64748b">#geo-form</text>
+    <rect x="0" y="132" width="191.4" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="95.7" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">select.paint-market-country</text>
+    <text x="95.7" y="171" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#64748b">#selCountry</text>
+    <rect x="205.4" y="132" width="172.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="291.8" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">select.paint-market-city</text>
+    <text x="291.8" y="171" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#64748b">#selCity</text>
+    <rect x="392.20000000000005" y="132" width="172.8" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="478.6" y="150" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">select.paint-market-lang</text>
+    <text x="478.6" y="171" text-anchor="middle" font-family="Consolas,monospace" font-size="9" fill="#64748b">#selLang</text>
+  </g>
+</svg>

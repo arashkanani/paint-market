@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="262" height="172" viewBox="0 0 262 172">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="24" y="18" font-family="Segoe UI,system-ui,sans-serif" font-size="14" font-weight="600" fill="#0f172a">Paint Market — UI element tree (by id)</text>
+  <text x="24" y="34" font-family="Segoe UI,system-ui,sans-serif" font-size="10" fill="#64748b">Generated 2026-05-20 · node scripts/build-objects-tree.mjs</text>
+  <g transform="translate(24, 48)">
+    <path d="M 107 28 V 36 H 50 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <path d="M 107 28 V 36 H 164 V 44" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect x="57" y="0" width="100" height="28" rx="6" fill="#1e40af" stroke="#2563eb" stroke-width="1.2"/>
+    <text x="107" y="18" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#fff">Shop login</text>
+    <rect x="0" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="50" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">form</text>
+    <rect x="114" y="44" width="100" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+    <text x="164" y="62" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-size="11" fill="#0f172a">error</text>
+  </g>
+</svg>
