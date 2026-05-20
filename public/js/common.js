@@ -177,6 +177,9 @@ const PaintApi = {
   putListing(body) {
     return this.request("/shop/listings", { method: "PUT", body });
   },
+  addShopCustomColor(body) {
+    return this.request("/shop/custom-colors", { method: "POST", body });
+  },
   patchShopProfile(body) {
     return this.request("/shop/profile", { method: "PATCH", body });
   },
@@ -447,6 +450,62 @@ function paintMarketTf(key, vars) {
   const s = String(paintMarketT(key));
   if (!vars) return s;
   return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? String(vars[k]) : `{${k}}`));
+}
+
+const PAINT_MARKET_CATEGORY_SLUG_I18N = {
+  building_paints: "shop_pill_building",
+  steel_workshop_paints: "shop_pill_steel",
+  carpentry_workshop_paints: "shop_pill_carpentry",
+  thinner: "shop_pill_thinner",
+  industrial: "shop_pill_industrial"
+};
+
+const PAINT_MARKET_CATEGORY_ICON_FILES = {
+  building_paints: "building.png",
+  steel_workshop_paints: "steel.png",
+  carpentry_workshop_paints: "wood.png",
+  thinner: "thinner.png",
+  industrial: "industrial.png"
+};
+
+function paintMarketCategoryIconUrl(slug) {
+  const file = PAINT_MARKET_CATEGORY_ICON_FILES[String(slug || "")];
+  if (!file) return "";
+  return `/paint/img/categories/${file}`;
+}
+
+function paintMarketEscapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[c]);
+}
+
+function paintMarketCategoryIconImgHtml(slug, className) {
+  const url = paintMarketCategoryIconUrl(slug);
+  if (!url) return "";
+  const cls = className ? paintMarketEscapeHtml(className) : "pm-cat-icon";
+  return `<img class="${cls}" src="${paintMarketEscapeHtml(url)}" alt="" loading="lazy" />`;
+}
+
+/** Inner HTML for picker header brand/category buttons (label is plain text). */
+function paintMarketContextHitInnerHtml(label, opts) {
+  const o = opts || {};
+  const icon = o.categorySlug
+    ? paintMarketCategoryIconImgHtml(o.categorySlug, o.iconClass || "pm-context-hit__icon")
+    : "";
+  return `<span class="pm-context-hit__inner">${icon}<span class="pm-context-hit__label">${paintMarketEscapeHtml(label)}</span></span>`;
+}
+
+function paintMarketCategoryLabel(slug, name) {
+  const k = String(slug || "");
+  const i18nKey = PAINT_MARKET_CATEGORY_SLUG_I18N[k];
+  if (i18nKey) return paintMarketT(i18nKey);
+  const n = name != null ? String(name).trim() : "";
+  return n || k;
 }
 
 const PAINT_MARKET_FAV_K = "paint_market_favorite_shops";
@@ -1059,6 +1118,11 @@ window.paintMarketParseShopLocationText = paintMarketParseShopLocationText;
 window.paintMarketShopCityLabel = paintMarketShopCityLabel;
 window.paintMarketT = paintMarketT;
 window.paintMarketTf = paintMarketTf;
+window.paintMarketCategoryLabel = paintMarketCategoryLabel;
+window.paintMarketCategoryIconUrl = paintMarketCategoryIconUrl;
+window.paintMarketCategoryIconImgHtml = paintMarketCategoryIconImgHtml;
+window.paintMarketContextHitInnerHtml = paintMarketContextHitInnerHtml;
+window.paintMarketEscapeHtml = paintMarketEscapeHtml;
 window.paintMarketFavoritesGet = paintMarketFavoritesGet;
 window.paintMarketFavoriteIs = paintMarketFavoriteIs;
 window.paintMarketFavoriteToggle = paintMarketFavoriteToggle;

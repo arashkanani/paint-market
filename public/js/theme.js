@@ -122,6 +122,23 @@
     }
   };
 
+  /** Teal → blue range only (dashboard product cards). */
+  function tealBlueHueFromSlug(slug, salt) {
+    const h = slugHue(String(salt || "") + String(slug || ""));
+    return 152 + (h % 54);
+  }
+
+  function tealBlueBarTriple(slug) {
+    const h1 = tealBlueHueFromSlug(slug, "brand");
+    const h2 = Math.min(h1 + 14, 210);
+    const h3 = Math.min(h1 + 32, 218);
+    return [
+      `hsl(${h1}, 58%, 26%)`,
+      `hsl(${h2}, 62%, 38%)`,
+      `hsl(${h3}, 64%, 48%)`
+    ];
+  }
+
   function brandTriple(slug) {
     const k = String(slug || "").toLowerCase();
     if (BRANDS[k]) return BRANDS[k];
@@ -159,6 +176,18 @@
   /** Same main gradient as `brandStripeFragment` / `shopBrandDivider` */
   function brandBarGradient(slug) {
     return linearBar(brandTriple(slug).bar);
+  }
+
+  /**
+   * Dashboard catalogue + update list: brands differ only by blue/green mix;
+   * category tints stay in the same family (no rainbow).
+   */
+  function catalogCardTheme(brandSlug, categorySlug) {
+    const brandGrad = linearBar(tealBlueBarTriple(brandSlug));
+    const catH = tealBlueHueFromSlug(categorySlug, "cat");
+    const catTitle = `hsl(${catH}, 48%, 96%)`;
+    const catAccent = `hsl(${Math.min(catH + 10, 215)}, 72%, 78%)`;
+    return { brandGrad, catTitle, catAccent };
   }
 
   /** Dashboard picker: same gradient tile style as brands */
@@ -258,6 +287,7 @@
   global.PaintTheme = {
     brandTriple,
     brandBarGradient,
+    catalogCardTheme,
     categoryBarGradient,
     categoryTheme,
     categoryHeaderFragment,

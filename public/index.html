@@ -169,6 +169,7 @@
 
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>
+  <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
@@ -331,6 +332,22 @@
       return `${n}L`;
     }
 
+    function indexSuggestCapRalHtml(p) {
+      const cap =
+        p.capacity_ltr != null && Number.isFinite(Number(p.capacity_ltr))
+          ? formatMapCapacity(p.capacity_ltr)
+          : "";
+      const hex =
+        p.ral_hex ||
+        (p.ral_code && typeof paintMarketRalHex === "function" ? paintMarketRalHex(p.ral_code, []) : null);
+      const title = esc(p.ral_label || p.ral_code || "");
+      const ralDot = hex
+        ? `<span class="pm-card-ral-swatch index-suggest-ral" style="background:${esc(hex)}"${title ? ` title="${title}"` : ""}></span>`
+        : "";
+      if (!cap && !ralDot) return "";
+      return `<span class="index-suggest-cap-ral">${cap ? `<span class="index-suggest-cap-ral__cap">${esc(cap)}</span>` : ""}${ralDot}</span>`;
+    }
+
     function clearSearchPriceMapLayers() {
       if (!indexSearchPriceMap) return;
       for (const layer of indexSearchPriceLayers) {
@@ -354,8 +371,15 @@
               ? PaintTheme.brandBarGradient(o.brandSlug || "")
               : "#0f766e";
           const price = formatMapPriceCompact(o.priceAmount, o.currency);
+          const ralHex =
+            o.ral_hex ||
+            (o.ralCode && typeof paintMarketRalHex === "function" ? paintMarketRalHex(o.ralCode, []) : null);
+          const ralTitle = esc(o.ral_label || o.ralCode || "");
+          const ralSwatch = ralHex
+            ? `<span class="pm-card-ral-swatch pm-map-price-ral" style="background:${esc(ralHex)}"${ralTitle ? ` title="${ralTitle}"` : ""}></span>`
+            : "";
           return `<div class="pm-map-price-chip" style="background:${esc(bg)}">
-            <span class="pm-map-price-cap">${esc(o.brandName || "")}·${esc(formatMapCapacity(o.capacityLtr))}</span>
+            <span class="pm-map-price-cap">${esc(o.brandName || "")}·${esc(formatMapCapacity(o.capacityLtr))}${ralSwatch}</span>
             <span class="pm-map-price-amt"><span class="pm-map-price-num">${esc(price.num)}</span>${
             price.cur ? `<span class="pm-map-price-cur">${esc(price.cur)}</span>` : ""
           }</span>
@@ -400,12 +424,17 @@
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
         const marker = L.marker([lat, lng], { icon: createPriceMarkerIcon(offers) });
         const lines = offers
-          .map(
-            (o) =>
-              `<div class="text-sm"><span class="font-semibold">${esc(o.brandName || "")}</span> · ${esc(
-                o.productName || ""
-              )} · ${esc(formatMapCapacity(o.capacityLtr))} — ${esc(formatMapPrice(o.priceAmount, o.currency))}</div>`
-          )
+          .map((o) => {
+            const ralHex =
+              o.ral_hex ||
+              (o.ralCode && typeof paintMarketRalHex === "function" ? paintMarketRalHex(o.ralCode, []) : null);
+            const ralDot = ralHex
+              ? `<span class="pm-card-ral-swatch index-suggest-ral" style="background:${esc(ralHex)}" title="${esc(o.ral_label || o.ralCode || "")}"></span>`
+              : "";
+            return `<div class="text-sm flex flex-wrap items-center gap-1"><span class="font-semibold">${esc(o.brandName || "")}</span> · ${esc(
+              o.productName || ""
+            )} · <span class="inline-flex flex-col items-center gap-0.5">${esc(formatMapCapacity(o.capacityLtr))}${ralDot}</span> — ${esc(formatMapPrice(o.priceAmount, o.currency))}</div>`;
+          })
           .join("");
         marker.bindPopup(
           `<div class="space-y-1">
@@ -843,9 +872,16 @@
         </div>`);
         for (const p of data.products) {
           parts.push(`<div class="flex gap-2 items-stretch border-t border-slate-100">
-            <div class="flex-1 min-w-0 px-3 py-2 text-sm">
-              <div class="font-medium text-slate-900">${esc(p.name)}</div>
-              <div class="text-xs text-slate-500">${esc(p.brand_name)} · ${esc(p.category_name)}</div>
+            <div class="flex-1 min-w-0 px-3 py-2 text-sm flex gap-2 items-center">
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-slate-900">${esc(p.name)}</div>
+                <div class="text-xs text-slate-500 flex flex-wrap items-center gap-x-1 gap-y-0.5">
+                <span>${esc(p.brand_name)}</span>
+                <span class="text-slate-300" aria-hidden="true">·</span>
+                <span class="index-suggest-cat">${paintMarketCategoryIconImgHtml(p.category_slug, "pm-cat-icon pm-cat-icon--xs")}<span>${esc(paintMarketCategoryLabel(p.category_slug, p.category_name))}</span></span>
+                </div>
+              </div>
+              ${indexSuggestCapRalHtml(p)}
             </div>
             <button type="button" class="index-product-map shrink-0 flex items-center px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-teal-800 bg-teal-50 hover:bg-teal-100 border-l border-teal-100" data-product-id="${esc(String(p.id))}" title="${esc(paintMarketT("index_search_map_for_product"))}">${esc(paintMarketT("index_search_map_prices"))}</button>
           </div>`);

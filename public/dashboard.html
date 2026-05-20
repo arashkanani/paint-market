@@ -2,14 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Shop dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
-    body { font-family: "DM Sans", system-ui, sans-serif; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      overflow-x: hidden;
+      padding-left: env(safe-area-inset-left, 0);
+      padding-right: env(safe-area-inset-right, 0);
+    }
     .pm-dash-price-quick-scroll {
       display: flex;
       flex-wrap: wrap;
@@ -111,6 +116,7 @@
       color: #f8fafc;
     }
     .pm-dash-picker-header__text {
+      flex: 1;
       min-width: 0;
     }
     .pm-dash-picker-step {
@@ -216,6 +222,40 @@
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       overflow: hidden;
+    }
+    .pm-dash-picker-card--category {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.35rem;
+      padding: 0.5rem 0.35rem 0.55rem;
+      min-height: 5.5rem;
+      background: linear-gradient(180deg, #ffffff 0%, #f0fdfa 100%) !important;
+      border: 1px solid rgba(13, 148, 136, 0.22) !important;
+      color: #0f766e;
+      text-shadow: none;
+    }
+    .pm-dash-picker-card--category:hover {
+      border-color: rgba(13, 148, 136, 0.45) !important;
+    }
+    .pm-dash-picker-card__cat-icon {
+      width: 3.25rem;
+      height: 3.25rem;
+      object-fit: contain;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+    .pm-dash-picker-card__cat-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1.15;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
     }
     .pm-dash-picker-card--product {
       display: flex;
@@ -357,7 +397,10 @@
       max-width: min(92vw, 28rem);
     }
     .pm-dash-picker-dialog--form {
-      max-width: min(92vw, 26rem);
+      max-width: min(96vw, 34rem);
+    }
+    .pm-dash-picker-dialog--form .pm-dash-picker-scroll {
+      max-height: min(68dvh, 560px);
     }
     .pm-dash-picker-dialog--form .pm-dash-picker-body {
       max-height: none;
@@ -452,7 +495,7 @@
       align-items: stretch;
       justify-content: flex-start;
       padding: 0;
-      aspect-ratio: 5 / 3;
+      aspect-ratio: 1 / 1;
     }
     .pm-dash-catalog-card__top {
       display: flex;
@@ -502,13 +545,54 @@
     .pm-dash-catalog-card__sep {
       opacity: 0.55;
     }
-    .pm-dash-catalog-card__img {
+    .pm-dash-catalog-card__img-wrap {
+      position: relative;
       flex: 1;
       min-height: 0;
-      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--pm-card-photo-inset, 0.35rem);
+      background: #ffffff;
+      overflow: hidden;
+    }
+    .pm-dash-catalog-card__overlay {
+      position: absolute;
+      z-index: 2;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #0f172a;
+      background: none;
+      padding: 0.15rem 0.2rem;
+      pointer-events: none;
+      text-shadow:
+        0 0 4px #fff,
+        0 0 8px #fff,
+        0 1px 2px rgba(255, 255, 255, 0.95);
+    }
+    .pm-dash-catalog-card__overlay--price {
+      top: 0.2rem;
+      left: 0.22rem;
+      font-size: 0.62rem;
+      text-align: left;
+    }
+    .pm-dash-catalog-card__overlay--cap:not(.pm-card-cap-corner *) {
+      top: 0.2rem;
+      right: 0.22rem;
+      font-size: 0.58rem;
+      text-align: right;
+    }
+    #productPickerDialog .pm-card-ral-swatch {
+      width: 0.52rem;
+      height: 0.52rem;
+    }
+    .pm-dash-catalog-card__img {
+      display: block;
+      width: auto;
+      height: auto;
       max-width: 100%;
-      max-height: none;
-      object-fit: cover;
+      max-height: 100%;
+      object-fit: contain;
       object-position: center;
     }
     .pm-dash-catalog-card__row {
@@ -519,7 +603,598 @@
       display: block;
       width: 100%;
       padding: 0.32rem 0.45rem;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      color: #0f172a;
+      font-weight: 700;
+      box-shadow: none;
+      border-top: 1px solid #e2e8f0;
+    }
+    /* Add-product picker: 3 compact cards per row */
+    .pm-dash-catalog-grid--dense {
+      grid-template-columns: repeat(auto-fill, minmax(5.1rem, 1fr));
+      gap: 0.3rem;
+    }
+    @media (min-width: 480px) {
+      .pm-dash-catalog-grid--dense {
+        grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+        gap: 0.35rem;
+      }
+    }
+    @media (min-width: 640px) {
+      .pm-dash-catalog-grid--dense {
+        grid-template-columns: repeat(auto-fill, minmax(5.85rem, 1fr));
+        gap: 0.4rem;
+      }
+    }
+    #productPickerDialog .pm-dash-picker-body {
+      flex: 1;
+      min-height: 0;
+    }
+    #productPickerList.pm-dash-catalog-grid--dense {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.28rem;
+      flex: 1;
+      min-height: 10rem;
+      max-height: min(68dvh, 640px);
+      overflow-y: auto;
+      align-content: start;
+    }
+    #productPickerDialog .pm-dash-catalog-card__media {
+      aspect-ratio: 1 / 1;
+    }
+    #productPickerDialog .pm-dash-catalog-card__top {
+      padding: 0.2rem 0.28rem;
+      gap: 0.06rem;
+    }
+    #productPickerDialog .pm-dash-catalog-card__brand,
+    #productPickerDialog .pm-dash-catalog-card__name,
+    #productPickerDialog .pm-dash-catalog-card .pm-shop-card__name {
+      font-size: clamp(0.44rem, 2.65vw, 0.58rem);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      text-align: center;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      text-overflow: unset;
+    }
+    #productPickerDialog .pm-dash-catalog-card__brand {
+      -webkit-line-clamp: 2;
+    }
+    #productPickerDialog .pm-dash-catalog-card__name,
+    #productPickerDialog .pm-dash-catalog-card .pm-shop-card__name {
+      padding: 0.22rem 0.28rem;
+      -webkit-line-clamp: 3;
+    }
+    #productPickerDialog .pm-dash-catalog-card__specs {
+      font-size: 0.5rem;
+      gap: 0.12rem;
+    }
+    #productPickerDialog .pm-dash-catalog-card--picker .pm-dash-catalog-card__media {
+      aspect-ratio: 1 / 1;
+    }
+    #productPickerDialog .pm-dash-catalog-card--picker .pm-dash-catalog-card__img-wrap {
+      --pm-card-photo-inset: 0.28rem;
+    }
+    #productPickerDialog .pm-dash-catalog-card__overlay--price {
+      font-size: clamp(0.48rem, 2.4vw, 0.58rem);
+    }
+    #productPickerDialog .pm-dash-catalog-card__overlay--cap {
+      font-size: clamp(0.44rem, 2.2vw, 0.54rem);
+    }
+    .pm-dash-catalog-grid--dense .pm-dash-picker-empty {
+      grid-column: 1 / -1;
+    }
+    .pm-dash-catalog-card__meta-line {
+      display: block;
+      text-align: center;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pm-pd-ral-panel {
+      padding: 0.65rem 0.55rem;
+      border: 1px solid rgba(13, 148, 136, 0.4);
+      border-radius: 0.65rem;
+      background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    .pm-pd-ral-section-label {
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #0f766e;
+      margin: 0.35rem 0 0.15rem;
+    }
+    .pm-pd-ral-section-label:first-child {
+      margin-top: 0;
+    }
+    .pm-pd-ral-grid-section.pm-pd-ral-grid {
+      max-height: none;
+      margin-bottom: 0.15rem;
+    }
+    .pm-pd-ral-picker-mount {
+      max-height: min(52dvh, 420px);
+      overflow-y: auto;
+    }
+    .pm-pd-ral-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr));
+      gap: 0.4rem;
+      max-height: 12.5rem;
+      overflow-y: auto;
+      padding: 0.15rem;
+    }
+    .pm-pd-ral-chip--custom .pm-pd-ral-chip__code {
+      font-size: 0.54rem;
+    }
+    .pm-pd-ral-add {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 0.65rem;
+      margin-top: 0.35rem;
+    }
+    .pm-pd-ral-add__row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: flex-end;
+    }
+    .pm-pd-ral-add__row input[type="text"] {
+      flex: 1;
+      min-width: 6rem;
+      border-radius: 0.5rem;
+      border: 1px solid #e2e8f0;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.75rem;
+    }
+    .pm-pd-ral-add__row input[type="color"] {
+      width: 2.25rem;
+      height: 2.05rem;
+      padding: 0.1rem;
+      border-radius: 0.45rem;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      background: #fff;
+    }
+    .pm-pd-ral-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0.35rem 0.25rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.12s, box-shadow 0.12s, transform 0.1s;
+      font: inherit;
+      text-align: center;
+      min-width: 0;
+    }
+    .pm-pd-ral-chip:hover {
+      border-color: #99f6e4;
+    }
+    .pm-pd-ral-chip.is-selected {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
+    }
+    .pm-pd-ral-chip__swatch {
+      width: 1.65rem;
+      height: 1.65rem;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      flex-shrink: 0;
+    }
+    .pm-pd-ral-chip__code {
+      font-size: 0.58rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.1;
+    }
+    .pm-pd-ral-chip__name {
+      font-size: 0.5rem;
+      font-weight: 600;
+      color: #64748b;
+      line-height: 1.15;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+    .pm-dash-catalog-card__ral {
+      display: block;
+      font-size: 0.52rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-top: 0.1rem;
+    }
+    .upd-cap-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .upd-cap-ral {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.28rem;
+      padding: 0.32rem 0.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      background: #fff;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      flex-shrink: 0;
+      min-width: 3.4rem;
+      max-width: 5.5rem;
+      line-height: 1.1;
+    }
+    .upd-cap-ral:hover:not(:disabled) {
+      border-color: #0d9488;
+      color: #0f766e;
+    }
+    .upd-cap-ral:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .upd-cap-ral__swatch {
+      width: 0.9rem;
+      height: 0.9rem;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.15);
+      flex-shrink: 0;
+    }
+    .upd-cap-ral__swatch--empty {
+      background: linear-gradient(135deg, #e2e8f0 42%, #f8fafc 58%);
+    }
+    .upd-cap-ral__label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .upd-cap-label-wrap {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.18rem;
+      width: 2.5rem;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .upd-cap-label-wrap .pm-card-ral-swatch {
+      width: 0.62rem;
+      height: 0.62rem;
+    }
+    .pm-dash-price-quick-cap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.22rem;
+      margin: 0.15rem 0 0.45rem;
+    }
+    .pm-dash-price-quick-cap__ltr {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.1;
+    }
+    .pm-dash-price-quick-cap__ral {
+      display: flex;
+      justify-content: center;
+      min-height: 0.62rem;
+    }
+    .pm-dash-price-quick-cap__ral .pm-card-ral-swatch {
+      width: 0.72rem;
+      height: 0.72rem;
+    }
+    .pm-dash-price-quick-edit__row {
+      display: flex;
+      gap: 0.4rem;
+      align-items: stretch;
+    }
+    .pm-dash-price-quick-edit__row .upd-cap-ral {
+      align-self: stretch;
+    }
+    .pm-dash-picker-context-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: baseline;
+      gap: 0.35rem 0.5rem;
+      min-width: 0;
+      margin: 0;
+      line-height: 1.15;
+    }
+  </style>
+  <style id="pm-dash-picker-context-header">
+    .pm-dash-picker-header .pm-dash-picker-context-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 0.35rem;
+      width: 100%;
+      min-width: 0;
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit {
+      position: relative;
+      isolation: isolate;
+      margin: 0;
+      padding: 0.22rem 0.4rem 0.28rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      text-transform: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: none;
+      flex: 1 1 0;
+      min-width: 0;
+      width: 0;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      border-radius: 0.625rem;
+      background: transparent;
+      font-family: inherit;
+      text-align: inherit;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.16s ease, filter 0.16s ease;
+      background-image: linear-gradient(
+        165deg,
+        #ffffff 0%,
+        #f0fdff 22%,
+        #cffafe 48%,
+        #7dd3fc 72%,
+        #5eead4 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.65))
+        drop-shadow(0 0 24px rgba(94, 234, 212, 0.5))
+        drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.14);
+      box-shadow:
+        0 2px 10px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transition:
+        background 0.16s ease,
+        border-color 0.16s ease,
+        box-shadow 0.16s ease;
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit::after {
+      content: "▾";
+      display: inline-block;
+      margin-inline-start: 0.14em;
+      font-size: 0.58em;
+      line-height: 1;
+      vertical-align: 0.12em;
+      color: #e0f2fe;
+      -webkit-text-fill-color: #e0f2fe;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+      transition: transform 0.16s ease, opacity 0.16s ease;
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit:hover {
+      transform: translateY(-2px) scale(1.03);
+      filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.9))
+        drop-shadow(0 0 34px rgba(94, 234, 212, 0.75))
+        drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45));
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit:hover::before {
+      background: rgba(255, 255, 255, 0.26);
+      border-color: rgba(255, 255, 255, 0.88);
+      box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 0 0 3px rgba(255, 255, 255, 0.2);
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit:hover::after {
+      transform: translateY(2px);
+      opacity: 1;
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit:active {
+      transform: translateY(0) scale(0.98);
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit:active::before {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.28),
+        inset 0 2px 6px rgba(0, 0, 0, 0.14);
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit:focus-visible {
+      outline: 2px solid #fef08a;
+      outline-offset: 2px;
+    }
+    .pm-dash-picker-header .pm-dash-picker-context-hit:focus-visible::before {
+      border-color: rgba(255, 255, 255, 0.95);
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.25),
+        0 0 0 3px rgba(254, 240, 138, 0.35);
+    }
+    .pm-dash-picker-context-sep {
+      flex: 0 0 auto;
+      align-self: center;
+      font-size: 0.85rem;
+      font-weight: 300;
+      line-height: 1;
+      opacity: 0.55;
+      color: #f8fafc;
+      user-select: none;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+    }
+  </style>
+  <style id="pm-dash-ios-fixes">
+    /* iPhone / small phones — readable sizes, safe areas, no tiny grids */
+    @media (max-width: 639px) {
+      header.border-b {
+        padding-top: env(safe-area-inset-top, 0);
+      }
+      .pm-header-bar {
+        flex-wrap: wrap;
+        row-gap: 0.35rem;
+      }
+      .pm-header-bar > .min-w-0 {
+        flex: 1 1 100%;
+        min-width: 0;
+      }
+      header .pm-header-nav {
+        flex: 1 1 100%;
+        max-width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.1rem;
+      }
+      .pm-header-nav-link {
+        font-size: 0.7rem;
+        padding: 0.45rem 0.55rem;
+        min-height: 2.25rem;
+      }
+      .pm-dash-product-row {
+        justify-content: stretch;
+      }
+      .pm-dash-product-actions {
+        width: 100%;
+      }
+      .pm-dash-product-action-btn {
+        flex: 1;
+        min-height: 2.75rem;
+        font-size: 0.8125rem;
+        padding: 0.5rem 0.4rem;
+      }
+      main.max-w-6xl {
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0));
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0));
+      }
+      .pm-dash-catalog-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      .pm-dash-catalog-grid--dense:not(#productPickerList) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      #productPickerList.pm-dash-catalog-grid--dense {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.28rem;
+      }
+      #productPickerDialog .pm-dash-catalog-card__brand,
+      #productPickerDialog .pm-dash-catalog-card__name,
+      #productPickerDialog .pm-dash-catalog-card .pm-shop-card__name {
+        font-size: clamp(0.42rem, 2.5vw, 0.54rem);
+      }
+      #productPickerDialog .pm-dash-catalog-card__name,
+      #productPickerDialog .pm-dash-catalog-card .pm-shop-card__name {
+        padding: 0.2rem 0.25rem;
+      }
+      #productPickerDialog .pm-dash-catalog-card__specs {
+        font-size: 0.48rem;
+      }
+      #productPickerDialog .pm-dash-catalog-card__top {
+        padding: 0.18rem 0.25rem;
+      }
+      .pm-dash-catalog-card__brand {
+        font-size: 0.65rem;
+      }
+      .pm-dash-catalog-card__specs {
+        font-size: 0.68rem;
+      }
+      .pm-dash-catalog-card .pm-shop-card__name {
+        font-size: 0.72rem;
+        line-height: 1.25;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .pm-dash-catalog-card__top {
+        padding: 0.35rem 0.45rem;
+      }
+      .pm-dash-catalog-card__name {
+        padding: 0.35rem 0.45rem;
+      }
+      #dashCatalogSection {
+        padding: 0.75rem;
+      }
+      .pm-dash-picker-dialog {
+        width: calc(100% - 1rem);
+        max-width: calc(100% - 1rem);
+        margin: 0.5rem auto;
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1rem);
+      }
+      .pm-dash-picker-form {
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1rem);
+      }
+      .pm-dash-picker-header {
+        padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+        padding-left: max(1rem, env(safe-area-inset-left, 0px));
+        padding-right: max(1rem, env(safe-area-inset-right, 0px));
+      }
+      .pm-dash-picker-body {
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+      }
+      .pm-dash-picker-footer {
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+        padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+        padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+      }
+      .pm-dash-picker-title {
+        font-size: 1rem;
+        line-height: 1.3;
+      }
+      .pm-dash-picker-header .pm-dash-picker-context-hit {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.3rem 0.24rem;
+      }
+      .pm-dash-picker-context-sep {
+        font-size: 0.7rem;
+      }
+      #productPickerList.pm-dash-catalog-grid--dense {
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 12rem);
+        min-height: 8rem;
+      }
+      .pm-dash-picker-nav-btn {
+        min-height: 2.5rem;
+        font-size: 0.8125rem;
+      }
+      .pm-dash-picker-close {
+        min-height: 2.25rem;
+        padding: 0.45rem 0.75rem;
+      }
+    }
+    @media (max-width: 390px) {
+      .pm-header-nav-link {
+        font-size: 0.65rem;
+        padding: 0.4rem 0.45rem;
+      }
+      .pm-dash-product-action-btn {
+        font-size: 0.75rem;
+      }
     }
   </style>
 </head>
@@ -563,6 +1238,13 @@
         <button id="dashUpdateProductBtn" type="button" class="pm-dash-product-action-btn pm-dash-product-action-btn--update" data-pm-t="dash_update_product">Update product</button>
       </div>
     </div>
+    <section id="dashRecentSection" class="hidden rounded-2xl border border-teal-200/80 bg-teal-50/40 p-4 sm:p-5 shadow-sm space-y-3">
+      <div>
+        <h2 class="text-sm font-bold text-slate-900" data-pm-t="dash_recent_title">Added in the last 3 hours</h2>
+        <p class="text-xs text-slate-600 mt-0.5" data-pm-t="dash_recent_hint">Review what you added — tap a card to edit prices.</p>
+      </div>
+      <div id="dashRecentList" class="pm-dash-catalog-grid pm-dash-catalog-grid--dense p-2 sm:p-3 min-h-[3rem]"></div>
+    </section>
     <section id="dashCatalogSection" class="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-3">
       <div class="flex flex-wrap gap-3 items-end justify-between">
         <div class="min-w-0 flex-1">
@@ -706,23 +1388,21 @@
     <form method="dialog" class="pm-dash-picker-form">
       <header class="pm-dash-picker-header">
         <div class="pm-dash-picker-header__text">
-          <p class="pm-dash-picker-step" data-pm-t="dash_picker_step_product">Step 3 · Product</p>
-          <h2 class="pm-dash-picker-title" data-pm-t="dash_product_picker_title">Choose product</h2>
+          <h2 class="pm-dash-picker-context-row">
+            <button type="button" id="productPickerBrand" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--brand"></button>
+            <span id="productPickerContextSep" class="pm-dash-picker-context-sep" aria-hidden="true">·</span>
+            <button type="button" id="productPickerCategory" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--category"></button>
+          </h2>
         </div>
         <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
       </header>
       <div class="pm-dash-picker-intro">
-        <p class="pm-dash-picker-hint" data-pm-t="dash_product_picker_hint">Popular items first — ranked by how many shops sell them and customer searches.</p>
-        <p id="productPickerContext" class="pm-dash-picker-context"></p>
+        <p class="pm-dash-picker-hint" data-pm-t="dash_product_picker_hint">Tap a product to add it to your shop.</p>
       </div>
       <div class="pm-dash-picker-body">
         <button id="productPickerNewBtn" type="button" class="pm-dash-picker-add-new" data-pm-t="dash_product_picker_new">+ New product</button>
-        <div id="productPickerList" class="pm-dash-picker-scroll pm-dash-picker-grid"></div>
+        <div id="productPickerList" class="pm-dash-catalog-grid pm-dash-catalog-grid--dense p-1 sm:p-2"></div>
       </div>
-      <footer class="pm-dash-picker-footer">
-        <button id="productPickerBackBtn" type="button" class="pm-dash-picker-nav-btn" data-pm-t="dash_product_back_category">Back to categories</button>
-        <button id="productPickerBrandsBtn" type="button" class="pm-dash-picker-nav-btn" data-pm-t="dash_product_back_brands">Back to brands</button>
-      </footer>
     </form>
   </dialog>
 
@@ -730,13 +1410,19 @@
     <form method="dialog" class="pm-dash-picker-form">
       <header class="pm-dash-picker-header">
         <div class="pm-dash-picker-header__text">
-          <p class="pm-dash-picker-step" data-pm-t="dash_picker_step_prices">Step 4 · Prices</p>
+          <h2 id="productDialogContextRow" class="pm-dash-picker-context-row hidden">
+            <button type="button" id="productDialogBrand" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--brand"></button>
+            <span class="pm-dash-picker-context-sep" aria-hidden="true">·</span>
+            <button type="button" id="productDialogCategory" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--category"></button>
+          </h2>
+          <p id="productDialogStep" class="pm-dash-picker-step" data-pm-t="dash_picker_step_prices">Step 4 · Prices</p>
           <h2 id="productDialogTitle" class="pm-dash-picker-title" data-pm-t="dash_dialog_add_title">Add product</h2>
         </div>
         <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
       </header>
-      <div class="pm-dash-picker-intro">
-        <p id="productDialogHint" class="pm-dash-picker-hint"></p>
+      <div class="pm-dash-picker-intro" id="productDialogIntro">
+        <p id="productDialogHint" class="pm-dash-picker-hint hidden"></p>
+        <p id="productDialogAddHint" class="pm-dash-picker-hint hidden" data-pm-t="dash_dialog_add_fields_hint">Enter name, capacity and price below.</p>
       </div>
       <div class="pm-dash-picker-body pm-dash-picker-scroll" style="max-height:min(58dvh,520px)">
       <input id="pdProductId" type="hidden" value="" />
@@ -759,7 +1445,8 @@
         <textarea id="pdDesc" rows="3" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_desc" placeholder="Short description"></textarea>
       </div>
 
-      <div id="pdAddFields" class="grid sm:grid-cols-2 gap-3">
+      <div id="pdAddFields" class="hidden flex flex-col gap-3">
+        <div class="grid sm:grid-cols-2 gap-3">
         <div class="grid gap-2">
           <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_capacity">Capacity</label>
           <select id="pdCapacity" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
@@ -772,12 +1459,33 @@
           <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_price" data-pm-currency-label>Price</label>
           <input id="pdPrice" type="number" step="any" inputmode="decimal" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="e.g. 120" />
         </div>
+        </div>
+
+        <div id="pdRalBlock" class="pm-pd-ral-panel grid gap-2">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <label class="text-[11px] font-semibold text-slate-700" data-pm-t="dash_pd_ral">RAL colour</label>
+          <p id="pdRalSelected" class="text-[10px] font-semibold text-teal-800 hidden" aria-live="polite"></p>
+        </div>
+        <p class="text-[10px] text-slate-500 -mt-1" data-pm-t="dash_pd_ral_hint">Tap a swatch below</p>
+        <input id="pdRalCode" type="hidden" value="" />
+        <div id="pdRalGrid" class="pm-pd-ral-picker-mount" role="listbox" aria-label="Popular RAL colours"></div>
+        <div class="pm-pd-ral-add">
+          <p class="text-[11px] font-semibold text-slate-700" data-pm-t="dash_ral_add_title">Add your own colour</p>
+          <div class="pm-pd-ral-add__row">
+            <input id="pdRalCustomName" type="text" maxlength="48" data-pm-ph="dash_ral_custom_name_ph" placeholder="Colour name" />
+            <input id="pdRalCustomHex" type="color" value="#2271b3" aria-label="Colour" />
+            <button type="button" id="pdRalCustomAddBtn" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary shrink-0 text-xs" data-pm-t="dash_ral_add_btn">Add</button>
+          </div>
+        </div>
+        </div>
       </div>
 
       <div id="pdPhotoBlock" class="grid gap-2">
         <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_photo">Photo (optional)</label>
         <div id="pdPhotoPreviewWrap" class="hidden flex items-center gap-3 mb-1">
-          <img id="pdPhotoPreview" alt="" class="w-16 h-16 rounded-lg border border-slate-200 object-cover bg-slate-100" />
+          <div class="w-20 h-20 rounded-lg border border-slate-200 pm-card-photo-frame" style="--pm-card-photo-inset:0.35rem">
+            <img id="pdPhotoPreview" alt="" />
+          </div>
           <p class="text-xs text-slate-500" data-pm-t="dash_pd_photo_current">Current photo — pick a file below to replace</p>
         </div>
         <input id="pdPhoto" type="file" accept="image/*" class="block w-full text-sm" />
@@ -816,7 +1524,18 @@
         <div id="dashPriceQuickListWrap" class="pm-dash-picker-scroll pm-dash-catalog-grid p-2 sm:p-3"></div>
         <div id="dashPriceQuickEdit" class="pm-dash-price-quick-edit">
           <p id="dashPriceQuickEditLabel" class="pm-dash-price-quick-edit__label"></p>
-          <input id="dashPriceQuickInput" type="number" step="any" inputmode="decimal" data-pm-ph="dash_pd_ph_price" placeholder="e.g. 120" />
+          <div class="pm-dash-price-quick-cap" id="dashPriceQuickCapBlock">
+            <span id="dashPriceQuickCapLtr" class="pm-dash-price-quick-cap__ltr"></span>
+            <span id="dashPriceQuickCapRal" class="pm-dash-price-quick-cap__ral" aria-hidden="true"></span>
+          </div>
+          <div class="pm-dash-price-quick-edit__row">
+            <input id="dashPriceQuickInput" type="number" step="any" inputmode="decimal" class="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="e.g. 120" />
+            <input id="dashPriceQuickRalCode" type="hidden" value="" />
+            <button type="button" id="dashPriceQuickRalBtn" class="upd-cap-ral" title="RAL colour">
+              <span id="dashPriceQuickRalSwatch" class="upd-cap-ral__swatch upd-cap-ral__swatch--empty hidden" aria-hidden="true"></span>
+              <span id="dashPriceQuickRalLabel" class="upd-cap-ral__label" data-pm-t="dash_upd_ral_btn">Colour</span>
+            </button>
+          </div>
           <div class="flex flex-wrap gap-2 justify-end">
             <button type="button" id="dashPriceQuickBack" class="pm-dash-picker-nav-btn" data-pm-t="dash_price_quick_back">Back to list</button>
             <button type="button" id="dashPriceQuickSave" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary" data-pm-t="dash_price_quick_save">Save price</button>
@@ -827,8 +1546,33 @@
     </form>
   </dialog>
 
+  <dialog id="ralPickerDialog" class="pm-dash-picker-dialog pm-dash-picker-dialog--compact">
+    <form method="dialog" class="pm-dash-picker-form">
+      <header class="pm-dash-picker-header">
+        <div class="pm-dash-picker-header__text">
+          <p class="pm-dash-picker-step" data-pm-t="dash_ral_picker_step">RAL</p>
+          <h2 class="pm-dash-picker-title" data-pm-t="dash_ral_picker_title">Choose colour</h2>
+        </div>
+        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+      </header>
+      <div class="pm-dash-picker-body pm-dash-picker-scroll" style="max-height:min(62dvh,480px)">
+        <p class="text-[11px] text-slate-600 mb-2" data-pm-t="dash_pd_ral_hint">Tap a swatch below</p>
+        <div id="ralPickerGrid" class="pm-pd-ral-picker-mount" role="listbox" aria-label="Popular RAL colours"></div>
+        <div class="pm-pd-ral-add">
+          <p class="text-[11px] font-semibold text-slate-700" data-pm-t="dash_ral_add_title">Add your own colour</p>
+          <div class="pm-pd-ral-add__row">
+            <input id="ralCustomName" type="text" maxlength="48" data-pm-ph="dash_ral_custom_name_ph" placeholder="Colour name" />
+            <input id="ralCustomHex" type="color" value="#2271b3" aria-label="Colour" />
+            <button type="button" id="ralCustomAddBtn" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary shrink-0 text-xs" data-pm-t="dash_ral_add_btn">Add</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
   <template id="toastTpl"><div class="fixed bottom-6 right-6 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg"></div></template>
   <script src="/paint/js/paint-i18n.js"></script>
+  <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/common.js"></script>
   <script src="/paint/js/theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -860,6 +1604,8 @@
     const dashCatalogFilter = document.getElementById("dashCatalogFilter");
     const dashCatalogCount = document.getElementById("dashCatalogCount");
     const dashCatalogEmpty = document.getElementById("dashCatalogEmpty");
+    const dashRecentSection = document.getElementById("dashRecentSection");
+    const dashRecentList = document.getElementById("dashRecentList");
     let dashCatalogFilterQuery = "";
 
     const dashPriceQuickDialog = document.getElementById("dashPriceQuickDialog");
@@ -994,6 +1740,47 @@
       state = await PaintApi.shopCatalog();
       syncDashProfilePanel();
       renderShopCatalogList();
+      renderRecentEntriesList();
+    }
+
+    function buildRecentListingRows(entries) {
+      const rows = [];
+      for (const e of entries || []) {
+        for (const L of e.listings || []) {
+          rows.push({
+            productId: e.productId,
+            productName: e.productName || "",
+            brandName: e.brandName || "",
+            imageUrl: e.imageUrl || "",
+            capacityLtr: L.capacityLtr,
+            priceAmount: L.priceAmount,
+            currency: L.currency,
+            ralCode: L.ralCode || "",
+            ral_hex: L.ralHex
+          });
+        }
+      }
+      return rows;
+    }
+
+    async function renderRecentEntriesList() {
+      if (!dashRecentSection || !dashRecentList) return;
+      try {
+        const data = await PaintApi.shopRecentEntries();
+        const rows = buildRecentListingRows(data.entries || []);
+        if (!rows.length) {
+          dashRecentSection.classList.add("hidden");
+          dashRecentList.innerHTML = "";
+          return;
+        }
+        dashRecentSection.classList.remove("hidden");
+        renderCatalogCardList(dashRecentList, rows, (row) => {
+          openCatalogPriceEdit(row);
+          dashRecentSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+      } catch {
+        dashRecentSection.classList.add("hidden");
+      }
     }
 
     const LAST_ADD_CONTEXT_TTL_MS = 10 * 60 * 1000;
@@ -1022,7 +1809,7 @@
             brandId: brand.id,
             categoryId: category.id,
             brandName: brand.name,
-            categoryName: category.name,
+            categoryName: paintMarketCategoryLabel(category.slug, category.name),
             savedAt: Date.now()
           })
         );
@@ -1053,6 +1840,40 @@
 
 
     /** Every active shop listing (no time limit — includes items added in the last 3 hours). */
+    function primaryListingForProduct(productId) {
+      const pid = Number(productId);
+      if (!Number.isFinite(pid)) return null;
+      for (const [cap] of DASH_CAPACITIES) {
+        const L = listingFor(pid, cap);
+        if (L?.available && L.price_amount != null) return L;
+      }
+      return (
+        (state?.listings || []).find(
+          (L) => L.master_product_id === pid && L.available && L.price_amount != null
+        ) || null
+      );
+    }
+
+    function enrichCatalogRowFromListing(row) {
+      const pid = row?.productId;
+      if (pid == null) return row;
+      const L = primaryListingForProduct(pid);
+      if (!L) return row;
+      const p = (state?.products || []).find((x) => x.id === pid);
+      return {
+        ...row,
+        imageUrl: row.imageUrl || L.custom_photo_url || p?.default_image_url || "",
+        capacityLtr: L.capacity_ltr,
+        priceAmount: L.price_amount,
+        currency: L.currency,
+        ralCode: L.ral_code || "",
+        ral_hex:
+          L.ral_code && typeof paintMarketRalHex === "function"
+            ? paintMarketRalHex(L.ral_code, shopCustomColors())
+            : null
+      };
+    }
+
     function buildShopListingRows() {
       const rows = [];
       for (const L of state?.listings || []) {
@@ -1071,6 +1892,11 @@
           capacityLtr: L.capacity_ltr,
           priceAmount: L.price_amount,
           currency: L.currency,
+          ralCode: L.ral_code || "",
+          ral_hex:
+            L.ral_code && typeof paintMarketRalHex === "function"
+              ? paintMarketRalHex(L.ral_code, shopCustomColors())
+              : null,
           updatedAt: L.updated_at || ""
         });
       }
@@ -1080,7 +1906,13 @@
     function listingRowsMatchFilter(row, q) {
       if (!q) return true;
       const cap = capacityLabel(Number(row.capacityLtr));
-      const hay = `${row.productName || ""} ${row.brandName || ""} ${cap}`.toLowerCase();
+      const ralHay =
+        row.ralCode && typeof paintMarketRalLabel === "function"
+          ? paintMarketRalLabel(row.ralCode, undefined, shopCustomColors())
+          : row.ralCode
+            ? `RAL ${row.ralCode}`
+            : "";
+      const hay = `${row.productName || ""} ${row.brandName || ""} ${cap} ${ralHay}`.toLowerCase();
       return hay.includes(q);
     }
 
@@ -1092,46 +1924,41 @@
         : String(amount);
     }
 
-    function dashCatalogRowTheme(row) {
-      const brandSlug = row.brandSlug || "";
-      const categorySlug = row.categorySlug || "";
-      const brandGrad =
-        typeof PaintTheme !== "undefined" && PaintTheme.brandBarGradient
-          ? PaintTheme.brandBarGradient(brandSlug)
-          : "linear-gradient(165deg,#0d9488 0%,#2563eb 100%)";
-      const cat =
-        typeof PaintTheme !== "undefined" && PaintTheme.categoryTheme
-          ? PaintTheme.categoryTheme(categorySlug)
-          : { title: "#0f172a", accent: "#0d9488" };
-      return { brandGrad, catTitle: cat.title, catAccent: cat.accent };
+    function catalogCardOverlayHtml(row, opts) {
+      const o = opts || {};
+      if (o.specsText != null && String(o.specsText).trim() !== "") {
+        return `<span class="pm-dash-catalog-card__overlay pm-dash-catalog-card__overlay--price">${esc(o.specsText)}</span>`;
+      }
+      if (typeof paintMarketListingPhotoOverlaysHtml === "function") {
+        return paintMarketListingPhotoOverlaysHtml(row, esc, shopCustomColors(), {
+          formatPrice: (amount, currency) => formatPriceChipAmount(amount, currency),
+          formatCapacity: (cap) => capacityLabel(Number(cap))
+        });
+      }
+      return "";
     }
 
-    function createCatalogProductCard(row, onClick) {
-      const { brandGrad, catTitle, catAccent } = dashCatalogRowTheme(row);
+    function createCatalogProductCard(row, onClick, options) {
+      const opts = options || {};
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pm-shop-card pm-dash-catalog-card group flex flex-col min-w-0 w-full";
-      const cap = capacityLabel(Number(row.capacityLtr));
-      const priceStr = formatPriceChipAmount(row.priceAmount, row.currency);
+      const overlayHtml = catalogCardOverlayHtml(row, opts);
+      if (opts.pickerMode) btn.classList.add("pm-dash-catalog-card--picker");
       const imgUrl = esc(
         row.imageUrl ||
           `https://placehold.co/500x300/f1f5f9/64748b?text=${encodeURIComponent(String(row.productName || "•").slice(0, 2))}`
       );
       btn.innerHTML = `
         <div class="pm-shop-card__logo pm-dash-catalog-card__media">
-          <div class="pm-dash-catalog-card__top" style="background:${brandGrad}">
-            <span class="pm-dash-catalog-card__brand">${esc(row.brandName)}</span>
-            <span class="pm-dash-catalog-card__specs">
-              <span class="pm-dash-catalog-card__price" style="color:${catAccent}">${esc(priceStr)}</span>
-              <span class="pm-dash-catalog-card__sep" aria-hidden="true">·</span>
-              <span class="pm-dash-catalog-card__cap">${esc(cap)}</span>
-            </span>
+          <div class="pm-dash-catalog-card__img-wrap pm-card-photo-frame" style="--pm-card-photo-inset:0.35rem">
+            ${overlayHtml}
+            <img src="${imgUrl}" alt="" class="pm-shop-card__logo-img pm-dash-catalog-card__img" loading="lazy" />
           </div>
-          <img src="${imgUrl}" alt="" class="pm-shop-card__logo-img pm-dash-catalog-card__img" loading="lazy" />
         </div>
         <div class="pm-shop-card__body">
           <div class="pm-shop-card__row pm-shop-card__row--solo pm-dash-catalog-card__row">
-            <span class="pm-shop-card__name pm-dash-catalog-card__name" style="background:${brandGrad};color:${catTitle}">${esc(row.productName)}</span>
+            <span class="pm-shop-card__name pm-dash-catalog-card__name">${esc(row.productName)}</span>
           </div>
         </div>`;
       btn.addEventListener("click", () => onClick(row));
@@ -1267,6 +2094,7 @@
       state = await PaintApi.shopCatalog();
       syncDashProfilePanel();
       renderShopCatalogList();
+      renderRecentEntriesList();
     }
 
     async function persistListingsBatch(payloads) {
@@ -1280,24 +2108,30 @@
     const brandNewName = document.getElementById("brandNewName");
     const brandAddBtn = document.getElementById("brandAddBtn");
     let pendingAddBrand = null;
+    /** After brand/category pick: "picker" | "newProduct" */
+    let addFlowReturnTo = "picker";
 
     const categoryDialog = document.getElementById("categoryDialog");
     const categoryPickerList = document.getElementById("categoryPickerList");
     const categoryDialogBrandLabel = document.getElementById("categoryDialogBrandLabel");
     const categoryBackBtn = document.getElementById("categoryBackBtn");
-    const productPickerBrandsBtn = document.getElementById("productPickerBrandsBtn");
     let pendingAddCategory = null;
 
     const productPickerDialog = document.getElementById("productPickerDialog");
     const productPickerList = document.getElementById("productPickerList");
-    const productPickerContext = document.getElementById("productPickerContext");
+    const productPickerBrand = document.getElementById("productPickerBrand");
+    const productPickerCategory = document.getElementById("productPickerCategory");
     const productPickerNewBtn = document.getElementById("productPickerNewBtn");
-    const productPickerBackBtn = document.getElementById("productPickerBackBtn");
     let catalogPicks = [];
 
     const productDialog = document.getElementById("productDialog");
+    const productDialogContextRow = document.getElementById("productDialogContextRow");
+    const productDialogBrand = document.getElementById("productDialogBrand");
+    const productDialogCategory = document.getElementById("productDialogCategory");
+    const productDialogStep = document.getElementById("productDialogStep");
     const productDialogTitle = document.getElementById("productDialogTitle");
     const pdHint = document.getElementById("productDialogHint");
+    const productDialogAddHint = document.getElementById("productDialogAddHint");
     const pdProductId = document.getElementById("pdProductId");
     const pdCurrentPhotoUrl = document.getElementById("pdCurrentPhotoUrl");
     const pdBrandId = document.getElementById("pdBrandId");
@@ -1309,6 +2143,10 @@
     const pdAddFields = document.getElementById("pdAddFields");
     const pdCapacity = document.getElementById("pdCapacity");
     const pdPrice = document.getElementById("pdPrice");
+    const pdRalBlock = document.getElementById("pdRalBlock");
+    const pdRalCode = document.getElementById("pdRalCode");
+    const pdRalGrid = document.getElementById("pdRalGrid");
+    const pdRalSelected = document.getElementById("pdRalSelected");
     const pdPhoto = document.getElementById("pdPhoto");
     const pdPhotoPreviewWrap = document.getElementById("pdPhotoPreviewWrap");
     const pdPhotoPreview = document.getElementById("pdPhotoPreview");
@@ -1340,6 +2178,11 @@
       if (pdPhotoBlock) pdPhotoBlock.classList.toggle("hidden", isList);
       if (pdCategoryRow) pdCategoryRow.classList.add("hidden");
       if (pdMetaFields) pdMetaFields.classList.toggle("hidden", isUpdate && !pdProductId.value);
+      if (productDialogContextRow) productDialogContextRow.classList.toggle("hidden", !isAdd);
+      if (productDialogStep) productDialogStep.classList.toggle("hidden", isAdd);
+      if (productDialogTitle) productDialogTitle.classList.toggle("hidden", isAdd);
+      if (pdHint) pdHint.classList.toggle("hidden", isAdd);
+      if (productDialogAddHint) productDialogAddHint.classList.toggle("hidden", !isAdd);
     }
 
     function sortedBrands() {
@@ -1357,7 +2200,7 @@
         ...cats.map((c) => {
           const opt = document.createElement("option");
           opt.value = String(c.id);
-          opt.textContent = c.name || "";
+          opt.textContent = paintMarketCategoryLabel(c.slug, c.name);
           return opt;
         })
       );
@@ -1451,13 +2294,12 @@
       }
       saveLastAddContext(brand, category);
       categoryDialog.close();
+      if (addFlowReturnTo === "newProduct") {
+        pendingAddCategory = category;
+        openAddProductDialog(brand, category);
+        return;
+      }
       openProductPickerDialog(brand, category);
-    }
-
-    function productPopularityMeta(p) {
-      const shops = Number(p.shop_count || 0);
-      const score = Number(p.popularity_score || 0) + Number(p.view_total || 0);
-      return paintMarketTf("dash_product_pick_meta", { shops, score });
     }
 
     function renderProductPickerList() {
@@ -1467,24 +2309,25 @@
         productPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(paintMarketT("dash_product_picker_empty"))}</p>`;
         return;
       }
-      const catSlug = pendingAddCategory?.slug || "";
-      const accent =
-        window.PaintTheme?.shopListingAccentStyle?.(catSlug)?.insetBar || "#0d9488";
+      const brand = pendingAddBrand;
+      const category = pendingAddCategory;
       for (const p of catalogPicks) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pm-dash-picker-card pm-dash-picker-card--product";
-        const img = p.default_image_url
-          ? `<img src="${esc(p.default_image_url)}" alt="" class="pm-dash-picker-card__thumb" />`
-          : `<span class="pm-dash-picker-card__thumb pm-dash-picker-card__thumb--empty">—</span>`;
-        btn.innerHTML = `<span class="pm-dash-picker-card__accent" style="background:${esc(accent)}"></span>
-          ${img}
-          <span class="pm-dash-picker-card__body">
-            <span class="pm-dash-picker-card__name">${esc(p.name || "")}</span>
-            <span class="pm-dash-picker-card__meta">${esc(productPopularityMeta(p))}</span>
-          </span>`;
-        btn.addEventListener("click", () => selectCatalogProduct(p));
-        productPickerList.appendChild(btn);
+        const row = enrichCatalogRowFromListing({
+          productId: p.id,
+          productName: p.name || "",
+          brandName: brand?.name || "",
+          brandSlug: brand?.slug || "",
+          categorySlug: category?.slug || "",
+          imageUrl: p.listing_image_url || p.default_image_url || "",
+          capacityLtr: p.capacity_ltr,
+          priceAmount: p.price_amount,
+          currency: p.currency,
+          ralCode: p.ral_code || "",
+          ral_hex: p.ral_hex
+        });
+        productPickerList.appendChild(
+          createCatalogProductCard(row, () => selectCatalogProduct(p), { pickerMode: true })
+        );
       }
     }
 
@@ -1523,21 +2366,90 @@
       }
     }
 
+    function fitContextHeaderButton(btn, maxPx, minPx) {
+      if (!btn) return;
+      const max = maxPx ?? 12;
+      const min = minPx ?? 7;
+      const label = btn.querySelector(".pm-context-hit__label");
+      const target = label || btn;
+      target.style.fontSize = `${max}px`;
+      const overflows = () => btn.scrollWidth > btn.clientWidth + 1;
+      let size = max;
+      while (size > min && overflows()) {
+        size -= 0.5;
+        target.style.fontSize = `${size}px`;
+      }
+    }
+
+    function fitPickerContextHeaderButtons() {
+      const narrow = window.matchMedia("(max-width: 639px)").matches;
+      const maxPx = narrow ? 10 : 12;
+      fitContextHeaderButton(productPickerBrand, maxPx);
+      fitContextHeaderButton(productPickerCategory, maxPx);
+      fitContextHeaderButton(productDialogBrand, maxPx);
+      fitContextHeaderButton(productDialogCategory, maxPx);
+    }
+
+    function scheduleFitPickerContextHeader() {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(fitPickerContextHeaderButtons);
+      });
+    }
+
+    function syncProductDialogHeaderLabels() {
+      const brand =
+        pendingAddBrand ||
+        (state?.brands || []).find((b) => b.id === Number(pdBrandId?.value));
+      const category =
+        pendingAddCategory ||
+        (state?.categories || []).find((c) => c.id === Number(pdCategoryId?.value));
+      if (productDialogBrand) {
+        productDialogBrand.innerHTML = paintMarketContextHitInnerHtml(brand?.name || "");
+        productDialogBrand.title = paintMarketT("dash_picker_tap_brand");
+      }
+      if (productDialogCategory) {
+        productDialogCategory.innerHTML = paintMarketContextHitInnerHtml(
+          category ? paintMarketCategoryLabel(category.slug, category.name) : "",
+          { categorySlug: category?.slug }
+        );
+        productDialogCategory.title = paintMarketT("dash_picker_tap_category");
+      }
+      scheduleFitPickerContextHeader();
+    }
+
+    function syncProductPickerHeaderLabels() {
+      const brand = pendingAddBrand;
+      const category = pendingAddCategory;
+      if (productPickerBrand) {
+        productPickerBrand.innerHTML = paintMarketContextHitInnerHtml(brand?.name || "");
+        productPickerBrand.title = paintMarketT("dash_picker_tap_brand");
+      }
+      if (productPickerCategory) {
+        productPickerCategory.innerHTML = paintMarketContextHitInnerHtml(
+          category ? paintMarketCategoryLabel(category.slug, category.name) : "",
+          { categorySlug: category?.slug }
+        );
+        productPickerCategory.title = paintMarketT("dash_picker_tap_category");
+      }
+      scheduleFitPickerContextHeader();
+    }
+
+    if (!window.__pmDashContextHeaderFitBound) {
+      window.__pmDashContextHeaderFitBound = true;
+      window.addEventListener("resize", scheduleFitPickerContextHeader);
+    }
+
     async function openProductPickerDialog(brand, category) {
       if (!brand || !category) return;
       pendingAddBrand = brand;
       pendingAddCategory = category;
-      if (productPickerContext) {
-        productPickerContext.textContent = paintMarketTf("dash_product_picker_context", {
-          brand: brand.name,
-          category: category.name
-        });
-      }
+      syncProductPickerHeaderLabels();
       catalogPicks = [];
       if (productPickerList) {
         productPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(paintMarketT("dash_loading"))}</p>`;
       }
       productPickerDialog.showModal();
+      scheduleFitPickerContextHeader();
       try {
         catalogPicks = await fetchCatalogPicks(brand.id, category.id);
         renderProductPickerList();
@@ -1559,6 +2471,7 @@
       const brand = pendingAddBrand;
       const category = pendingAddCategory;
       if (!brand || !category) return;
+      addFlowReturnTo = "newProduct";
       productPickerDialog.close();
       openAddProductDialog(brand, category);
     }
@@ -1589,13 +2502,14 @@
       for (const c of cats) {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "pm-dash-picker-card pm-dash-picker-card--brand";
+        btn.className = "pm-dash-picker-card pm-dash-picker-card--category";
         btn.setAttribute("data-category-id", String(c.id));
-        const grad =
-          window.PaintTheme?.categoryBarGradient?.(c.slug || "") ||
-          "linear-gradient(135deg,#0f766e,#115e59)";
-        btn.innerHTML = `<span>${esc(c.name || "")}</span>`;
-        btn.style.background = grad;
+        const label = paintMarketCategoryLabel(c.slug, c.name);
+        const iconUrl = paintMarketCategoryIconUrl(c.slug);
+        const iconHtml = iconUrl
+          ? `<img class="pm-dash-picker-card__cat-icon" src="${esc(iconUrl)}" alt="" loading="lazy" />`
+          : "";
+        btn.innerHTML = `${iconHtml}<span class="pm-dash-picker-card__cat-label">${esc(label)}</span>`;
         btn.addEventListener("click", () => selectCategoryAndContinue(c));
         categoryPickerList.appendChild(btn);
       }
@@ -1628,20 +2542,40 @@
         openBrandPickerDialog();
       });
     }
-    if (productPickerBrandsBtn) {
-      productPickerBrandsBtn.addEventListener("click", () => {
+    if (productPickerBrand) {
+      productPickerBrand.addEventListener("click", () => {
+        addFlowReturnTo = "picker";
         productPickerDialog.close();
         openBrandPickerDialog();
       });
     }
-    if (productPickerNewBtn) {
-      productPickerNewBtn.addEventListener("click", () => openNewProductFromPicker());
-    }
-    if (productPickerBackBtn) {
-      productPickerBackBtn.addEventListener("click", () => {
+    if (productPickerCategory) {
+      productPickerCategory.addEventListener("click", () => {
+        addFlowReturnTo = "picker";
         productPickerDialog.close();
         if (pendingAddBrand) openCategoryPickerDialog(pendingAddBrand);
+        else openBrandPickerDialog();
       });
+    }
+    if (productDialogBrand) {
+      productDialogBrand.addEventListener("click", () => {
+        addFlowReturnTo = "newProduct";
+        productDialog.close();
+        openBrandPickerDialog();
+      });
+    }
+    if (productDialogCategory) {
+      productDialogCategory.addEventListener("click", () => {
+        addFlowReturnTo = "newProduct";
+        productDialog.close();
+        const brand =
+          pendingAddBrand || (state?.brands || []).find((b) => b.id === Number(pdBrandId?.value));
+        if (brand) openCategoryPickerDialog(brand);
+        else openBrandPickerDialog();
+      });
+    }
+    if (productPickerNewBtn) {
+      productPickerNewBtn.addEventListener("click", () => openNewProductFromPicker());
     }
     if (pdCategorySelect) {
       pdCategorySelect.addEventListener("change", () => {
@@ -1653,7 +2587,9 @@
     function syncAddProductHint() {
       const brand = (state?.brands || []).find((b) => b.id === Number(pdBrandId.value));
       const cat = (state?.categories || []).find((c) => c.id === Number(pdCategoryId.value));
-      if (brand && cat) pdHint.textContent = `${brand.name} / ${cat.name}`;
+      if (brand && cat) {
+        pdHint.textContent = `${brand.name} / ${paintMarketCategoryLabel(cat.slug, cat.name)}`;
+      }
     }
 
     function listingFor(productId, cap) {
@@ -1665,19 +2601,43 @@
       pdUpdateListingRows.innerHTML = "";
       for (const [cap, label] of DASH_CAPACITIES) {
         const row = document.createElement("div");
-        row.className = "flex items-center gap-2";
+        row.className = "upd-cap-row";
         row.setAttribute("data-cap", String(cap));
         const chkId = `upd-cap-${cap}`;
         row.innerHTML = `
           <input type="checkbox" id="${chkId}" class="upd-cap-chk rounded border-slate-300" />
-          <label for="${chkId}" class="text-xs font-bold text-slate-700 w-10 shrink-0">${label}</label>
-          <input type="number" step="any" inputmode="decimal" class="upd-cap-price flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm" placeholder="" disabled />`;
+          <label for="${chkId}" class="upd-cap-label-wrap text-xs font-bold text-slate-700 shrink-0">
+            <span class="upd-cap-label-text">${label}</span>
+            <span class="upd-cap-label__ral" aria-hidden="true"></span>
+          </label>
+          <input type="number" step="any" inputmode="decimal" class="upd-cap-price flex-1 min-w-[4rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm" placeholder="" disabled />
+          <input type="hidden" class="upd-cap-ral-code" value="" />
+          <button type="button" class="upd-cap-ral" disabled title="RAL colour">
+            <span class="upd-cap-ral__swatch upd-cap-ral__swatch--empty hidden" aria-hidden="true"></span>
+            <span class="upd-cap-ral__label">${esc(paintMarketT("dash_upd_ral_btn"))}</span>
+          </button>`;
         const chk = row.querySelector(".upd-cap-chk");
         const price = row.querySelector(".upd-cap-price");
+        const ralBtn = row.querySelector(".upd-cap-ral");
+        const ralCodeInput = row.querySelector(".upd-cap-ral-code");
         chk.addEventListener("change", () => {
           price.disabled = !chk.checked;
-          if (!chk.checked) price.value = "";
+          if (ralBtn) ralBtn.disabled = !chk.checked;
+          if (!chk.checked) {
+            price.value = "";
+            if (ralCodeInput) ralCodeInput.value = "";
+            syncUpdCapRalBtn(row);
+          }
         });
+        if (ralBtn) {
+          ralBtn.addEventListener("click", () => {
+            openRalPickerDialog(ralCodeInput?.value || "", (code) => {
+              if (ralCodeInput) ralCodeInput.value = code;
+              syncUpdCapRalBtn(row);
+            });
+          });
+        }
+        syncUpdCapRalBtn(row);
         pdUpdateListingRows.appendChild(row);
       }
     }
@@ -1689,11 +2649,16 @@
         const listing = listingFor(productId, cap);
         const chk = row.querySelector(".upd-cap-chk");
         const price = row.querySelector(".upd-cap-price");
+        const ralBtn = row.querySelector(".upd-cap-ral");
+        const ralCodeInput = row.querySelector(".upd-cap-ral-code");
         if (!chk || !price) continue;
         chk.checked = !!listing?.available;
         price.disabled = !chk.checked;
+        if (ralBtn) ralBtn.disabled = !chk.checked;
         price.value =
           listing?.price_amount != null && listing.price_amount !== "" ? String(listing.price_amount) : "";
+        if (ralCodeInput) ralCodeInput.value = listing?.ral_code ? String(listing.ral_code) : "";
+        syncUpdCapRalBtn(row);
       }
     }
 
@@ -1708,12 +2673,22 @@
         const cap = Number(row.getAttribute("data-cap"));
         const chk = row.querySelector(".upd-cap-chk");
         const priceEl = row.querySelector(".upd-cap-price");
+        const ralCodeInput = row.querySelector(".upd-cap-ral-code");
         if (!chk?.checked || !Number.isFinite(cap)) continue;
         const raw = String(priceEl?.value ?? "").trim();
         const amount = Number(raw);
         if (!raw || !Number.isFinite(amount) || amount <= 0) {
           toast(paintMarketTf("dash_toast_capacity_price_required", { capacity: capacityLabel(cap) }));
           priceEl?.focus();
+          return false;
+        }
+        const ralPick = String(ralCodeInput?.value ?? "").trim();
+        if (
+          !ralPick ||
+          (typeof paintMarketIsValidRalCode === "function" && !paintMarketIsValidRalCode(ralPick, shopCustomColors()))
+        ) {
+          toast(paintMarketTf("dash_toast_capacity_ral_required", { capacity: capacityLabel(cap) }));
+          row.querySelector(".upd-cap-ral")?.focus();
           return false;
         }
       }
@@ -1727,6 +2702,7 @@
         const cap = Number(row.getAttribute("data-cap"));
         const chk = row.querySelector(".upd-cap-chk");
         const price = row.querySelector(".upd-cap-price");
+        const ralCodeInput = row.querySelector(".upd-cap-ral-code");
         if (!chk || !price || !Number.isFinite(cap)) continue;
         const raw = String(price.value ?? "").trim();
         payloads.push({
@@ -1734,7 +2710,8 @@
           capacityLtr: cap,
           available: chk.checked,
           priceAmount: chk.checked ? Number(raw) : null,
-          customPhotoUrl: null
+          customPhotoUrl: null,
+          ralCode: chk.checked ? String(ralCodeInput?.value ?? "").trim() : null
         });
       }
       return payloads;
@@ -1763,7 +2740,7 @@
       pdProductId.value = String(product.id);
       const b = (state.brands || []).find((x) => x.id === product.brand_id);
       const c = (state.categories || []).find((x) => x.id === product.category_id);
-      pdHint.textContent = `${b?.name || ""} / ${c?.name || ""}`;
+      pdHint.textContent = `${b?.name || ""} / ${paintMarketCategoryLabel(c?.slug, c?.name)}`;
       pdBrandId.value = String(product.brand_id || "");
       pdCategoryId.value = String(product.category_id || "");
       pdName.value = product.name || "";
@@ -1793,14 +2770,268 @@
       }
     }
 
+    const ralPickerDialog = document.getElementById("ralPickerDialog");
+    const ralPickerGrid = document.getElementById("ralPickerGrid");
+    const dashPriceQuickRalBtn = document.getElementById("dashPriceQuickRalBtn");
+    const dashPriceQuickRalCode = document.getElementById("dashPriceQuickRalCode");
+    const dashPriceQuickRalSwatch = document.getElementById("dashPriceQuickRalSwatch");
+    const dashPriceQuickRalLabel = document.getElementById("dashPriceQuickRalLabel");
+    const dashPriceQuickCapLtr = document.getElementById("dashPriceQuickCapLtr");
+    const dashPriceQuickCapRal = document.getElementById("dashPriceQuickCapRal");
+
+    function syncCapRalUnderSlot(slotEl, code) {
+      if (!slotEl) return;
+      const c = String(code || "").trim();
+      if (
+        c &&
+        typeof paintMarketRalSwatchHtml === "function" &&
+        typeof paintMarketRalHex === "function" &&
+        paintMarketRalHex(c, shopCustomColors())
+      ) {
+        slotEl.innerHTML = paintMarketRalSwatchHtml(c, shopCustomColors(), esc);
+      } else {
+        slotEl.innerHTML = "";
+      }
+    }
+    const pdRalCustomName = document.getElementById("pdRalCustomName");
+    const pdRalCustomHex = document.getElementById("pdRalCustomHex");
+    const pdRalCustomAddBtn = document.getElementById("pdRalCustomAddBtn");
+    const ralCustomName = document.getElementById("ralCustomName");
+    const ralCustomHex = document.getElementById("ralCustomHex");
+    const ralCustomAddBtn = document.getElementById("ralCustomAddBtn");
+    let ralPickerOnPick = null;
+
+    function shopCustomColors() {
+      return state?.customColors || [];
+    }
+
+    function ralPickerLabels() {
+      return {
+        primary: paintMarketT("dash_ral_section_primary"),
+        more: paintMarketT("dash_ral_section_more"),
+        custom: paintMarketT("dash_ral_section_custom")
+      };
+    }
+
+    function invalidateAllRalGrids() {
+      for (const el of [pdRalGrid, ralPickerGrid]) {
+        if (!el) continue;
+        delete el.dataset.built;
+        el.innerHTML = "";
+      }
+    }
+
+    function buildRalGridInto(container, force) {
+      if (!container) return;
+      if (force) delete container.dataset.built;
+      if (container.dataset.built === "1" && container.children.length > 0) return;
+      if (typeof paintMarketBuildRalPickerHtml === "function") {
+        container.innerHTML = paintMarketBuildRalPickerHtml(esc, shopCustomColors(), ralPickerLabels());
+      }
+      container.dataset.built = "1";
+    }
+
+    function highlightRalGrid(container, code) {
+      if (!container) return;
+      const normalized =
+        typeof paintMarketNormalizeRalCode === "function"
+          ? paintMarketNormalizeRalCode(code)
+          : String(code || "")
+              .replace(/^RAL\s*/i, "")
+              .trim();
+      container.querySelectorAll("[data-ral]").forEach((btn) => {
+        const on = btn.getAttribute("data-ral") === normalized;
+        btn.classList.toggle("is-selected", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+
+    async function submitCustomRalColor(nameInput, hexInput, afterPick) {
+      const name = String(nameInput?.value ?? "").trim();
+      const hexRaw = hexInput?.value;
+      if (name.length < 2) {
+        toast(paintMarketT("dash_ral_custom_name_short"));
+        nameInput?.focus();
+        return;
+      }
+      let res;
+      try {
+        res = await PaintApi.addShopCustomColor({ name, hex: hexRaw });
+      } catch (e) {
+        showErr(paintMarketT("dash_ral_custom_add_fail"), e);
+        return;
+      }
+      state.customColors = res.customColors || [];
+      invalidateAllRalGrids();
+      buildRalGridInto(pdRalGrid, true);
+      buildRalGridInto(ralPickerGrid, true);
+      if (nameInput) nameInput.value = "";
+      const created = res.color;
+      const code =
+        created && typeof paintMarketCustomColorCode === "function"
+          ? paintMarketCustomColorCode(created.id)
+          : created
+            ? `C${created.id}`
+            : "";
+      if (code && typeof afterPick === "function") afterPick(code);
+      toast(paintMarketT("dash_ral_custom_added"));
+    }
+
+    function syncUpdCapRalBtn(row) {
+      const btn = row?.querySelector?.(".upd-cap-ral");
+      const codeInput = row?.querySelector?.(".upd-cap-ral-code");
+      const labelRal = row?.querySelector?.(".upd-cap-label__ral");
+      if (!btn || !codeInput) return;
+      const code = String(codeInput.value || "").trim();
+      const info =
+        typeof paintMarketRalLookup === "function" ? paintMarketRalLookup(code, shopCustomColors()) : null;
+      syncCapRalUnderSlot(labelRal, code);
+      const swatch = btn.querySelector(".upd-cap-ral__swatch");
+      const label = btn.querySelector(".upd-cap-ral__label");
+      if (info && swatch && label) {
+        swatch.style.background = info.hex;
+        swatch.classList.remove("hidden", "upd-cap-ral__swatch--empty");
+        label.textContent = info.custom ? info.name.slice(0, 10) : info.code;
+        btn.title =
+          typeof paintMarketRalLabel === "function"
+            ? paintMarketRalLabel(info.code, undefined, shopCustomColors())
+            : info.custom
+              ? info.name
+              : `RAL ${info.code}`;
+      } else {
+        if (swatch) {
+          swatch.classList.add("hidden", "upd-cap-ral__swatch--empty");
+          swatch.style.background = "";
+        }
+        if (label) label.textContent = paintMarketT("dash_upd_ral_btn");
+        btn.title = paintMarketT("dash_upd_ral_btn");
+      }
+    }
+
+    function syncDashPriceQuickRalBtn() {
+      if (!dashPriceQuickRalBtn || !dashPriceQuickRalCode) return;
+      const info =
+        typeof paintMarketRalLookup === "function"
+          ? paintMarketRalLookup(dashPriceQuickRalCode.value, shopCustomColors())
+          : null;
+      if (info && dashPriceQuickRalSwatch && dashPriceQuickRalLabel) {
+        dashPriceQuickRalSwatch.style.background = info.hex;
+        dashPriceQuickRalSwatch.classList.remove("hidden", "upd-cap-ral__swatch--empty");
+        dashPriceQuickRalLabel.textContent = info.custom ? info.name.slice(0, 10) : info.code;
+        dashPriceQuickRalBtn.title =
+          typeof paintMarketRalLabel === "function"
+            ? paintMarketRalLabel(info.code, undefined, shopCustomColors())
+            : info.custom
+              ? info.name
+              : `RAL ${info.code}`;
+      } else {
+        if (dashPriceQuickRalSwatch) {
+          dashPriceQuickRalSwatch.classList.add("hidden", "upd-cap-ral__swatch--empty");
+          dashPriceQuickRalSwatch.style.background = "";
+        }
+        if (dashPriceQuickRalLabel) dashPriceQuickRalLabel.textContent = paintMarketT("dash_upd_ral_btn");
+        dashPriceQuickRalBtn.title = paintMarketT("dash_upd_ral_btn");
+      }
+      syncCapRalUnderSlot(dashPriceQuickCapRal, dashPriceQuickRalCode?.value || "");
+    }
+
+    function openRalPickerDialog(currentCode, onPick) {
+      if (!ralPickerDialog || !ralPickerGrid) return;
+      ralPickerOnPick = typeof onPick === "function" ? onPick : null;
+      buildRalGridInto(ralPickerGrid, true);
+      highlightRalGrid(ralPickerGrid, currentCode);
+      ralPickerDialog.showModal();
+    }
+
+    function ensurePdRalGrid() {
+      buildRalGridInto(pdRalGrid, true);
+    }
+
+    function setPdRalSelection(code) {
+      const normalized =
+        typeof paintMarketNormalizeRalCode === "function"
+          ? paintMarketNormalizeRalCode(code)
+          : String(code || "")
+              .replace(/^RAL\s*/i, "")
+              .trim();
+      if (pdRalCode) pdRalCode.value = normalized;
+      highlightRalGrid(pdRalGrid, normalized);
+      const row =
+        typeof paintMarketRalLookup === "function" ? paintMarketRalLookup(normalized, shopCustomColors()) : null;
+      if (pdRalSelected) {
+        if (row) {
+          pdRalSelected.textContent =
+            typeof paintMarketRalLabel === "function"
+              ? paintMarketRalLabel(row.code, undefined, shopCustomColors())
+              : `${row.code} · ${row.name}`;
+          pdRalSelected.classList.remove("hidden");
+        } else {
+          pdRalSelected.textContent = "";
+          pdRalSelected.classList.add("hidden");
+        }
+      }
+    }
+
+    if (pdRalGrid) {
+      pdRalGrid.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-ral]");
+        if (!btn) return;
+        setPdRalSelection(btn.getAttribute("data-ral"));
+      });
+    }
+    if (ralPickerGrid) {
+      ralPickerGrid.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-ral]");
+        if (!btn) return;
+        const code = btn.getAttribute("data-ral");
+        if (ralPickerOnPick) ralPickerOnPick(code);
+        ralPickerDialog?.close();
+        ralPickerOnPick = null;
+      });
+    }
+    if (ralPickerDialog) {
+      ralPickerDialog.addEventListener("close", () => {
+        ralPickerOnPick = null;
+      });
+    }
+    if (dashPriceQuickRalBtn) {
+      dashPriceQuickRalBtn.addEventListener("click", () => {
+        openRalPickerDialog(dashPriceQuickRalCode?.value || "", (code) => {
+          if (dashPriceQuickRalCode) dashPriceQuickRalCode.value = code;
+          syncDashPriceQuickRalBtn();
+        });
+      });
+    }
+    if (pdRalCustomAddBtn) {
+      pdRalCustomAddBtn.addEventListener("click", () => {
+        submitCustomRalColor(pdRalCustomName, pdRalCustomHex, (code) => setPdRalSelection(code));
+      });
+    }
+    if (ralCustomAddBtn) {
+      ralCustomAddBtn.addEventListener("click", () => {
+        submitCustomRalColor(ralCustomName, ralCustomHex, (code) => {
+          if (ralPickerOnPick) ralPickerOnPick(code);
+          ralPickerDialog?.close();
+          ralPickerOnPick = null;
+        });
+      });
+    }
+    ensurePdRalGrid();
+    buildRalGridInto(ralPickerGrid, true);
+
     function openAddProductDialog(brand, category) {
+      pendingAddBrand = brand;
+      pendingAddCategory = category;
       setProductDialogMode("add");
+      ensurePdRalGrid();
+      setPdRalSelection("");
       pdProductId.value = "";
       productDialogTitle.textContent = paintMarketT("dash_dialog_add_title");
       pdSubmit.textContent = paintMarketT("dash_add_btn");
       pdBrandId.value = String(brand.id);
+      pdCategoryId.value = String(category.id);
       fillCategorySelect(category?.id);
-      syncAddProductHint();
+      syncProductDialogHeaderLabels();
       pdName.value = "";
       pdDesc.value = "";
       pdCapacity.value = "1";
@@ -1811,6 +3042,11 @@
       pdPhoto.disabled = false;
       syncProductDialogPhotoPreview("");
       productDialog.showModal();
+      scheduleFitPickerContextHeader();
+      requestAnimationFrame(() => {
+        ensurePdRalGrid();
+        pdRalBlock?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
     }
 
     function showDashPriceQuickList() {
@@ -1824,17 +3060,20 @@
       if (dashPriceQuickListWrap) dashPriceQuickListWrap.classList.add("hidden");
       if (dashPriceQuickEdit) dashPriceQuickEdit.classList.add("is-open");
       if (dashPriceQuickEditLabel) {
-        const cap = capacityLabel(Number(row.capacityLtr));
-        dashPriceQuickEditLabel.textContent = paintMarketTf("dash_price_quick_edit_label", {
-          name: row.productName,
-          brand: row.brandName,
-          capacity: cap
-        });
+        const parts = [row.productName, row.brandName].filter(Boolean);
+        dashPriceQuickEditLabel.textContent = parts.join(" · ");
+      }
+      if (dashPriceQuickCapLtr) {
+        dashPriceQuickCapLtr.textContent = capacityLabel(Number(row.capacityLtr));
       }
       if (dashPriceQuickInput) {
         dashPriceQuickInput.value =
           row.priceAmount != null && row.priceAmount !== "" ? String(row.priceAmount) : "";
         setTimeout(() => dashPriceQuickInput.focus(), 40);
+      }
+      if (dashPriceQuickRalCode) {
+        dashPriceQuickRalCode.value = row.ralCode ? String(row.ralCode) : "";
+        syncDashPriceQuickRalBtn();
       }
     }
 
@@ -1875,6 +3114,15 @@
           dashPriceQuickInput?.focus();
           return;
         }
+        const ralPick = String(dashPriceQuickRalCode?.value ?? "").trim();
+        if (
+          !ralPick ||
+          (typeof paintMarketIsValidRalCode === "function" && !paintMarketIsValidRalCode(ralPick, shopCustomColors()))
+        ) {
+          toast(paintMarketT("dash_toast_ral_required"));
+          dashPriceQuickRalBtn?.focus();
+          return;
+        }
         dashPriceQuickSave.disabled = true;
         try {
           await PaintApi.putListing({
@@ -1882,7 +3130,8 @@
             capacityLtr: Number(dashPriceQuickRow.capacityLtr),
             available: true,
             priceAmount: amount,
-            customPhotoUrl: null
+            customPhotoUrl: null,
+            ralCode: ralPick
           });
           await refreshDashState();
           toast(paintMarketT("dash_toast_prices_saved"));
@@ -1996,6 +3245,15 @@
           pdPrice.focus();
           return;
         }
+        const ralPick = String(pdRalCode?.value || "").trim();
+        if (
+          !ralPick ||
+          (typeof paintMarketIsValidRalCode === "function" && !paintMarketIsValidRalCode(ralPick, shopCustomColors()))
+        ) {
+          toast(paintMarketT("dash_toast_ral_required"));
+          pdRalGrid?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          return;
+        }
       }
       pdSubmit.disabled = true;
       try {
@@ -2031,7 +3289,8 @@
           capacityLtr: Number(pdCapacity.value),
           available: true,
           priceAmount: Number(pdPrice.value || 0),
-          customPhotoUrl: null
+          customPhotoUrl: null,
+          ralCode: String(pdRalCode?.value || "").trim()
         });
         const brand = (state?.brands || []).find((b) => b.id === brandId);
         const category = (state?.categories || []).find((c) => c.id === categoryId);
@@ -2074,7 +3333,9 @@
     function openQuickAddProduct() {
       if (!state) return;
       if (!state.categories?.length) return;
-      const last = getLastAddContext();
+      addFlowReturnTo = "picker";
+      const isFirstAdd = !dashIsReturningShop(state);
+      const last = isFirstAdd ? null : getLastAddContext();
       if (last?.brandId != null && last?.categoryId != null) {
         const { brand, category } = resolveBrandCategory(last.brandId, last.categoryId);
         if (brand && category) {
@@ -2114,6 +3375,15 @@
       renderShopCatalogList();
       syncCoordsLabel();
       if (dashPriceQuickDialog?.open) renderDashPriceQuickList();
+      if (categoryDialog?.open) renderCategoryPickerList();
+      if (productDialog?.open) {
+        fillCategorySelect(Number(pdCategorySelect?.value || pdCategoryId?.value));
+        if (productDialog.dataset.mode === "add") syncProductDialogHeaderLabels();
+        else syncAddProductHint();
+      }
+      if (productPickerDialog?.open) syncProductPickerHeaderLabels();
+      else if (productDialog?.open && productDialog.dataset.mode === "add") syncProductDialogHeaderLabels();
+      else scheduleFitPickerContextHeader();
     });
 
     refreshDashboardTitleForLang();

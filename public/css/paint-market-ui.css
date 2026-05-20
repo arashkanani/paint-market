@@ -438,6 +438,17 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
   letter-spacing: 0;
 }
 
+.pm-map-price-chip .pm-map-price-ral {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-inline-start: 2px;
+  vertical-align: middle;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.2);
+}
+
 .leaflet-marker-icon.pm-map-price-marker {
   background: transparent;
   border: none;
@@ -667,9 +678,9 @@ html[lang="ar"] .pm-shops-section__title-bar {
   align-items: center;
   justify-content: center;
   aspect-ratio: 5 / 3;
-  padding: clamp(0.3rem, 2vw, 0.55rem);
+  padding: var(--pm-card-photo-inset, clamp(0.35rem, 2vw, 0.55rem));
   border-radius: 0.75rem 0.75rem 0 0;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 55%, #f1f5f9 100%);
+  background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   overflow: hidden;
@@ -685,12 +696,154 @@ html[lang="ar"] .pm-shops-section__title-bar {
   display: block;
   width: auto;
   height: auto;
-  max-width: 88%;
-  max-height: 82%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center;
-  filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.1));
+  filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.08));
   transition: transform 0.25s ease;
+}
+
+/* Centered product photo in any card block — same white inset */
+.pm-card-photo-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pm-card-photo-inset, 0.35rem);
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.pm-card-photo-frame > img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.pm-card-photo-frame .pm-dash-catalog-card__overlay,
+.pm-card-photo-frame .pm-card-photo-overlay,
+.pm-dash-catalog-card__img-wrap .pm-dash-catalog-card__overlay,
+.pm-dash-catalog-card__img-wrap .pm-card-photo-overlay {
+  position: absolute;
+  z-index: 2;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+  background: none;
+  padding: 0.15rem 0.2rem;
+  pointer-events: none;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 8px #fff,
+    0 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+.pm-card-photo-frame .pm-card-photo-overlay--price,
+.pm-card-photo-frame .pm-dash-catalog-card__overlay--price,
+.pm-dash-catalog-card__img-wrap .pm-dash-catalog-card__overlay--price,
+.pm-dash-catalog-card__img-wrap .pm-card-photo-overlay--price {
+  top: 0.2rem;
+  left: 0.22rem;
+  font-size: 0.62rem;
+  text-align: left;
+}
+
+.pm-card-photo-frame .pm-card-cap-corner,
+.pm-dash-catalog-card__img-wrap .pm-card-cap-corner {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.22rem;
+  z-index: 2;
+}
+
+.pm-card-cap-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  pointer-events: none;
+}
+
+.pm-card-cap-corner .pm-card-photo-overlay--cap,
+.pm-card-cap-corner .pm-dash-catalog-card__overlay--cap {
+  position: static;
+  top: auto;
+  right: auto;
+  padding: 0.15rem 0.2rem;
+  font-size: 0.58rem;
+  text-align: right;
+}
+
+.pm-card-ral-swatch {
+  display: block;
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.pm-card-photo-frame .pm-card-photo-overlay--cap:not(.pm-card-cap-corner *),
+.pm-card-photo-frame .pm-dash-catalog-card__overlay--cap:not(.pm-card-cap-corner *),
+.pm-dash-catalog-card__img-wrap .pm-card-photo-overlay--cap:not(.pm-card-cap-corner *),
+.pm-dash-catalog-card__img-wrap .pm-dash-catalog-card__overlay--cap:not(.pm-card-cap-corner *) {
+  top: 0.2rem;
+  right: 0.22rem;
+  font-size: 0.58rem;
+  text-align: right;
+}
+
+/* Shop listing / popular: capacity + RAL tucked top-right; price uses rest in one row */
+.pm-card-photo-frame.pm-card-photo-frame--shop-split {
+  --pm-shop-cap-reserve: 1.38rem;
+}
+
+.pm-card-photo-frame.pm-card-photo-frame--shop-split .pm-card-photo-overlay--price,
+.pm-card-photo-frame.pm-card-photo-frame--shop-split .pm-dash-catalog-card__overlay--price {
+  left: 0.06rem;
+  right: var(--pm-shop-cap-reserve);
+  max-width: none;
+  top: 0.06rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  line-height: 1.1;
+  font-size: clamp(0.5rem, 2.85vw, 0.6rem);
+  display: block;
+  word-break: normal;
+}
+
+.pm-card-photo-frame.pm-card-photo-frame--shop-split .pm-card-cap-corner {
+  top: 0.04rem;
+  right: 0.04rem;
+  left: auto;
+  width: max-content;
+  max-width: var(--pm-shop-cap-reserve);
+  align-items: flex-end;
+  gap: 0.05rem;
+  z-index: 3;
+}
+
+.pm-card-photo-frame.pm-card-photo-frame--shop-split .pm-card-cap-corner .pm-card-photo-overlay--cap,
+.pm-card-photo-frame.pm-card-photo-frame--shop-split .pm-card-cap-corner .pm-dash-catalog-card__overlay--cap {
+  white-space: nowrap;
+  text-align: right;
+  padding: 0.06rem 0.08rem;
+  font-size: 0.5rem;
+  line-height: 1;
+}
+
+.pm-card-photo-frame.pm-card-photo-frame--shop-split .pm-card-cap-corner .pm-card-ral-swatch {
+  margin-left: auto;
+  width: 0.52rem;
+  height: 0.52rem;
 }
 
 .pm-shop-card:hover .pm-shop-card__logo-img {
@@ -883,19 +1036,15 @@ html[lang="ar"] .pm-shops-section__title-bar {
 }
 
 .pm-shop-popular-tile {
-  border: 1px solid rgba(13, 148, 136, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .pm-shop-popular-tile:hover {
-  border-color: rgba(37, 99, 235, 0.45);
-  background: #fff;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
 }
 
-.pm-shop-popular-tile span:last-child {
-  font-weight: 700;
+.pm-shop-product-card__name {
+  font-weight: 600;
   color: #0f172a;
 }
 
@@ -913,4 +1062,132 @@ html[lang="ar"] .pm-shop-card__dir,
 html[lang="ar"] .pm-shop-card__info,
 html[lang="ar"] .pm-shop-card__name {
   font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+}
+
+/* Shop category filter pills with icons */
+.pill.pill--with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.shop-pill-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pm-cat-icon {
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+.pm-cat-icon--xs {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.pm-cat-icon--sm {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.pm-context-hit__inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.pm-context-hit__icon {
+  width: 1.2em;
+  height: 1.2em;
+  flex-shrink: 0;
+}
+
+.pm-context-hit__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-dash-catalog-card__topline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.pm-dash-catalog-card__cat-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+#productPickerDialog .pm-dash-catalog-card__cat-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.index-suggest-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.index-suggest-cap-ral {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+  align-self: center;
+  min-width: 1.75rem;
+}
+
+.index-suggest-cap-ral__cap {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1;
+}
+
+.index-suggest-cap-ral .pm-card-ral-swatch,
+.index-suggest-ral {
+  width: 0.65rem;
+  height: 0.65rem;
+}
+
+.shop-listing-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.shop-listing-cat-row .pm-cat-icon--xs {
+  width: 0.65rem;
+  height: 0.65rem;
+}
+
+.pm-shop-popular-tile__cat {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }

@@ -47,12 +47,14 @@ function slugify(s) {
 }
 
 const CATEGORY_DEFS = [
-  { slug: "building_paints", name: "Building paints", sort_order: 1 },
-  { slug: "steel_workshop_paints", name: "Steel workshop paints", sort_order: 2 },
-  { slug: "carpentry_workshop_paints", name: "Carpentry workshop paints", sort_order: 3 },
+  { slug: "building_paints", name: "Building", sort_order: 1 },
+  { slug: "steel_workshop_paints", name: "Steel", sort_order: 2 },
+  { slug: "carpentry_workshop_paints", name: "Wood", sort_order: 3 },
   { slug: "thinner", name: "Thinner", sort_order: 4 },
   { slug: "industrial", name: "Industrial", sort_order: 5 }
 ];
+
+const CATEGORY_NAMES_BY_SLUG = Object.fromEntries(CATEGORY_DEFS.map((c) => [c.slug, c.name]));
 
 const BRAND_DEFS = [
   { slug: "national", name: "National", sort_order: 1 },
@@ -269,6 +271,23 @@ async function migrate(db) {
     await run(db, "ALTER TABLE shops ADD COLUMN lng REAL");
   }
 
+  const listingCols = await all(db, "PRAGMA table_info(shop_listings)");
+  if (!listingCols.some((c) => c.name === "ral_code")) {
+    await run(db, "ALTER TABLE shop_listings ADD COLUMN ral_code TEXT");
+  }
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS shop_custom_colors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      hex TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`
+  );
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_shop_custom_colors_shop ON shop_custom_colors(shop_id)`);
+
   const setting = await get(db, "SELECT value FROM site_settings WHERE key = 'customer_access_enabled'");
   if (!setting) {
     await run(
@@ -303,6 +322,9 @@ async function migrate(db) {
         [c.slug, c.name, c.sort_order]
       );
     }
+  }
+  for (const [slug, name] of Object.entries(CATEGORY_NAMES_BY_SLUG)) {
+    await run(db, "UPDATE catalog_categories SET name = ? WHERE slug = ?", [name, slug]);
   }
 
   const brandCount = await get(db, "SELECT COUNT(*) AS c FROM brands");
@@ -346,5 +368,6 @@ module.exports = {
   touchShopCatalogUpdate,
   slugify,
   BRAND_DEFS,
-  CATEGORY_DEFS
+  CATEGORY_DEFS,
+  CATEGORY_NAMES_BY_SLUG
 };

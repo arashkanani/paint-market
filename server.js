@@ -4,6 +4,41 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const dbm = require("./db");
+const { CATEGORY_NAMES_BY_SLUG } = require("./db");
+const ralColors = require("./public/js/ral-colors");
+
+async function loadShopCustomColors(db, shopId) {
+  return dbm.all(
+    db,
+    "SELECT id, name, hex FROM shop_custom_colors WHERE shop_id = ? ORDER BY id ASC",
+    [shopId]
+  );
+}
+
+function normalizeListingRalCode(raw) {
+  if (raw == null || String(raw).trim() === "") return null;
+  return ralColors.paintMarketNormalizeRalCode(String(raw).replace(/^RAL\s*/i, "").trim());
+}
+
+function categoryDisplayName(slug, name) {
+  const k = String(slug || "");
+  if (k && CATEGORY_NAMES_BY_SLUG[k]) return CATEGORY_NAMES_BY_SLUG[k];
+  return name;
+}
+
+function normalizeCategoryRow(row) {
+  if (!row) return row;
+  if (row.slug) row.name = categoryDisplayName(row.slug, row.name);
+  return row;
+}
+
+function normalizeCategoryNameFields(row) {
+  if (!row) return row;
+  if (row.category_slug != null) {
+    row.category_name = categoryDisplayName(row.category_slug, row.category_name);
+  }
+  return row;
+}
 const { hashPassword, verifyPassword, randomToken } = require("./auth");
 
 const PORT = Number(process.env.PAINT_PORT || 3010);
@@ -138,6 +173,144 @@ function parseCapacityLtr(raw) {
 function buildCapacityListingFilter(capacityLtr) {
   if (capacityLtr == null) return { sql: "", params: [] };
   return { sql: " AND ABS(sl.capacity_ltr - ?) < 0.001", params: [capacityLtr] };
+}
+
+function pickSuggestListingForProduct(listings, capacityLtr) {
+  let pool = Array.isArray(listings) ? listings : [];
+  if (capacityLtr != null) {
+    pool = pool.filter((l) => Math.abs(Number(l.capacity_ltr) - capacityLtr) < 0.001);
+  }
+  if (!pool.length) return null;
+  const withRal = pool.filter((l) => l.ral_code && String(l.ral_code).trim());
+  const byRecent = (a, b) => String(b.updated_at || "").localeCompare(String(a.updated_at || ""));
+  if (withRal.length) {
+    withRal.sort(byRecent);
+    return withRal[0];
+  }
+  for (const cap of [1, 3.6, 18]) {
+    const hit = pool.find((l) => Math.abs(Number(l.capacity_ltr) - cap) < 0.001);
+    if (hit) return hit;
+  }
+  pool.sort(byRecent);
+  return pool[0];
+}
+
+async function enrichSuggestProducts(db, products, capacityLtr) {
+  if (!products?.length) return products;
+  const ids = products.map((p) => p.id);
+  const placeholders = ids.map(() => "?").join(",");
+  const { sql: capSql, params: capParams } = buildCapacityListingFilter(capacityLtr);
+  const rows = await dbm.all(
+    db,
+    `SELECT sl.master_product_id, sl.capacity_ltr, sl.ral_code, sl.updated_at, sl.shop_id
+     FROM shop_listings sl
+     WHERE sl.master_product_id IN (${placeholders})
+       AND sl.available = 1
+       AND sl.price_amount IS NOT NULL
+       ${capSql}`,
+    [...ids, ...capParams]
+  );
+  const byProduct = new Map();
+  for (const r of rows) {
+    const pid = r.master_product_id;
+    if (!byProduct.has(pid)) byProduct.set(pid, []);
+    byProduct.get(pid).push(r);
+  }
+  const shopIds = [...new Set(rows.map((r) => r.shop_id))];
+  const customByShop = new Map();
+  if (shopIds.length) {
+    const customRows = await dbm.all(
+      db,
+      `SELECT shop_id, id, name, hex FROM shop_custom_colors WHERE shop_id IN (${shopIds.map(() => "?").join(",")})`,
+      shopIds
+    );
+    for (const c of customRows) {
+      if (!customByShop.has(c.shop_id)) customByShop.set(c.shop_id, []);
+      customByShop.get(c.shop_id).push({ id: c.id, name: c.name, hex: c.hex });
+    }
+  }
+  for (const p of products) {
+    const pick = pickSuggestListingForProduct(byProduct.get(p.id) || [], capacityLtr);
+    p.capacity_ltr = pick?.capacity_ltr ?? null;
+    const ralCode = pick?.ral_code ? normalizeListingRalCode(pick.ral_code) : "";
+    p.ral_code = ralCode || "";
+    const custom = pick ? customByShop.get(pick.shop_id) || [] : [];
+    p.ral_hex = ralCode ? ralColors.paintMarketRalHex(ralCode, custom) : null;
+    p.ral_label = ralCode ? ralColors.paintMarketRalLabel(ralCode, "en", custom) : "";
+  }
+  return products;
+}
+
+async function loadCustomColorsForShops(db, shopIds) {
+  const customByShop = new Map();
+  const ids = [...new Set((shopIds || []).filter((id) => Number.isFinite(Number(id))))];
+  if (!ids.length) return customByShop;
+  const customRows = await dbm.all(
+    db,
+    `SELECT shop_id, id, name, hex FROM shop_custom_colors WHERE shop_id IN (${ids.map(() => "?").join(",")})`,
+    ids
+  );
+  for (const c of customRows) {
+    if (!customByShop.has(c.shop_id)) customByShop.set(c.shop_id, []);
+    customByShop.get(c.shop_id).push({ id: c.id, name: c.name, hex: c.hex });
+  }
+  return customByShop;
+}
+
+function attachRalDisplayFields(offer, customColors) {
+  const code = offer.ralCode ? normalizeListingRalCode(offer.ralCode) : "";
+  offer.ralCode = code || "";
+  offer.ral_hex = code ? ralColors.paintMarketRalHex(code, customColors) : null;
+  offer.ral_label = code ? ralColors.paintMarketRalLabel(code, "en", customColors) : "";
+}
+
+async function enrichPricesMapShops(db, shops) {
+  if (!shops?.length) return shops;
+  const customByShop = await loadCustomColorsForShops(
+    db,
+    shops.map((s) => s.id)
+  );
+  for (const shop of shops) {
+    const custom = customByShop.get(shop.id) || [];
+    for (const offer of shop.offers || []) {
+      attachRalDisplayFields(offer, custom);
+    }
+  }
+  return shops;
+}
+
+async function enrichShopCatalogPicks(db, shopId, products) {
+  if (!products?.length) return products;
+  const ids = products.map((p) => p.id);
+  const placeholders = ids.map(() => "?").join(",");
+  const rows = await dbm.all(
+    db,
+    `SELECT master_product_id, capacity_ltr, price_amount, currency, ral_code, custom_photo_url, updated_at
+     FROM shop_listings
+     WHERE shop_id = ?
+       AND master_product_id IN (${placeholders})
+       AND available = 1
+       AND price_amount IS NOT NULL`,
+    [shopId, ...ids]
+  );
+  const customColors = await loadShopCustomColors(db, shopId);
+  const byProduct = new Map();
+  for (const r of rows) {
+    if (!byProduct.has(r.master_product_id)) byProduct.set(r.master_product_id, []);
+    byProduct.get(r.master_product_id).push(r);
+  }
+  for (const p of products) {
+    const pick = pickSuggestListingForProduct(byProduct.get(p.id) || [], null);
+    if (!pick) continue;
+    p.capacity_ltr = pick.capacity_ltr;
+    p.price_amount = pick.price_amount;
+    p.currency = pick.currency;
+    const ralCode = pick.ral_code ? normalizeListingRalCode(pick.ral_code) : "";
+    p.ral_code = ralCode || "";
+    p.ral_hex = ralCode ? ralColors.paintMarketRalHex(ralCode, customColors) : null;
+    if (pick.custom_photo_url) p.listing_image_url = pick.custom_photo_url;
+  }
+  return products;
 }
 
 function parsePricesMapProductIds(raw) {
@@ -470,7 +643,8 @@ async function main() {
           : "";
       const products = await dbm.all(
         db,
-        `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, b.name AS brand_name, c.name AS category_name
+        `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, b.name AS brand_name,
+                c.slug AS category_slug, c.name AS category_name
          FROM master_products mp
          JOIN brands b ON b.id = mp.brand_id
          JOIN catalog_categories c ON c.id = mp.category_id
@@ -480,6 +654,8 @@ async function main() {
          LIMIT 12`,
         capacityLtr != null ? [like, ...capParams] : [like]
       );
+      products.forEach(normalizeCategoryNameFields);
+      await enrichSuggestProducts(db, products, capacityLtr);
       const shopCapExists =
         capacityLtr != null
           ? ` AND EXISTS (
@@ -553,7 +729,7 @@ async function main() {
                 s.lat, s.lng, s.location_text, s.address,
                 mp.id AS product_id, mp.name AS product_name,
                 b.slug AS brand_slug, b.name AS brand_name,
-                sl.capacity_ltr, sl.price_amount, sl.currency, sl.id AS listing_id
+                sl.capacity_ltr, sl.price_amount, sl.currency, sl.ral_code, sl.id AS listing_id
          FROM shop_listings sl
          JOIN shops s ON s.id = sl.shop_id
          JOIN master_products mp ON mp.id = sl.master_product_id
@@ -592,9 +768,11 @@ async function main() {
           capacityLtr: r.capacity_ltr,
           priceAmount: r.price_amount,
           currency: r.currency || pmCurrencyForLocationText(r.location_text),
+          ralCode: r.ral_code || "",
           listingId: r.listing_id
         });
       }
+      const shops = await enrichPricesMapShops(db, [...byShop.values()]);
       res.json({
         query: q,
         productId: hasProduct ? productId : null,
@@ -602,7 +780,7 @@ async function main() {
         allBrands: Boolean(productName),
         productName,
         capacityLtr,
-        shops: [...byShop.values()]
+        shops
       });
     })
   );
@@ -678,15 +856,18 @@ async function main() {
         return;
       }
       const brands = await dbm.all(db, "SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC, name ASC");
-      const categories = await dbm.all(
-        db,
-        "SELECT id, slug, name, sort_order FROM catalog_categories ORDER BY sort_order ASC"
-      );
+      const categories = (
+        await dbm.all(
+          db,
+          "SELECT id, slug, name, sort_order FROM catalog_categories ORDER BY sort_order ASC"
+        )
+      ).map(normalizeCategoryRow);
 
-      const listings = await dbm.all(
+      const listings = (
+        await dbm.all(
         db,
         `SELECT sl.id, sl.master_product_id, sl.available, sl.price_amount, sl.currency, sl.capacity_ltr,
-                sl.custom_photo_url, sl.view_count,
+                sl.custom_photo_url, sl.ral_code, sl.view_count,
                 mp.name AS product_name, mp.slug AS product_slug, mp.description, mp.default_image_url, mp.popularity_score,
                 b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name, b.sort_order AS brand_order,
                 c.id AS category_id, c.slug AS category_slug, c.name AS category_name, c.sort_order AS category_order
@@ -697,10 +878,12 @@ async function main() {
          WHERE sl.shop_id = ? AND sl.available = 1
          ORDER BY b.sort_order ASC, c.sort_order ASC,
                   (mp.popularity_score + sl.view_count) DESC, mp.name ASC`,
-        [shop.id]
-      );
+          [shop.id]
+        )
+      ).map(normalizeCategoryNameFields);
 
-      res.json({ shop, brands, categories, listings });
+      const customColors = await loadShopCustomColors(db, shop.id);
+      res.json({ shop, brands, categories, listings, customColors });
     })
   );
 
@@ -803,23 +986,25 @@ async function main() {
     asyncHandler(async (req, res) => {
       const u = await requireRole(db, req, "shop");
       const brands = await dbm.all(db, "SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC");
-      const categories = await dbm.all(
+      const categories = (await dbm.all(
         db,
         "SELECT id, slug, name, sort_order FROM catalog_categories ORDER BY sort_order ASC"
-      );
-      const products = await dbm.all(
-        db,
-        `SELECT mp.id, mp.name, mp.slug, mp.description, mp.default_image_url, mp.popularity_score,
+      )).map(normalizeCategoryRow);
+      const products = (
+        await dbm.all(
+          db,
+          `SELECT mp.id, mp.name, mp.slug, mp.description, mp.default_image_url, mp.popularity_score,
                 mp.created_by_shop_id,
                 CASE WHEN mp.created_by_shop_id = ? THEN 1 ELSE 0 END AS editable,
                 b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name, b.sort_order AS brand_order,
-                c.id AS category_id, c.name AS category_name, c.sort_order AS category_order
-         FROM master_products mp
-         JOIN brands b ON b.id = mp.brand_id
-         JOIN catalog_categories c ON c.id = mp.category_id
-         ORDER BY b.sort_order ASC, c.sort_order ASC, mp.popularity_score DESC, mp.name ASC`,
-        [u.shop_id]
-      );
+                c.id AS category_id, c.slug AS category_slug, c.name AS category_name, c.sort_order AS category_order
+           FROM master_products mp
+           JOIN brands b ON b.id = mp.brand_id
+           JOIN catalog_categories c ON c.id = mp.category_id
+           ORDER BY b.sort_order ASC, c.sort_order ASC, mp.popularity_score DESC, mp.name ASC`,
+          [u.shop_id]
+        )
+      ).map(normalizeCategoryNameFields);
       const listings = await dbm.all(
         db,
         "SELECT * FROM shop_listings WHERE shop_id = ?",
@@ -829,7 +1014,54 @@ async function main() {
       for (const L of listings) {
         listingKey.set(`${L.master_product_id}:${L.capacity_ltr}`, L);
       }
-      res.json({ brands, categories, products, listings, listingKey: Object.fromEntries(listingKey) });
+      const customColors = await loadShopCustomColors(db, u.shop_id);
+      res.json({
+        brands,
+        categories,
+        products,
+        listings,
+        listingKey: Object.fromEntries(listingKey),
+        customColors
+      });
+    })
+  );
+
+  app.post(
+    "/paint/api/shop/custom-colors",
+    asyncHandler(async (req, res) => {
+      const u = await requireRole(db, req, "shop");
+      const body = req.body || {};
+      const name = String(body.name || "").trim();
+      const hex = ralColors.paintMarketNormalizeHex(body.hex);
+      if (name.length < 2 || name.length > 48) {
+        res.status(400).json({ error: "Colour name must be 2–48 characters" });
+        return;
+      }
+      if (!hex) {
+        res.status(400).json({ error: "Valid hex colour required (e.g. #1a2b3c)" });
+        return;
+      }
+      const count = await dbm.get(
+        db,
+        "SELECT COUNT(*) AS c FROM shop_custom_colors WHERE shop_id = ?",
+        [u.shop_id]
+      );
+      if (Number(count?.c || 0) >= 40) {
+        res.status(400).json({ error: "Maximum 40 custom colours per shop" });
+        return;
+      }
+      const ins = await dbm.run(
+        db,
+        "INSERT INTO shop_custom_colors (shop_id, name, hex) VALUES (?, ?, ?)",
+        [u.shop_id, name, hex]
+      );
+      await dbm.touchShopCatalogUpdate(db, u.shop_id);
+      const customColors = await loadShopCustomColors(db, u.shop_id);
+      const created = customColors.find((c) => c.id === ins.lastID);
+      res.json({
+        customColors,
+        color: created || { id: ins.lastID, name, hex }
+      });
     })
   );
 
@@ -867,7 +1099,7 @@ async function main() {
   app.get(
     "/paint/api/shop/catalog-picks",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "shop");
+      const u = await requireRole(db, req, "shop");
       const brandId = Number(req.query.brandId);
       const categoryId = Number(req.query.categoryId);
       if (!Number.isFinite(brandId) || !Number.isFinite(categoryId)) {
@@ -890,6 +1122,7 @@ async function main() {
                   mp.name ASC`,
         [brandId, categoryId]
       );
+      await enrichShopCatalogPicks(db, u.shop_id, products);
       res.json({ products });
     })
   );
@@ -902,8 +1135,9 @@ async function main() {
         db,
         `SELECT mp.id AS product_id, mp.name AS product_name,
                 b.id AS brand_id, b.name AS brand_name,
-                c.id AS category_id, c.name AS category_name,
-                sl.capacity_ltr, sl.price_amount, sl.currency, sl.updated_at
+                c.id AS category_id, c.slug AS category_slug, c.name AS category_name,
+                sl.capacity_ltr, sl.price_amount, sl.currency, sl.ral_code, sl.updated_at,
+                mp.default_image_url
          FROM shop_listings sl
          JOIN master_products mp ON mp.id = sl.master_product_id
          JOIN brands b ON b.id = mp.brand_id
@@ -915,6 +1149,7 @@ async function main() {
          ORDER BY sl.updated_at DESC`,
         [u.shop_id]
       );
+      const customColors = await loadShopCustomColors(db, u.shop_id);
       const byProduct = new Map();
       for (const r of rows) {
         let entry = byProduct.get(r.product_id);
@@ -925,16 +1160,20 @@ async function main() {
             brandId: r.brand_id,
             brandName: r.brand_name,
             categoryId: r.category_id,
-            categoryName: r.category_name,
+            categoryName: categoryDisplayName(r.category_slug, r.category_name),
+            imageUrl: r.default_image_url || "",
             lastUpdatedAt: r.updated_at,
             listings: []
           };
           byProduct.set(r.product_id, entry);
         }
+        const ralCode = r.ral_code ? normalizeListingRalCode(r.ral_code) : "";
         entry.listings.push({
           capacityLtr: r.capacity_ltr,
           priceAmount: r.price_amount,
-          currency: r.currency
+          currency: r.currency,
+          ralCode: ralCode || "",
+          ralHex: ralCode ? ralColors.paintMarketRalHex(ralCode, customColors) : null
         });
         if (String(r.updated_at) > String(entry.lastUpdatedAt)) {
           entry.lastUpdatedAt = r.updated_at;
@@ -960,6 +1199,15 @@ async function main() {
           ? null
           : Number(body.priceAmount);
       const customPhotoUrl = body.customPhotoUrl ? String(body.customPhotoUrl).trim() : null;
+      let ralCode = null;
+      if (body.ralCode != null && String(body.ralCode).trim() !== "") {
+        const customColors = await loadShopCustomColors(db, u.shop_id);
+        ralCode = normalizeListingRalCode(body.ralCode);
+        if (!ralCode || !ralColors.paintMarketIsValidRalCode(ralCode, customColors)) {
+          res.status(400).json({ error: "Invalid or unsupported colour" });
+          return;
+        }
+      }
       if (!Number.isFinite(masterProductId) || !CAPACITIES.has(capacity)) {
         res.status(400).json({ error: "masterProductId and valid capacityLtr (1, 3.6, 18) required" });
         return;
@@ -985,9 +1233,9 @@ async function main() {
         await dbm.run(
           db,
           `UPDATE shop_listings SET
-             available = ?, price_amount = ?, currency = ?, custom_photo_url = ?, updated_at = datetime('now')
+             available = ?, price_amount = ?, currency = ?, custom_photo_url = ?, ral_code = ?, updated_at = datetime('now')
            WHERE id = ?`,
-          [available, priceAmount, listingCurrency, customPhotoUrl, existing.id]
+          [available, priceAmount, listingCurrency, customPhotoUrl, ralCode, existing.id]
         );
         await dbm.touchShopCatalogUpdate(db, u.shop_id);
         const row = await dbm.get(db, "SELECT * FROM shop_listings WHERE id = ?", [existing.id]);
@@ -996,9 +1244,9 @@ async function main() {
       }
       const inserted = await dbm.run(
         db,
-        `INSERT INTO shop_listings (shop_id, master_product_id, available, price_amount, currency, capacity_ltr, custom_photo_url)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [u.shop_id, masterProductId, available, priceAmount, listingCurrency, capacity, customPhotoUrl]
+        `INSERT INTO shop_listings (shop_id, master_product_id, available, price_amount, currency, capacity_ltr, custom_photo_url, ral_code)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [u.shop_id, masterProductId, available, priceAmount, listingCurrency, capacity, customPhotoUrl, ralCode]
       );
       await dbm.touchShopCatalogUpdate(db, u.shop_id);
       const row = await dbm.get(db, "SELECT * FROM shop_listings WHERE id = ?", [inserted.lastID]);
