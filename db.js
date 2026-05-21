@@ -66,7 +66,7 @@ const BRAND_DEFS = [
   { slug: "wellcoat", name: "Wellcoat", sort_order: 7 },
   { slug: "fap", name: "FAP", sort_order: 8 },
   { slug: "ritver", name: "Ritver", sort_order: 9 },
-  { slug: "fabula", name: "Fabula", sort_order: 10 }
+  { slug: "glc_paint", name: "GLC Paint", sort_order: 10 }
 ];
 
 const PRODUCT_STEMS = {
@@ -335,6 +335,27 @@ async function migrate(db) {
         b.name,
         b.sort_order
       ]);
+    }
+  } else {
+    const fabulaRow = await get(db, "SELECT id FROM brands WHERE slug = ?", ["fabula"]);
+    if (fabulaRow) {
+      await run(db, "UPDATE brands SET slug = ?, name = ?, sort_order = ? WHERE id = ?", [
+        "glc_paint",
+        "GLC Paint",
+        10,
+        fabulaRow.id
+      ]);
+    }
+    const glcRow = await get(db, "SELECT id FROM brands WHERE slug = ?", ["glc_paint"]);
+    if (!glcRow) {
+      const def = BRAND_DEFS.find((b) => b.slug === "glc_paint");
+      if (def) {
+        await run(db, "INSERT INTO brands (slug, name, sort_order) VALUES (?, ?, ?)", [
+          def.slug,
+          def.name,
+          def.sort_order
+        ]);
+      }
     }
   }
 

@@ -42,34 +42,34 @@
       meta: "rgba(30,58,138,0.82)"
     },
     sigma: {
-      bar: ["#1e293b", "#475569", "#94a3b8"],
-      footer: "linear-gradient(90deg,#e2e8f0 0%,#f8fafc 60%,#ffffff 100%)",
-      title: "#0f172a",
-      meta: "rgba(15,23,42,0.78)"
+      bar: ["#001f7e", "#3b5bdb", "#94a3b8"],
+      footer: "linear-gradient(90deg,#e8eef9 0%,#f1f5f9 55%,#ffffff 100%)",
+      title: "#001f7e",
+      meta: "rgba(0,31,126,0.82)"
     },
     wellcoat: {
-      bar: ["#14532d", "#16a34a", "#86efac"],
-      footer: "linear-gradient(90deg,#bbf7d0 0%,#f0fdf4 55%,#ffffff 100%)",
-      title: "#14532d",
-      meta: "rgba(20,83,45,0.82)"
+      bar: ["#1a5ca8", "#5cb80e", "#bbf7d0"],
+      footer: "linear-gradient(90deg,#dbeafe 0%,#ecfccb 50%,#ffffff 100%)",
+      title: "#1a5ca8",
+      meta: "rgba(26,92,168,0.82)"
     },
     fap: {
-      bar: ["#7f1d1d", "#dc2626", "#fca5a5"],
-      footer: "linear-gradient(90deg,#fee2e2 0%,#fef2f2 55%,#ffffff 100%)",
-      title: "#450a0a",
-      meta: "rgba(69,10,10,0.82)"
+      bar: ["#73b62b", "#9acd32", "#d9f99d"],
+      footer: "linear-gradient(90deg,#ecfccb 0%,#f7fee7 55%,#ffffff 100%)",
+      title: "#4d7c1a",
+      meta: "rgba(115,182,43,0.85)"
     },
     ritver: {
-      bar: ["#4c1d95", "#7c3aed", "#c4b5fd"],
-      footer: "linear-gradient(90deg,#ede9fe 0%,#faf5ff 55%,#ffffff 100%)",
-      title: "#3b0764",
-      meta: "rgba(59,7,100,0.82)"
+      bar: ["#e30613", "#111827", "#9ca3af"],
+      footer: "linear-gradient(90deg,#fee2e2 0%,#f3f4f6 55%,#ffffff 100%)",
+      title: "#e30613",
+      meta: "rgba(227,6,19,0.82)"
     },
-    fabula: {
-      bar: ["#831843", "#db2777", "#fbcfe8"],
-      footer: "linear-gradient(90deg,#fce7f3 0%,#fdf2f8 55%,#ffffff 100%)",
-      title: "#831843",
-      meta: "rgba(131,24,67,0.82)"
+    glc_paint: {
+      bar: ["#e31e24", "#84cc16", "#2563eb"],
+      footer: "linear-gradient(90deg,#fee2e2 0%,#fefce8 45%,#eff6ff 70%,#ffffff 100%)",
+      title: "#e31e24",
+      meta: "rgba(227,30,36,0.82)"
     }
   };
 

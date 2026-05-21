@@ -599,6 +599,87 @@ async function main() {
   );
 
   app.get(
+    "/paint/api/public/browse/categories",
+    asyncHandler(async (_req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ categories: [] });
+        return;
+      }
+      const categories = await dbm.all(
+        db,
+        `SELECT id, slug, name
+         FROM catalog_categories
+         ORDER BY sort_order ASC, name ASC`
+      );
+      res.json({ categories });
+    })
+  );
+
+  app.get(
+    "/paint/api/public/browse/brands",
+    asyncHandler(async (req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ brands: [] });
+        return;
+      }
+      const categoryId = Number(req.query.categoryId);
+      let brands;
+      if (Number.isFinite(categoryId) && categoryId > 0) {
+        brands = await dbm.all(
+          db,
+          `SELECT DISTINCT b.id, b.slug, b.name, b.sort_order
+           FROM brands b
+           JOIN master_products mp ON mp.brand_id = b.id AND mp.category_id = ?
+           JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+           ORDER BY b.sort_order ASC, b.name ASC`,
+          [categoryId]
+        );
+      }
+      if (!brands?.length) {
+        brands = await dbm.all(
+          db,
+          `SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC, name ASC`
+        );
+      }
+      res.json({ brands });
+    })
+  );
+
+  app.get(
+    "/paint/api/public/browse/shops",
+    asyncHandler(async (req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ shops: [] });
+        return;
+      }
+      const categoryId = Number(req.query.categoryId);
+      const brandId = Number(req.query.brandId);
+      const hasCategory = Number.isFinite(categoryId) && categoryId > 0;
+      const hasBrand = Number.isFinite(brandId) && brandId > 0;
+      let sql = `SELECT DISTINCT s.id, s.name, s.slug, s.location_text, s.address, s.photo_url, s.last_catalog_update, s.lat, s.lng
+                 FROM shops s
+                 JOIN shop_listings sl ON sl.shop_id = s.id AND sl.available = 1
+                 JOIN master_products mp ON mp.id = sl.master_product_id
+                 WHERE 1=1`;
+      const params = [];
+      if (hasCategory) {
+        sql += ` AND mp.category_id = ?`;
+        params.push(categoryId);
+      }
+      if (hasBrand) {
+        sql += ` AND mp.brand_id = ?`;
+        params.push(brandId);
+      }
+      sql += ` ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC, s.name ASC`;
+      const shops = await dbm.all(db, sql, params);
+      res.json({ shops });
+    })
+  );
+
+  app.get(
     "/paint/api/public/ads",
     asyncHandler(async (_req, res) => {
       const customerAccess = await readCustomerAccess(db);

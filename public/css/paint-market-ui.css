@@ -542,7 +542,316 @@ body[data-pm-index-ad-collapsed="1"] .pm-index-ad-dismiss-hint {
   display: none;
 }
 
-.pm-index-shops-scroll {
+.pm-index-browse-panel {
+  flex-shrink: 0;
+  margin-top: 0.75rem;
+  padding: 0.8rem 0.85rem 0.9rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.pm-index-browse-panel--category {
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.pm-index-browse-panel--brand {
+  margin-top: 0.85rem;
+  border-color: rgba(13, 148, 136, 0.28);
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.08);
+}
+
+.pm-index-browse-panel__heading {
+  margin: 0 0 0.6rem;
+  padding: 0 0 0.5rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.pm-index-browse-panel--brand .pm-index-browse-panel__heading {
+  color: #0f766e;
+  border-bottom-color: rgba(13, 148, 136, 0.2);
+}
+
+html[lang="ar"] .pm-index-browse-panel__heading {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.8125rem;
+}
+
+.pm-index-category-bar__track {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, auto);
+  align-items: stretch;
+  gap: 0.6rem 0.5rem;
+  padding: 0.25rem 0 0.55rem;
+}
+
+.pm-index-category-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding: 0.4rem 0.35rem;
+  border: 2px solid transparent;
+  border-radius: 0.85rem;
+  background: #fff;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.pm-index-category-chip:hover {
+  border-color: rgba(13, 148, 136, 0.35);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.12);
+}
+
+.pm-index-category-chip:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+.pm-index-category-chip--active {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.18);
+}
+
+.pm-index-category-chip__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.78rem;
+  height: 5.78rem;
+  border-radius: 1.2rem;
+  background: #f8fafc;
+}
+
+.pm-index-category-chip--active .pm-index-category-chip__icon {
+  background: #ccfbf1;
+}
+
+.pm-index-category-chip__icon .pm-cat-icon--bar {
+  width: 4.37rem;
+  height: 4.37rem;
+}
+
+.pm-index-category-chip__icon--all {
+  background: #f0fdfa;
+}
+
+.pm-index-category-chip__all-txt {
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #0d9488;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pm-index-category-chip__label {
+  display: block;
+  width: 100%;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[lang="ar"] .pm-index-category-chip__label {
+  font-size: 0.84rem;
+  letter-spacing: 0;
+}
+
+.pm-index-brand-bar__track {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, auto);
+  align-items: stretch;
+  gap: 0.6rem 0.5rem;
+  padding: 0.1rem 0 0;
+}
+
+.pm-index-brand-bar__track--expanded {
+  grid-template-rows: none;
+}
+
+.pm-index-brand-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem 0.35rem;
+  border: 2px solid transparent;
+  border-radius: 0.85rem;
+  background: #fff;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.pm-index-brand-chip:hover {
+  border-color: rgba(13, 148, 136, 0.35);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.12);
+}
+
+.pm-index-brand-chip:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+.pm-index-brand-chip--active {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.18);
+}
+
+.pm-index-brand-chip__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.82rem;
+  height: 4.82rem;
+  border-radius: 1rem;
+  background: #f8fafc;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.pm-index-brand-chip--active .pm-index-brand-chip__icon {
+  box-shadow:
+    inset 0 0 0 2px rgba(13, 148, 136, 0.35),
+    0 2px 8px rgba(13, 148, 136, 0.15);
+}
+
+.pm-brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 0.75rem;
+}
+
+.pm-brand-icon__mark {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0.14rem 0.2rem;
+  font-size: 1.13rem;
+  line-height: 1.08;
+  text-align: center;
+  text-shadow: none;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.pm-index-brand-chip__label,
+#shopGrid .pm-shop-card__name {
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: #334155;
+}
+
+.pm-index-brand-chip__label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-index-brand-chip--active .pm-index-brand-chip__label {
+  color: #0f766e;
+}
+
+#shopGrid .pm-shop-card__name {
+  max-width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[lang="ar"] .pm-index-brand-chip__label,
+html[lang="ar"] #shopGrid .pm-shop-card__name {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+  font-size: 0.84rem;
+  letter-spacing: 0;
+}
+
+html[lang="ar"] .pm-brand-icon__mark {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.pm-index-brand-view-more {
+  display: block;
+  width: 100%;
+  margin-top: 0.65rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(13, 148, 136, 0.45);
+  border-radius: 0.75rem;
+  background: #f0fdfa;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f766e;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.pm-index-brand-view-more:hover {
+  background: #ccfbf1;
+  border-color: #0d9488;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.15);
+}
+
+.pm-index-brand-view-more:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+.pm-index-page-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -551,10 +860,18 @@ body[data-pm-index-ad-collapsed="1"] .pm-index-ad-dismiss-hint {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   background: var(--pm-shops-bg);
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+}
+
+@supports (height: 100dvh) {
+  .pm-index-page-scroll {
+    scroll-padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* Same content width as #homeAdSection (no extra horizontal inset) */
 #homeAdSection,
+.pm-index-browse-panel,
 .pm-shops-section {
   width: 100%;
   max-width: 100%;
@@ -959,19 +1276,16 @@ html[lang="ar"] .pm-shops-section__title-bar {
 
 .pm-shop-card__name {
   max-width: 100%;
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
   line-height: 1.2;
+  letter-spacing: 0.01em;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-@media (min-width: 640px) {
-  .pm-shop-card__name {
-    font-size: 0.875rem;
-  }
+  color: #334155;
 }
 
 @media (min-width: 640px) {
@@ -1167,9 +1481,14 @@ html[lang="ar"] .pm-shops-section__title-bar {
 
 html[lang="ar"] .pm-shop-card__row,
 html[lang="ar"] .pm-shop-card__dir,
-html[lang="ar"] .pm-shop-card__info,
+html[lang="ar"] .pm-shop-card__info {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+}
+
 html[lang="ar"] .pm-shop-card__name {
   font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+  font-size: 0.84rem;
+  letter-spacing: 0;
 }
 
 /* Shop category filter pills with icons */

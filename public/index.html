@@ -7,14 +7,15 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@700;800;900&family=Nunito:wght@800;900&family=Playfair+Display:wght@700;800&family=Archivo+Black&family=Varela+Round:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body { font-family: "DM Sans", system-ui, sans-serif; }
     .ad-carousel-strip::-webkit-scrollbar { display: none; }
-    .ad-carousel-strip { -ms-overflow-style: none; scrollbar-width: none; }
+    .ad-carousel-strip { -ms-overflow-style: none; scrollbar-width: none; touch-action: pan-x pinch-zoom; }
   </style>
 </head>
 <body class="text-slate-900 min-h-screen" data-pm-page-title="index_metaTitle">
@@ -94,6 +95,7 @@
   </header>
 
   <main class="pm-index-main max-w-6xl mx-auto px-4 pt-0">
+    <div id="indexPageScroll" class="pm-index-page-scroll">
     <section id="phaseBanner" class="rounded-2xl border border-amber-200 bg-amber-50 p-5 mb-3 text-sm text-amber-950 hidden shrink-0" data-error-api="">
       <p id="phaseBannerTitle" class="font-semibold mb-1" data-pm-t="index_phase_title">Shop onboarding phase</p>
       <p id="phaseBannerBody" class="text-amber-900/90" data-pm-t="index_phase_body">Only paint shops can register and use the dashboard. Customer browsing unlocks when an admin enables public access.</p>
@@ -132,7 +134,17 @@
       </div>
     </section>
 
-    <div id="indexShopsScroll" class="pm-index-shops-scroll min-h-0 flex-1">
+    <section id="indexCategoryPickWrap" class="pm-index-browse-panel pm-index-browse-panel--category hidden shrink-0" aria-label="Browse by category">
+      <h2 class="pm-index-browse-panel__heading" data-pm-t="index_browse_categories">Categories</h2>
+      <div id="indexCategoryBar" class="pm-index-category-bar__track" role="tablist"></div>
+    </section>
+
+    <section id="indexBrandPickWrap" class="pm-index-browse-panel pm-index-browse-panel--brand hidden shrink-0" aria-label="Browse by brand">
+      <h2 class="pm-index-browse-panel__heading" data-pm-t="index_browse_brands">Brands</h2>
+      <div id="indexBrandBar" class="pm-index-brand-bar__track" role="tablist"></div>
+      <button type="button" id="indexBrandViewMore" class="pm-index-brand-view-more hidden" data-pm-t="index_brand_view_more">View more</button>
+    </section>
+
       <section id="shopsSection" class="pm-shops-section mt-3 space-y-4 hidden">
         <p id="shopsSectionTitle" class="pm-shops-section__title-bar" role="heading" aria-level="2"></p>
         <div id="shopGrid" class="grid"></div>
@@ -147,7 +159,7 @@
         </div>
       </section>
 
-      <footer class="mt-6 pb-6 text-xs text-slate-500" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
+      <footer class="mt-6 pb-8 text-xs text-slate-500" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
     </div>
   </main>
 
@@ -174,7 +186,7 @@
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     const shopGrid = document.getElementById("shopGrid");
-    const indexShopsScroll = document.getElementById("indexShopsScroll");
+    const indexPageScroll = document.getElementById("indexPageScroll");
     const homeAdSection = document.getElementById("homeAdSection");
     const shopsSection = document.getElementById("shopsSection");
     const lockedShops = document.getElementById("lockedShops");
@@ -189,12 +201,24 @@
     const searchPriceMapCanvas = document.getElementById("searchPriceMapCanvas");
     const searchPriceMapStatus = document.getElementById("searchPriceMapStatus");
     const searchPriceMapClose = document.getElementById("searchPriceMapClose");
+    const indexCategoryPickWrap = document.getElementById("indexCategoryPickWrap");
+    const indexCategoryBar = document.getElementById("indexCategoryBar");
+    const indexBrandPickWrap = document.getElementById("indexBrandPickWrap");
+    const indexBrandBar = document.getElementById("indexBrandBar");
+    const indexBrandViewMore = document.getElementById("indexBrandViewMore");
+    const INDEX_BRAND_PREVIEW_COUNT = 6;
+    let indexBrowseCategories = [];
+    let indexBrowseBrands = [];
+    let indexSelectedCategory = null;
+    let indexSelectedBrand = null;
+    let indexBrandsExpanded = false;
 
     function pmIndexLayoutSync() {
       const header = document.querySelector("header");
       if (header) {
         document.documentElement.style.setProperty("--pm-index-header-h", header.offsetHeight + "px");
       }
+      requestAnimationFrame(pmIndexSyncAdFromScroll);
     }
     pmIndexLayoutSync();
     window.addEventListener("resize", pmIndexLayoutSync);
@@ -211,75 +235,20 @@
       return document.body.hasAttribute("data-pm-index-ad-collapsed");
     }
 
-    if (indexShopsScroll) {
-      let shopsTouchY = 0;
-      let shopsTouchX = 0;
-      indexShopsScroll.addEventListener(
-        "wheel",
-        (e) => {
-          if (!pmIndexAdCollapsed() || indexShopsScroll.scrollTop > 6) return;
-          if (e.deltaY < -10) {
-            e.preventDefault();
-            pmIndexExpandAd();
-          }
-        },
-        { passive: false }
-      );
-      indexShopsScroll.addEventListener(
-        "touchstart",
-        (e) => {
-          const t0 = e.changedTouches[0];
-          if (!t0) return;
-          shopsTouchY = t0.clientY;
-          shopsTouchX = t0.clientX;
-        },
-        { passive: true }
-      );
-      indexShopsScroll.addEventListener(
-        "touchend",
-        (e) => {
-          if (!pmIndexAdCollapsed() || indexShopsScroll.scrollTop > 10) return;
-          const t0 = e.changedTouches[0];
-          if (!t0) return;
-          const dy = t0.clientY - shopsTouchY;
-          const dx = Math.abs(t0.clientX - shopsTouchX);
-          if (dy > 36 && dy > dx * 1.2) pmIndexExpandAd();
-        },
-        { passive: true }
-      );
+    let indexScrollCollapseRaf = 0;
+    function pmIndexSyncAdFromScroll() {
+      if (!indexPageScroll || !homeAdSection) return;
+      const top = indexPageScroll.scrollTop;
+      const adEnd = homeAdSection.offsetTop + homeAdSection.offsetHeight;
+      if (top > Math.max(48, adEnd - 32)) pmIndexCollapseAd();
+      else if (top < 16) pmIndexExpandAd();
     }
-
-    if (homeAdSection) {
-      let adTouchY = 0;
-      let adTouchX = 0;
-      homeAdSection.addEventListener(
-        "wheel",
-        (e) => {
-          if (e.deltaY > 10) {
-            e.preventDefault();
-            pmIndexCollapseAd();
-          }
-        },
-        { passive: false }
-      );
-      homeAdSection.addEventListener(
-        "touchstart",
-        (e) => {
-          const t0 = e.changedTouches[0];
-          if (!t0) return;
-          adTouchY = t0.clientY;
-          adTouchX = t0.clientX;
-        },
-        { passive: true }
-      );
-      homeAdSection.addEventListener(
-        "touchend",
-        (e) => {
-          const t0 = e.changedTouches[0];
-          if (!t0) return;
-          const dy = adTouchY - t0.clientY;
-          const dx = Math.abs(t0.clientX - adTouchX);
-          if (dy > 36 && dy > dx * 1.2) pmIndexCollapseAd();
+    if (indexPageScroll) {
+      indexPageScroll.addEventListener(
+        "scroll",
+        () => {
+          cancelAnimationFrame(indexScrollCollapseRaf);
+          indexScrollCollapseRaf = requestAnimationFrame(pmIndexSyncAdFromScroll);
         },
         { passive: true }
       );
@@ -787,9 +756,230 @@
       { passive: true }
     );
 
+    function indexCategoryChipActive(btn, on) {
+      btn.classList.toggle("pm-index-category-chip--active", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    }
+
+    function renderIndexCategoryBar() {
+      if (!indexCategoryBar) return;
+      const chips = [];
+      for (const c of indexBrowseCategories) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pm-index-category-chip";
+        btn.setAttribute("role", "tab");
+        btn.dataset.categoryId = String(c.id);
+        const selected = indexSelectedCategory && indexSelectedCategory.id === c.id;
+        indexCategoryChipActive(btn, selected);
+        const label = paintMarketCategoryLabel(c.slug, c.name);
+        btn.setAttribute("aria-label", label);
+        btn.title = label;
+        btn.innerHTML = `<span class="pm-index-category-chip__icon">${paintMarketCategoryIconImgHtml(c.slug, "pm-cat-icon pm-cat-icon--bar")}</span>`;
+        btn.addEventListener("click", () => {
+          if (indexSelectedCategory && indexSelectedCategory.id === c.id) selectIndexCategory(null);
+          else selectIndexCategory(c);
+        });
+        chips.push(btn);
+      }
+      indexCategoryBar.replaceChildren(...chips);
+    }
+
+    async function loadIndexShops() {
+      const hasCategory = !!(indexSelectedCategory && indexSelectedCategory.id);
+      const hasBrand = !!(indexSelectedBrand && indexSelectedBrand.id);
+      try {
+        if (!hasCategory && !hasBrand) {
+          const shopsData = await PaintApi.publicShops();
+          indexLastShops = shopsData.shops || [];
+        } else {
+          const data = await PaintApi.publicBrowseShops({
+            categoryId: hasCategory ? indexSelectedCategory.id : undefined,
+            brandId: hasBrand ? indexSelectedBrand.id : undefined
+          });
+          indexLastShops = data.shops || [];
+        }
+      } catch (e) {
+        console.warn("load index shops", e);
+        try {
+          const shopsData = await PaintApi.publicShops();
+          indexLastShops = shopsData.shops || [];
+        } catch {
+          indexLastShops = [];
+        }
+      }
+      renderShops(indexLastShops);
+      syncShopsSectionTitle();
+    }
+
+    function indexBrandChipActive(btn, on) {
+      btn.classList.toggle("pm-index-brand-chip--active", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    }
+
+    function renderIndexBrandBar() {
+      if (!indexBrandBar) return;
+      const chips = [];
+      const list = indexBrandsExpanded
+        ? indexBrowseBrands
+        : indexBrowseBrands.slice(0, INDEX_BRAND_PREVIEW_COUNT);
+      for (const b of list) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pm-index-brand-chip";
+        btn.setAttribute("role", "tab");
+        btn.dataset.brandId = String(b.id);
+        const selected = indexSelectedBrand && indexSelectedBrand.id === b.id;
+        indexBrandChipActive(btn, selected);
+        const name = b.name != null ? String(b.name) : "";
+        const slugKey = b.slug != null ? String(b.slug).trim().toLowerCase() : "";
+        if (slugKey) btn.dataset.brandSlug = slugKey;
+        const iconHtml =
+          typeof paintMarketBrandIconHtml === "function" ? paintMarketBrandIconHtml(b) : esc(name);
+        btn.setAttribute("aria-label", name);
+        btn.title = name;
+        btn.innerHTML = `<span class="pm-index-brand-chip__icon">${iconHtml}</span>`;
+        btn.addEventListener("click", () => {
+          if (indexSelectedBrand && indexSelectedBrand.id === b.id) selectIndexBrand(null);
+          else selectIndexBrand(b);
+        });
+        chips.push(btn);
+      }
+      indexBrandBar.replaceChildren(...chips);
+      indexBrandBar.classList.toggle("pm-index-brand-bar__track--expanded", indexBrandsExpanded);
+      if (typeof paintMarketScheduleFitBrandMarks === "function") {
+        paintMarketScheduleFitBrandMarks(indexBrandBar);
+      }
+
+      if (indexBrandViewMore) {
+        const extra = indexBrowseBrands.length > INDEX_BRAND_PREVIEW_COUNT;
+        indexBrandViewMore.classList.toggle("hidden", !extra);
+        const moreCount = Math.max(0, indexBrowseBrands.length - INDEX_BRAND_PREVIEW_COUNT);
+        if (extra && !indexBrandsExpanded && moreCount > 0) {
+          const label = `${paintMarketT("index_brand_view_more")} (+${moreCount})`;
+          indexBrandViewMore.textContent = label;
+          indexBrandViewMore.setAttribute("aria-label", label);
+        } else {
+          indexBrandViewMore.textContent = paintMarketT(
+            indexBrandsExpanded ? "index_brand_view_less" : "index_brand_view_more"
+          );
+          indexBrandViewMore.setAttribute("aria-label", indexBrandViewMore.textContent);
+        }
+      }
+    }
+
+    function indexBrandFallbackList() {
+      return typeof paintMarketDefaultBrowseBrands === "function"
+        ? paintMarketDefaultBrowseBrands()
+        : [];
+    }
+
+    async function loadIndexBrands() {
+      if (!indexBrandPickWrap || !indexBrandBar) return;
+      indexBrandPickWrap.classList.remove("hidden");
+      try {
+        const catId = indexSelectedCategory?.id;
+        const data = await PaintApi.publicBrowseBrands(catId);
+        const fromApi = data.brands || [];
+        indexBrowseBrands = fromApi.length ? fromApi : indexBrandFallbackList();
+      } catch (e) {
+        console.warn("browse brands", e);
+        indexBrowseBrands = indexBrandFallbackList();
+      }
+      if (
+        indexSelectedBrand &&
+        !indexBrowseBrands.some((b) => b.id === indexSelectedBrand.id)
+      ) {
+        indexSelectedBrand = null;
+      }
+      renderIndexBrandBar();
+    }
+
+    async function selectIndexBrand(brand) {
+      indexSelectedBrand = brand || null;
+      renderIndexBrandBar();
+      try {
+        await loadIndexShops();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function selectIndexCategory(cat) {
+      indexSelectedCategory = cat || null;
+      indexSelectedBrand = null;
+      indexBrandsExpanded = false;
+      renderIndexCategoryBar();
+      try {
+        await loadIndexBrands();
+        await loadIndexShops();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function indexCategoryFallbackList() {
+      return typeof paintMarketDefaultBrowseCategories === "function"
+        ? paintMarketDefaultBrowseCategories()
+        : [];
+    }
+
+    async function initIndexCategoryPicker() {
+      if (!indexCategoryPickWrap || !indexCategoryBar) return;
+      indexCategoryPickWrap.classList.remove("hidden");
+      try {
+        const data = await PaintApi.publicBrowseCategories();
+        const fromApi = data.categories || [];
+        indexBrowseCategories = fromApi.length ? fromApi : indexCategoryFallbackList();
+      } catch (e) {
+        console.warn("browse categories", e);
+        indexBrowseCategories = indexCategoryFallbackList();
+      }
+      if (!indexBrowseCategories.length) {
+        indexCategoryPickWrap.classList.add("hidden");
+        return;
+      }
+      renderIndexCategoryBar();
+    }
+
+    if (indexBrandViewMore) {
+      indexBrandViewMore.addEventListener("click", () => {
+        indexBrandsExpanded = !indexBrandsExpanded;
+        renderIndexBrandBar();
+      });
+    }
+
+    let indexBrandFitResizeTimer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(indexBrandFitResizeTimer);
+      indexBrandFitResizeTimer = setTimeout(() => {
+        if (indexBrandBar && typeof paintMarketFitBrandMarks === "function") {
+          paintMarketFitBrandMarks(indexBrandBar);
+        }
+      }, 120);
+    });
+
     function syncShopsSectionTitle() {
       const el = document.getElementById("shopsSectionTitle");
       if (!el || typeof paintMarketTf !== "function") return;
+      const brandName = indexSelectedBrand?.name != null ? String(indexSelectedBrand.name) : "";
+      if (indexSelectedCategory && indexSelectedBrand) {
+        const label = paintMarketCategoryLabel(indexSelectedCategory.slug, indexSelectedCategory.name);
+        el.textContent = paintMarketTf("index_shops_title_category_brand", {
+          category: label,
+          brand: brandName
+        });
+        return;
+      }
+      if (indexSelectedBrand) {
+        el.textContent = paintMarketTf("index_shops_title_brand", { brand: brandName });
+        return;
+      }
+      if (indexSelectedCategory) {
+        const label = paintMarketCategoryLabel(indexSelectedCategory.slug, indexSelectedCategory.name);
+        el.textContent = paintMarketTf("index_shops_title_category", { category: label });
+        return;
+      }
       const cityCode = typeof paintMarketCityGet === "function" ? paintMarketCityGet() : "";
       if (cityCode) {
         const city =
@@ -956,6 +1146,11 @@
         phaseBannerBody.classList.remove("hidden");
       }
       syncShopsSectionTitle();
+      renderIndexCategoryBar();
+      renderIndexBrandBar();
+      if (indexBrandBar && typeof paintMarketScheduleFitBrandMarks === "function") {
+        paintMarketScheduleFitBrandMarks(indexBrandBar);
+      }
       loadAds(indexLastCustomerEnabled).catch(() => {});
       pmIndexLayoutSync();
       if (indexLastShops.length && !shopsSection.classList.contains("hidden")) renderShops(indexLastShops);
@@ -986,11 +1181,13 @@
           phaseBanner.classList.add("hidden");
           shopsSection.classList.remove("hidden");
           searchWrap.classList.remove("hidden");
+          if (indexCategoryPickWrap) indexCategoryPickWrap.classList.remove("hidden");
+          if (indexBrandPickWrap) indexBrandPickWrap.classList.remove("hidden");
           syncShopsSectionTitle();
           pmIndexLayoutSync();
-          const shopsData = await PaintApi.publicShops();
-          indexLastShops = shopsData.shops || [];
-          renderShops(indexLastShops);
+          await initIndexCategoryPicker();
+          await loadIndexBrands();
+          await loadIndexShops();
         }
         await loadAds(enabled);
         pmIndexLayoutSync();

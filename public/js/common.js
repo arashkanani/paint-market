@@ -105,6 +105,25 @@ const PaintApi = {
     const qs = q ? `?q=${encodeURIComponent(q)}` : "";
     return this.request(`/public/shops${qs}`);
   },
+  publicBrowseCategories() {
+    return this.request("/public/browse/categories");
+  },
+  publicBrowseBrands(categoryId) {
+    const qs = new URLSearchParams();
+    const id = Number(categoryId);
+    if (Number.isFinite(id) && id > 0) qs.set("categoryId", String(id));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/public/browse/brands${suffix}`);
+  },
+  publicBrowseShops(opts = {}) {
+    const qs = new URLSearchParams();
+    const catId = Number(opts.categoryId);
+    const brandId = Number(opts.brandId);
+    if (Number.isFinite(catId) && catId > 0) qs.set("categoryId", String(catId));
+    if (Number.isFinite(brandId) && brandId > 0) qs.set("brandId", String(brandId));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/public/browse/shops${suffix}`);
+  },
   suggest(q, opts = {}) {
     const qs = new URLSearchParams();
     if (q) qs.set("q", String(q));
@@ -459,6 +478,138 @@ const PAINT_MARKET_CATEGORY_SLUG_I18N = {
   thinner: "shop_pill_thinner",
   industrial: "shop_pill_industrial"
 };
+
+/** Hub category picker fallback when browse API is unavailable (ids match default DB seed). */
+const PAINT_MARKET_BROWSE_CATEGORIES = [
+  { id: 1, slug: "building_paints", name: "Building" },
+  { id: 2, slug: "steel_workshop_paints", name: "Steel" },
+  { id: 3, slug: "carpentry_workshop_paints", name: "Wood" },
+  { id: 4, slug: "thinner", name: "Thinner" },
+  { id: 5, slug: "industrial", name: "Industrial" }
+];
+
+function paintMarketDefaultBrowseCategories() {
+  return PAINT_MARKET_BROWSE_CATEGORIES.map((c) => ({ ...c }));
+}
+
+/** Hub brand picker fallback when browse API is unavailable (ids match default DB seed). */
+const PAINT_MARKET_BROWSE_BRANDS = [
+  { id: 1, slug: "national", name: "National" },
+  { id: 2, slug: "jotun", name: "Jotun" },
+  { id: 3, slug: "asian", name: "Asian" },
+  { id: 4, slug: "arabpaint", name: "Arabpaint" },
+  { id: 5, slug: "hempel", name: "Hempel" },
+  { id: 6, slug: "sigma", name: "Sigma" },
+  { id: 7, slug: "wellcoat", name: "Wellcoat" },
+  { id: 8, slug: "fap", name: "FAP" },
+  { id: 9, slug: "ritver", name: "Ritver" },
+  { id: 10, slug: "glc_paint", name: "GLC Paint" }
+];
+
+function paintMarketDefaultBrowseBrands() {
+  return PAINT_MARKET_BROWSE_BRANDS.map((b) => ({ ...b }));
+}
+
+/** Full brand name inside the hub icon square. */
+function paintMarketBrandMarkText(name) {
+  const n = String(name || "").trim();
+  return n || "?";
+}
+
+function paintMarketBrandMarkInnerHtml(name, slug) {
+  const n = String(name || "").trim();
+  if (!n) return "?";
+  const k = String(slug || "").trim().toLowerCase();
+  if (k === "arabpaint") {
+    const lower = n.toLowerCase();
+    const idx = lower.indexOf("paint");
+    if (idx > 0) {
+      return `<span class="pm-brand-word-arab">${paintMarketEscapeHtml(n.slice(0, idx))}</span><span class="pm-brand-word-paint">${paintMarketEscapeHtml(n.slice(idx))}</span>`;
+    }
+  }
+  if (k === "glc_paint") {
+    const lower = n.toLowerCase();
+    const idx = lower.indexOf("paint");
+    if (idx > 0) {
+      return `<span class="pm-brand-word-glc">${paintMarketEscapeHtml(n.slice(0, idx).trim())}</span><span class="pm-brand-word-paint">${paintMarketEscapeHtml(n.slice(idx).trim())}</span>`;
+    }
+  }
+  if (k === "wellcoat") {
+    const lower = n.toLowerCase();
+    const idx = lower.indexOf("coat");
+    if (idx > 0) {
+      return `<span class="pm-brand-word-well">${paintMarketEscapeHtml(n.slice(0, idx))}</span><span class="pm-brand-word-coat">${paintMarketEscapeHtml(n.slice(idx))}</span>`;
+    }
+  }
+  if (k === "ritver") {
+    const lower = n.toLowerCase();
+    const idx = lower.indexOf("ver");
+    if (idx > 0) {
+      return `<span class="pm-brand-word-rit">${paintMarketEscapeHtml(n.slice(0, idx))}</span><span class="pm-brand-word-ver">${paintMarketEscapeHtml(n.slice(idx))}</span>`;
+    }
+  }
+  return paintMarketEscapeHtml(n);
+}
+
+const PAINT_MARKET_BRAND_ICON_FILES = {};
+
+function paintMarketBrandIconUrl(slug) {
+  const file = PAINT_MARKET_BRAND_ICON_FILES[String(slug || "")];
+  if (!file) return "";
+  return `/paint/img/brands/${file}`;
+}
+
+function paintMarketBrandIconImgHtml(slug, className) {
+  const url = paintMarketBrandIconUrl(slug);
+  if (!url) return "";
+  const cls = className ? paintMarketEscapeHtml(className) : "pm-brand-icon__img";
+  return `<img class="${cls}" src="${paintMarketEscapeHtml(url)}" alt="" loading="lazy" />`;
+}
+
+/** Shrink each brand wordmark until the full name fits inside its icon square. */
+function paintMarketFitBrandMarks(root) {
+  const marks =
+    root && typeof root.querySelectorAll === "function"
+      ? root.querySelectorAll(".pm-brand-icon__mark:not(.pm-brand-icon__mark--skip-fit)")
+      : document.querySelectorAll(".pm-brand-icon__mark:not(.pm-brand-icon__mark--skip-fit)");
+  for (const mark of marks) {
+    const box = mark.closest(".pm-brand-icon");
+    if (!box || box.clientWidth < 1 || box.clientHeight < 1) continue;
+    mark.style.fontSize = "";
+    const textLen = (mark.textContent || "").trim().length;
+    let px = textLen <= 4 ? 26 : textLen <= 7 ? 22 : 17;
+    const minPx = 8.5;
+    const padW = 10;
+    const padH = 10;
+    let guard = 0;
+    do {
+      mark.style.fontSize = `${px}px`;
+      guard += 1;
+      if (mark.scrollWidth <= box.clientWidth - padW && mark.scrollHeight <= box.clientHeight - padH) break;
+      px -= 0.5;
+    } while (px > minPx && guard < 50);
+  }
+}
+
+function paintMarketScheduleFitBrandMarks(root) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => paintMarketFitBrandMarks(root));
+  });
+}
+
+/** Colored logo-style badge for hub brand chips (pairs with label under the square). */
+function paintMarketBrandIconHtml(brand) {
+  const slug = brand?.slug != null ? String(brand.slug) : "";
+  const name = brand?.name != null ? String(brand.name) : "";
+  const slugKey = String(slug || "").trim().toLowerCase();
+  const slugCls = paintMarketEscapeHtml(slug.replace(/[^a-z0-9_-]/gi, "") || "brand");
+  const img = paintMarketBrandIconImgHtml(slugKey, "pm-brand-icon__img pm-brand-icon__img--bar");
+  if (img) {
+    return `<span class="pm-brand-icon pm-brand-icon--${slugCls} pm-brand-icon--image" aria-hidden="true">${img}</span>`;
+  }
+  const inner = paintMarketBrandMarkInnerHtml(paintMarketBrandMarkText(name), slug);
+  return `<span class="pm-brand-icon pm-brand-icon--${slugCls}" aria-hidden="true"><span class="pm-brand-icon__mark">${inner}</span></span>`;
+}
 
 const PAINT_MARKET_CATEGORY_ICON_FILES = {
   building_paints: "building.png",
