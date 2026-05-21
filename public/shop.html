@@ -71,36 +71,43 @@
 
   <main class="max-w-[min(1920px,100%)] mx-auto px-3 sm:px-4 py-8 space-y-8">
     <div class="flex flex-col lg:flex-row lg:items-stretch gap-4 w-full max-w-full lg:w-fit">
-      <section class="pm-shop-hero rounded-2xl overflow-hidden p-2.5 sm:p-3 w-fit max-w-full min-w-0 flex-1 lg:flex-initial flex flex-col h-full lg:min-h-0">
-      <div class="grid lg:grid-cols-[14rem_auto] gap-2.5 items-start justify-start">
-        <div class="flex justify-center lg:justify-start">
-          <div class="shop-photo-frame aspect-square w-full max-w-[min(100%,12.5rem)] sm:max-w-[13.5rem]">
-            <img id="heroImg" alt="" class="shop-photo-frame__img opacity-95" loading="lazy" />
+      <section class="pm-shop-hero rounded-2xl p-2.5 sm:p-3 w-fit max-w-full min-w-0 flex-1 lg:flex-initial flex flex-col h-full lg:min-h-0">
+        <div class="pm-shop-hero-layout">
+          <div class="pm-shop-hero-col pm-shop-hero-col--photo">
+            <div class="shop-photo-frame pm-shop-hero-photo-frame">
+              <img id="heroImg" alt="" class="shop-photo-frame__img" loading="lazy" />
+            </div>
           </div>
-        </div>
-        <div class="space-y-1 text-sm text-slate-600 w-full max-w-xl">
-          <div class="pm-shop-info-box">
-            <p data-pm-t="shop_loc">Location</p>
-            <p id="locationText"></p>
-          </div>
-          <div class="pm-shop-info-box">
-            <p data-pm-t="shop_addr">Address</p>
-            <p id="addressText"></p>
-          </div>
-          <div class="pm-shop-info-box">
-            <p data-pm-t="index_last_update">Last update:</p>
-            <p id="lastUpdated"></p>
-          </div>
-          <div id="shopMapInfo" class="hidden pm-shop-info-box">
-            <p data-pm-t="shop_map_hint">Show on map</p>
-            <div class="pm-shop-map-links flex flex-wrap gap-2 text-[11px]">
-              <a id="openExtMap" href="#" target="_blank" rel="noopener noreferrer" class="underline-offset-2 hover:underline" data-pm-t="shop_view_loc">View location</a>
-              <a id="openDirectionsMap" href="#" target="_blank" rel="noopener noreferrer" class="underline-offset-2 hover:underline" data-pm-t="shop_get_directions">Get directions</a>
+          <div class="pm-shop-hero-col pm-shop-hero-col--info">
+            <div class="pm-shop-hero-meta" aria-label="Shop details">
+              <p id="locationText" class="pm-shop-hero-meta__line"></p>
+              <p id="addressText" class="pm-shop-hero-meta__line"></p>
+              <p class="pm-shop-hero-meta__line pm-shop-hero-meta__line--muted">
+                <span data-pm-t="index_last_update">Last update:</span>
+                <span id="lastUpdated"></span>
+              </p>
+            </div>
+            <div id="shopMapInfo" class="pm-shop-hero-map-actions" hidden>
+              <a
+                id="openExtMap"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="pm-shop-hero-map-btn"
+                data-pm-t="shop_map_hint"
+              >Show on map</a>
+              <a
+                id="openDirectionsMap"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="pm-shop-hero-map-btn pm-shop-hero-map-btn--dir"
+                data-pm-t="shop_get_directions"
+              >Get directions</a>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
       <div
         id="popularPickWrap"
         class="pm-shop-panel hidden shrink-0 rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 w-full max-w-full sm:w-auto sm:max-w-[19rem] lg:w-[min(100%,19rem)] flex flex-col h-full min-h-0 lg:min-h-full self-stretch"
@@ -167,7 +174,7 @@
       if (!sec || !link || !dir) return false;
       const locationQuery = [shop.name, shop.location_text, shop.address].filter(Boolean).join(", ");
       if (!locationQuery) return false;
-      sec.classList.remove("hidden");
+      sec.hidden = false;
       const mlat = shop.lat != null ? Number(shop.lat) : NaN;
       const mlng = shop.lng != null ? Number(shop.lng) : NaN;
       if (Number.isFinite(mlat) && Number.isFinite(mlng)) {
@@ -470,8 +477,12 @@
           shopFavBtn.removeAttribute("aria-hidden");
           paintMarketFavoriteApplyButton(shopFavBtn, shop.slug, "inline");
         }
-        document.getElementById("locationText").textContent = shop.location_text || "—";
-        document.getElementById("addressText").textContent = shop.address || "—";
+        const locEl = document.getElementById("locationText");
+        const addrEl = document.getElementById("addressText");
+        locEl.textContent = shop.location_text || "—";
+        locEl.hidden = !String(shop.location_text || "").trim();
+        addrEl.textContent = shop.address || "—";
+        addrEl.hidden = !String(shop.address || "").trim();
         document.getElementById("lastUpdated").textContent =
           shop.last_catalog_update || paintMarketT("index_last_update_na");
         setupPublicShopLinks(shop);
