@@ -175,6 +175,26 @@ function buildCapacityListingFilter(capacityLtr) {
   return { sql: " AND ABS(sl.capacity_ltr - ?) < 0.001", params: [capacityLtr] };
 }
 
+function buildProductListedExists(capacityLtr) {
+  if (capacityLtr == null) {
+    return {
+      sql: `EXISTS (
+        SELECT 1 FROM shop_listings sl
+        WHERE sl.master_product_id = mp.id AND sl.available = 1
+      )`,
+      params: []
+    };
+  }
+  return {
+    sql: `EXISTS (
+      SELECT 1 FROM shop_listings sl
+      WHERE sl.master_product_id = mp.id AND sl.available = 1
+        AND ABS(sl.capacity_ltr - ?) < 0.001
+    )`,
+    params: [capacityLtr]
+  };
+}
+
 function pickSuggestListingForProduct(listings, capacityLtr) {
   let pool = Array.isArray(listings) ? listings : [];
   if (capacityLtr != null) {
@@ -676,6 +696,119 @@ async function main() {
       sql += ` ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC, s.name ASC`;
       const shops = await dbm.all(db, sql, params);
       res.json({ shops });
+    })
+  );
+
+  app.get(
+    "/paint/api/public/browse/products",
+    asyncHandler(async (req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ products: [] });
+        return;
+      }
+      const categoryId = Number(req.query.categoryId);
+      const brandId = Number(req.query.brandId);
+      const hasCategory = Number.isFinite(categoryId) && categoryId > 0;
+      const hasBrand = Number.isFinite(brandId) && brandId > 0;
+      if (!hasCategory && !hasBrand) {
+        res.json({ products: [] });
+        return;
+      }
+      const q = String(req.query.q || "").trim();
+      const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
+      const listed = buildProductListedExists(capacityLtr);
+      let sql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score,
+                        b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name
+                 FROM master_products mp
+                 JOIN brands b ON b.id = mp.brand_id
+                 WHERE ${listed.sql}`;
+      const params = [...listed.params];
+      if (hasCategory) {
+        sql += ` AND mp.category_id = ?`;
+        params.push(categoryId);
+      }
+      if (hasBrand) {
+        sql += ` AND mp.brand_id = ?`;
+        params.push(brandId);
+      }
+      if (q.length >= 1) {
+        sql += ` AND (mp.name LIKE ? COLLATE NOCASE OR b.name LIKE ? COLLATE NOCASE)`;
+        const like = `%${q}%`;
+        params.push(like, like);
+      }
+      sql += ` ORDER BY mp.popularity_score DESC, mp.name ASC LIMIT 200`;
+      const products = await dbm.all(db, sql, params);
+      res.json({ products, capacityLtr });
+    })
+  );
+
+  app.get(
+    "/paint/api/public/browse/suggest",
+    asyncHandler(async (req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ products: [], brands: [] });
+        return;
+      }
+      const categoryId = Number(req.query.categoryId);
+      const brandId = Number(req.query.brandId);
+      const hasCategory = Number.isFinite(categoryId) && categoryId > 0;
+      const hasBrand = Number.isFinite(brandId) && brandId > 0;
+      if (!hasCategory && !hasBrand) {
+        res.json({ products: [], brands: [] });
+        return;
+      }
+      const q = String(req.query.q || "").trim();
+      if (q.length < 1) {
+        res.json({ products: [], brands: [], capacityLtr: parseCapacityLtr(req.query.capacityLtr) });
+        return;
+      }
+      const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
+      const like = `%${q}%`;
+      const listed = buildProductListedExists(capacityLtr);
+      let productSql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score,
+                b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name
+         FROM master_products mp
+         JOIN brands b ON b.id = mp.brand_id
+         WHERE ${listed.sql}
+           AND (mp.name LIKE ? COLLATE NOCASE OR b.name LIKE ? COLLATE NOCASE)`;
+      const productParams = [...listed.params, like, like];
+      if (hasCategory) {
+        productSql += ` AND mp.category_id = ?`;
+        productParams.push(categoryId);
+      }
+      if (hasBrand) {
+        productSql += ` AND mp.brand_id = ?`;
+        productParams.push(brandId);
+      }
+      productSql += ` ORDER BY mp.popularity_score DESC, mp.name ASC LIMIT 12`;
+      const products = await dbm.all(db, productSql, productParams);
+      await enrichSuggestProducts(db, products, capacityLtr);
+      let brandSql = `SELECT b.id, b.slug, b.name, b.sort_order
+         FROM brands b
+         WHERE b.name LIKE ? COLLATE NOCASE
+           AND EXISTS (
+             SELECT 1 FROM master_products mp
+             JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+             WHERE mp.brand_id = b.id`;
+      const brandParams = [like];
+      if (hasCategory) {
+        brandSql += ` AND mp.category_id = ?`;
+        brandParams.push(categoryId);
+      }
+      if (capacityLtr != null) {
+        brandSql += ` AND ABS(sl.capacity_ltr - ?) < 0.001`;
+        brandParams.push(capacityLtr);
+      }
+      brandSql += `)`;
+      if (hasBrand) {
+        brandSql += ` AND b.id = ?`;
+        brandParams.push(brandId);
+      }
+      brandSql += ` ORDER BY b.sort_order ASC, b.name ASC LIMIT 8`;
+      const brands = await dbm.all(db, brandSql, brandParams);
+      res.json({ products, brands, capacityLtr });
     })
   );
 

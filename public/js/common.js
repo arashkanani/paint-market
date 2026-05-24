@@ -46,6 +46,21 @@ function paintMarketApiFullUrl(apiPathSuffix) {
   }
 }
 
+function paintMarketBrowsePageUrl(opts = {}) {
+  const qs = new URLSearchParams();
+  const catId = Number(opts.categoryId);
+  const brandId = Number(opts.brandId);
+  if (Number.isFinite(catId) && catId > 0) qs.set("categoryId", String(catId));
+  if (Number.isFinite(brandId) && brandId > 0) qs.set("brandId", String(brandId));
+  const q = opts.q != null ? String(opts.q).trim() : "";
+  if (q) qs.set("q", q);
+  const cap =
+    typeof PaintApi !== "undefined" ? PaintApi.normalizeCapacityLtr(opts.capacityLtr) : null;
+  if (cap != null) qs.set("capacityLtr", String(cap));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return `/paint/browse.html${suffix}`;
+}
+
 const PaintApi = {
   async request(path, options = {}) {
     const { body, headers: hdrs = {}, ...rest } = options;
@@ -123,6 +138,31 @@ const PaintApi = {
     if (Number.isFinite(brandId) && brandId > 0) qs.set("brandId", String(brandId));
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return this.request(`/public/browse/shops${suffix}`);
+  },
+  publicBrowseProducts(opts = {}) {
+    const qs = new URLSearchParams();
+    const catId = Number(opts.categoryId);
+    const brandId = Number(opts.brandId);
+    if (Number.isFinite(catId) && catId > 0) qs.set("categoryId", String(catId));
+    if (Number.isFinite(brandId) && brandId > 0) qs.set("brandId", String(brandId));
+    const q = opts.q != null ? String(opts.q).trim() : "";
+    if (q) qs.set("q", q);
+    const cap = PaintApi.normalizeCapacityLtr(opts.capacityLtr);
+    if (cap != null) qs.set("capacityLtr", String(cap));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/public/browse/products${suffix}`);
+  },
+  publicBrowseSuggest(opts = {}) {
+    const qs = new URLSearchParams();
+    const catId = Number(opts.categoryId);
+    const brandId = Number(opts.brandId);
+    if (Number.isFinite(catId) && catId > 0) qs.set("categoryId", String(catId));
+    if (Number.isFinite(brandId) && brandId > 0) qs.set("brandId", String(brandId));
+    if (opts.q) qs.set("q", String(opts.q).trim());
+    const cap = PaintApi.normalizeCapacityLtr(opts.capacityLtr);
+    if (cap != null) qs.set("capacityLtr", String(cap));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/public/browse/suggest${suffix}`);
   },
   suggest(q, opts = {}) {
     const qs = new URLSearchParams();

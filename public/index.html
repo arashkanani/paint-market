@@ -145,6 +145,7 @@
       <button type="button" id="indexBrandViewMore" class="pm-index-brand-view-more hidden" data-pm-t="index_brand_view_more">View more</button>
     </section>
 
+
       <section id="shopsSection" class="pm-shops-section mt-3 space-y-4 hidden">
         <p id="shopsSectionTitle" class="pm-shops-section__title-bar" role="heading" aria-level="2"></p>
         <div id="shopGrid" class="grid"></div>
@@ -209,8 +210,6 @@
     const INDEX_BRAND_PREVIEW_COUNT = 6;
     let indexBrowseCategories = [];
     let indexBrowseBrands = [];
-    let indexSelectedCategory = null;
-    let indexSelectedBrand = null;
     let indexBrandsExpanded = false;
 
     function pmIndexLayoutSync() {
@@ -770,15 +769,12 @@
         btn.className = "pm-index-category-chip";
         btn.setAttribute("role", "tab");
         btn.dataset.categoryId = String(c.id);
-        const selected = indexSelectedCategory && indexSelectedCategory.id === c.id;
-        indexCategoryChipActive(btn, selected);
         const label = paintMarketCategoryLabel(c.slug, c.name);
         btn.setAttribute("aria-label", label);
         btn.title = label;
         btn.innerHTML = `<span class="pm-index-category-chip__icon">${paintMarketCategoryIconImgHtml(c.slug, "pm-cat-icon pm-cat-icon--bar")}</span>`;
         btn.addEventListener("click", () => {
-          if (indexSelectedCategory && indexSelectedCategory.id === c.id) selectIndexCategory(null);
-          else selectIndexCategory(c);
+          window.location.href = paintMarketBrowsePageUrl({ categoryId: c.id });
         });
         chips.push(btn);
       }
@@ -786,27 +782,12 @@
     }
 
     async function loadIndexShops() {
-      const hasCategory = !!(indexSelectedCategory && indexSelectedCategory.id);
-      const hasBrand = !!(indexSelectedBrand && indexSelectedBrand.id);
       try {
-        if (!hasCategory && !hasBrand) {
-          const shopsData = await PaintApi.publicShops();
-          indexLastShops = shopsData.shops || [];
-        } else {
-          const data = await PaintApi.publicBrowseShops({
-            categoryId: hasCategory ? indexSelectedCategory.id : undefined,
-            brandId: hasBrand ? indexSelectedBrand.id : undefined
-          });
-          indexLastShops = data.shops || [];
-        }
+        const shopsData = await PaintApi.publicShops();
+        indexLastShops = shopsData.shops || [];
       } catch (e) {
         console.warn("load index shops", e);
-        try {
-          const shopsData = await PaintApi.publicShops();
-          indexLastShops = shopsData.shops || [];
-        } catch {
-          indexLastShops = [];
-        }
+        indexLastShops = [];
       }
       renderShops(indexLastShops);
       syncShopsSectionTitle();
@@ -829,8 +810,6 @@
         btn.className = "pm-index-brand-chip";
         btn.setAttribute("role", "tab");
         btn.dataset.brandId = String(b.id);
-        const selected = indexSelectedBrand && indexSelectedBrand.id === b.id;
-        indexBrandChipActive(btn, selected);
         const name = b.name != null ? String(b.name) : "";
         const slugKey = b.slug != null ? String(b.slug).trim().toLowerCase() : "";
         if (slugKey) btn.dataset.brandSlug = slugKey;
@@ -840,8 +819,7 @@
         btn.title = name;
         btn.innerHTML = `<span class="pm-index-brand-chip__icon">${iconHtml}</span>`;
         btn.addEventListener("click", () => {
-          if (indexSelectedBrand && indexSelectedBrand.id === b.id) selectIndexBrand(null);
-          else selectIndexBrand(b);
+          window.location.href = paintMarketBrowsePageUrl({ brandId: b.id });
         });
         chips.push(btn);
       }
@@ -878,45 +856,16 @@
       if (!indexBrandPickWrap || !indexBrandBar) return;
       indexBrandPickWrap.classList.remove("hidden");
       try {
-        const catId = indexSelectedCategory?.id;
-        const data = await PaintApi.publicBrowseBrands(catId);
+        const data = await PaintApi.publicBrowseBrands();
         const fromApi = data.brands || [];
         indexBrowseBrands = fromApi.length ? fromApi : indexBrandFallbackList();
       } catch (e) {
         console.warn("browse brands", e);
         indexBrowseBrands = indexBrandFallbackList();
       }
-      if (
-        indexSelectedBrand &&
-        !indexBrowseBrands.some((b) => b.id === indexSelectedBrand.id)
-      ) {
-        indexSelectedBrand = null;
-      }
       renderIndexBrandBar();
     }
 
-    async function selectIndexBrand(brand) {
-      indexSelectedBrand = brand || null;
-      renderIndexBrandBar();
-      try {
-        await loadIndexShops();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function selectIndexCategory(cat) {
-      indexSelectedCategory = cat || null;
-      indexSelectedBrand = null;
-      indexBrandsExpanded = false;
-      renderIndexCategoryBar();
-      try {
-        await loadIndexBrands();
-        await loadIndexShops();
-      } catch (e) {
-        console.error(e);
-      }
-    }
 
     function indexCategoryFallbackList() {
       return typeof paintMarketDefaultBrowseCategories === "function"
@@ -949,6 +898,7 @@
       });
     }
 
+
     let indexBrandFitResizeTimer = 0;
     window.addEventListener("resize", () => {
       clearTimeout(indexBrandFitResizeTimer);
@@ -962,24 +912,6 @@
     function syncShopsSectionTitle() {
       const el = document.getElementById("shopsSectionTitle");
       if (!el || typeof paintMarketTf !== "function") return;
-      const brandName = indexSelectedBrand?.name != null ? String(indexSelectedBrand.name) : "";
-      if (indexSelectedCategory && indexSelectedBrand) {
-        const label = paintMarketCategoryLabel(indexSelectedCategory.slug, indexSelectedCategory.name);
-        el.textContent = paintMarketTf("index_shops_title_category_brand", {
-          category: label,
-          brand: brandName
-        });
-        return;
-      }
-      if (indexSelectedBrand) {
-        el.textContent = paintMarketTf("index_shops_title_brand", { brand: brandName });
-        return;
-      }
-      if (indexSelectedCategory) {
-        const label = paintMarketCategoryLabel(indexSelectedCategory.slug, indexSelectedCategory.name);
-        el.textContent = paintMarketTf("index_shops_title_category", { category: label });
-        return;
-      }
       const cityCode = typeof paintMarketCityGet === "function" ? paintMarketCityGet() : "";
       if (cityCode) {
         const city =
