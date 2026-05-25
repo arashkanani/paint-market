@@ -227,21 +227,24 @@
         </div>`;
   }
 
-  /** Public shop: brand band */
+  /** Public shop: brand band (white, logo mark) */
   function shopBrandDivider(slug, labelText) {
-    const t = brandTriple(slug);
-    const barBg = linearBar(t.bar);
+    const slugKey = String(slug || "").trim().toLowerCase();
+    const slugCls = slugKey.replace(/[^a-z0-9_-]/g, "") || "brand";
+    const nameEsc = String(labelText ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const markFn = global.paintMarketBrandMarkInnerHtml;
+    const markTextFn = global.paintMarketBrandMarkText;
+    const markInner =
+      typeof markFn === "function" && typeof markTextFn === "function"
+        ? markFn(markTextFn(labelText), slugKey)
+        : nameEsc;
     const el = document.createElement("div");
-    el.className =
-      "sticky top-[57px] z-10 flex items-center justify-center gap-3 px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em]";
-    el.style.background = `${barBg}`;
-    el.style.color = "#fafaf9";
-    el.style.borderTop = "1px solid rgba(255,255,255,0.16)";
-    el.style.borderBottom = "1px solid rgba(0,0,0,0.2)";
-    el.style.boxShadow =
-      "0 4px 14px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.18)";
-    el.style.textShadow = "0 1px 4px rgba(0,0,0,0.45)";
-    el.textContent = labelText;
+    el.className = "pm-shop-brand-divider flex items-center justify-center px-3 py-2";
+    el.setAttribute("data-brand-slug", slugKey);
+    el.innerHTML = `<span class="pm-brand-icon pm-brand-icon--${slugCls} pm-shop-brand-divider__brand" aria-hidden="true"><span class="pm-brand-icon__mark pm-brand-icon__mark--skip-fit">${markInner}</span></span>`;
     return el;
   }
 

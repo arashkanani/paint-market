@@ -1,0 +1,293 @@
+/* Brand prism — contained 3D, no bleed onto page */
+
+:root {
+  --pm-shop-page-bg: linear-gradient(to left, #e8eef4 0%, #f8fafc 100%);
+  --pm-prism-pitch: 11deg;
+  --pm-prism-yaw: 20deg;
+}
+
+body[data-pm-page-title="shop_metaTitle"] {
+  background: var(--pm-shop-page-bg);
+  background-attachment: fixed;
+}
+
+.pm-brand-prism {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  contain: layout paint;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.65rem 0.65rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(165deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.pm-brand-prism__viewport {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  height: 17.5rem;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e8eef4 100%);
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+  user-select: none;
+}
+
+.pm-brand-prism__viewport:active {
+  cursor: grabbing;
+}
+
+.pm-brand-prism__floor {
+  position: absolute;
+  left: 50%;
+  bottom: 0.35rem;
+  transform: translateX(-48%);
+  width: 78%;
+  max-width: 22rem;
+  height: auto;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+.pm-brand-prism__scene {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  perspective: 520px;
+  perspective-origin: 50% 45%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pm-brand-prism__camera {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) rotateX(var(--pm-prism-pitch)) rotateY(var(--pm-prism-yaw));
+  pointer-events: none;
+}
+
+.pm-brand-prism__drum {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: auto;
+}
+
+.pm-brand-prism__wire,
+.pm-brand-prism__edges,
+.pm-brand-prism__faces {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.pm-brand-prism__faces {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pm-brand-prism__wire {
+  z-index: 0;
+  opacity: 0.75;
+}
+
+.pm-brand-prism__wire-cap--top {
+  fill: rgba(255, 255, 255, 0.45);
+  stroke: rgba(13, 148, 136, 0.35);
+  stroke-width: 1.2;
+}
+
+.pm-brand-prism__wire-cap--bot {
+  fill: rgba(226, 232, 240, 0.5);
+  stroke: rgba(71, 85, 105, 0.3);
+  stroke-width: 1.2;
+}
+
+.pm-brand-prism__wire-rib {
+  stroke: rgba(71, 85, 105, 0.35);
+  stroke-width: 1;
+}
+
+.pm-brand-prism__facet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: #64748b;
+  opacity: 0.4;
+  transform-origin: center center;
+}
+
+.pm-brand-prism__face {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  padding: 0.45rem 0.35rem 0.4rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border: none;
+  border-radius: 0;
+  background: linear-gradient(180deg, #fff 0%, #e8eef4 100%);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: center center;
+  overflow: hidden;
+  pointer-events: auto;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.pm-brand-prism__viewport--dragging .pm-brand-prism__face {
+  transition: none;
+}
+
+.pm-brand-prism__viewport--dragging .pm-brand-prism__drum {
+  transition: none !important;
+}
+
+.pm-brand-prism__face-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.65), transparent 50%);
+  pointer-events: none;
+}
+
+.pm-brand-prism__face-icon {
+  position: relative;
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+}
+
+.pm-brand-prism__face-icon .pm-brand-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.pm-brand-prism__face-name {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+  line-height: 1.1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pm-brand-prism__face-count {
+  position: relative;
+  z-index: 1;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.pm-brand-prism__face--center {
+  opacity: 1;
+  visibility: visible;
+  z-index: 4;
+}
+
+.pm-brand-prism__face--side {
+  opacity: 0.88;
+  visibility: visible;
+  z-index: 3;
+}
+
+.pm-brand-prism__face--gone {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.pm-shop-brand-inside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.pm-shop-brand-inside__back {
+  padding: 0.32rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+}
+
+.pm-shop-brand-inside__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  min-width: 0;
+}
+
+.pm-shop-brand-inside__name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pm-shop-brand-inside__count {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.pm-shop-brand-divider {
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pm-shop-brand-divider__brand.pm-brand-icon {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[lang="ar"] .pm-brand-prism__face-name,
+html[lang="ar"] .pm-shop-brand-inside__name {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
+}
+
+@media (min-width: 640px) {
+  .pm-brand-prism__viewport {
+    height: 19rem;
+  }
+}
