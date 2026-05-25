@@ -1,14 +1,140 @@
 /* Brand prism — contained 3D, no bleed onto page */
 
 :root {
-  --pm-shop-page-bg: linear-gradient(to left, #e8eef4 0%, #f8fafc 100%);
+  --pm-shop-page-bg: #e5e7eb;
   --pm-prism-pitch: 11deg;
   --pm-prism-yaw: 20deg;
 }
 
 body[data-pm-page-title="shop_metaTitle"] {
   background: var(--pm-shop-page-bg);
-  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Popular panel — gray, slightly darker than page */
+body[data-pm-page-title="shop_metaTitle"] #popularPickWrap.pm-shop-panel {
+  background: #d1d5db;
+  border: 1px solid #c5cad1;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-popular-tile {
+  border-top-width: 1px;
+  border-top-color: #d5d9d9;
+}
+
+/* Amazon-style product tiles (shop grid + popular) */
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.65rem;
+}
+
+@media (min-width: 640px) {
+  body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-grid {
+    grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-grid {
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: 0.85rem;
+  }
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #fff;
+  border: 1px solid #d5d9d9;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card:hover {
+  border-color: #c8cccc;
+  box-shadow: 0 2px 10px rgba(15, 17, 17, 0.12);
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__media {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  background: #fff;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__body {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.45rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: #0f1111;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__title {
+    font-size: 0.78rem;
+  }
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__price {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #b12704;
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 640px) {
+  body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__price {
+    font-size: 0.9rem;
+  }
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__meta {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.25;
+  color: #565959;
+}
+
+html[lang="ar"] body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__title,
+html[lang="ar"] body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__price,
+html[lang="ar"] body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__meta {
+  font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif;
 }
 
 .pm-brand-prism {

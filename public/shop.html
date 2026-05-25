@@ -169,8 +169,6 @@
     </section>
   </main>
 
-  <footer class="max-w-6xl mx-auto px-4 pb-12 text-xs text-slate-500" data-pm-t="shop_footer">Information only—purchase directly from the retailer.</footer>
-
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/common.js"></script>
@@ -338,10 +336,8 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.title = tip;
-        const catMark = PaintTheme.shopListingAccentStyle(row.categorySlug || "");
         btn.className =
-          "pm-shop-popular-tile group aspect-square h-full w-full min-h-0 min-w-0 flex flex-col rounded-lg border border-slate-200 border-t-[3px] bg-white overflow-hidden hover:shadow-md transition cursor-pointer select-none outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-teal-500 text-left";
-        btn.style.borderTopColor = catMark.insetBar;
+          "pm-shop-popular-tile pm-shop-amazon-card group h-full w-full min-h-0 min-w-0 flex flex-col cursor-pointer select-none outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-teal-500 text-left";
         btn.innerHTML = shopProductCardBodyHtml(row);
         btn.addEventListener("click", () => goToListing(row.listingId, row.categorySlug));
         strip.appendChild(btn);
@@ -399,14 +395,14 @@
       return Number.isFinite(n) ? String(n) : String(v ?? "");
     }
 
-    /** Same inner markup as main grid: photo (price / capacity / RAL) | product name. */
+    /** Amazon-style card: image on top, title + price below. */
     function shopProductCardBodyHtml(row) {
       const rawImg = row.default_image_url || row.imageUrl || "";
       const productName = row.product_name || row.productName || "";
       const imgSrc = rawImg
         ? esc(rawImg)
         : esc(
-            `https://placehold.co/128x128/f1f5f9/64748b/png?text=${encodeURIComponent(String(productName || "•").slice(0, 2).toUpperCase())}`
+            `https://placehold.co/200x200/f7f7f7/64748b/png?text=${encodeURIComponent(String(productName || "•").slice(0, 2).toUpperCase())}`
           );
       const cap = formatCapacityLtr(row.capacity_ltr ?? row.capacityLtr);
       const cur = row.currency || (typeof paintMarketCurrencyGet === "function" ? paintMarketCurrencyGet() : "AED");
@@ -417,34 +413,17 @@
             ? paintMarketFormatPrice(amt, cur)
             : String(amt)
           : "";
-      const photoOverlays =
-        typeof paintMarketListingPhotoOverlaysHtml === "function"
-          ? paintMarketListingPhotoOverlaysHtml(
-              {
-                price_amount: amt,
-                currency: cur,
-                capacity_ltr: row.capacity_ltr ?? row.capacityLtr,
-                ral_code: row.ral_code ?? row.ralCode
-              },
-              esc,
-              shopCustomColors,
-              { formatPrice: () => priceStr, formatCapacity: () => `${cap}L`, hidePrice: !priceStr }
-            )
-          : priceStr
-            ? `<span class="pm-card-photo-overlay pm-card-photo-overlay--price">${esc(priceStr)}</span>`
-            : "";
-      return `
-          <div class="flex-1 flex gap-px min-h-0 overflow-hidden p-0 bg-white">
-            <div class="w-[50%] max-w-[4.5rem] shrink-0 self-stretch flex min-h-0 items-stretch relative z-10">
-              <div class="h-full aspect-square max-w-full min-h-0 overflow-hidden relative pm-card-photo-frame pm-card-photo-frame--shop-split" style="--pm-card-photo-inset:0.28rem">
-                ${photoOverlays}
-                <img src="${imgSrc}" alt="" loading="lazy" />
-              </div>
-            </div>
-            <div class="flex-1 min-w-0 min-h-0 flex flex-col justify-center gap-px overflow-hidden leading-tight pr-0.5">
-              <p class="pm-shop-product-card__name text-[11px] sm:text-[12px] font-semibold text-slate-900 line-clamp-2 leading-snug">${esc(productName)}</p>
-            </div>
-          </div>`;
+      const ral = String(row.ral_code ?? row.ralCode ?? "").trim();
+      const meta = [];
+      if (cap) meta.push(`${cap}L`);
+      if (ral) meta.push(ral.toUpperCase().startsWith("RAL") ? ral : `RAL ${ral}`);
+      const metaHtml = meta.length
+        ? `<p class="pm-shop-amazon-card__meta">${esc(meta.join(" · "))}</p>`
+        : "";
+      const priceHtml = priceStr
+        ? `<p class="pm-shop-amazon-card__price">${esc(priceStr)}</p>`
+        : "";
+      return `<div class="pm-shop-amazon-card__media"><img class="pm-shop-amazon-card__img" src="${imgSrc}" alt="" loading="lazy" /></div><div class="pm-shop-amazon-card__body"><p class="pm-shop-amazon-card__title">${esc(productName)}</p>${priceHtml}${metaHtml}</div>`;
     }
 
     function renderList() {
@@ -466,16 +445,12 @@
         return;
       }
       const grid = document.createElement("div");
-      grid.className =
-        "grid grid-cols-[repeat(auto-fill,minmax(5.1rem,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] md:grid-cols-[repeat(auto-fill,minmax(6.6rem,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(7.2rem,1fr))] gap-1";
+      grid.className = "pm-shop-amazon-grid";
       listingMount.appendChild(grid);
       for (const row of filtered) {
         const card = document.createElement("article");
-        const catMark = PaintTheme.shopListingAccentStyle(row.category_slug || "");
-        card.className =
-          "group aspect-square flex flex-col rounded-lg border border-slate-200 border-t-[3px] bg-white overflow-hidden hover:shadow-md transition cursor-pointer select-none";
+        card.className = "pm-shop-amazon-card group cursor-pointer select-none";
         card.dataset.listingId = String(row.id);
-        card.style.borderTopColor = catMark.insetBar;
         card.innerHTML = shopProductCardBodyHtml(row);
         card.addEventListener("click", () => activate(card, row.id));
         grid.appendChild(card);
