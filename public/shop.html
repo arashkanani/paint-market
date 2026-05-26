@@ -125,7 +125,7 @@
     <div id="errorBox" class="hidden rounded-xl border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3 text-sm"></div>
 
     <section class="pm-shop-catalog" id="shopCatalog">
-      <aside id="shopBrandSidebar" class="pm-shop-brand-sidebar" aria-label="Brand filter">
+      <aside id="shopBrandSidebar" class="pm-shop-brand-sidebar" aria-label="Brand, category and pack size filters">
         <div class="pm-shop-brand-sidebar__head">
           <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_brands_filter">Brands</h2>
           <span class="pm-shop-brand-sidebar__tag" data-pm-t="shop_brand_drum_tag">FILTER</span>
@@ -153,6 +153,62 @@
             <span aria-hidden="true">▼</span>
           </button>
         </section>
+
+        <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--categories">
+          <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_categories_filter">Categories</h2>
+          <span class="pm-shop-brand-sidebar__tag" data-pm-t="shop_category_drum_tag">FILTER</span>
+        </div>
+        <section id="shopCategoryPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--category hidden" aria-label="Category drum">
+          <button type="button" id="shopCatPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous category">
+            <span aria-hidden="true">▲</span>
+          </button>
+          <div class="pm-brand-prism__viewport" id="shopCatPrismViewport">
+            <div class="pm-brand-prism__hud" aria-hidden="true">
+              <span class="pm-brand-prism__hud-line"></span>
+              <span class="pm-brand-prism__hud-reticle"></span>
+            </div>
+            <div class="pm-brand-prism__scene">
+              <div class="pm-brand-prism__camera">
+                <div class="pm-brand-prism__drum" id="shopCatPrismDrum">
+                  <div class="pm-brand-prism__wire" id="shopCatPrismWire" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__edges" id="shopCatPrismEdges" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__faces" id="shopCatPrismFaces"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="shopCatPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next category">
+            <span aria-hidden="true">▼</span>
+          </button>
+        </section>
+
+        <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--capacity">
+          <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_capacities_filter">Pack size</h2>
+          <span class="pm-shop-brand-sidebar__tag" data-pm-t="shop_capacity_drum_tag">FILTER</span>
+        </div>
+        <section id="shopCapacityPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--capacity hidden" aria-label="Capacity drum">
+          <button type="button" id="shopCapPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous pack size">
+            <span aria-hidden="true">▲</span>
+          </button>
+          <div class="pm-brand-prism__viewport" id="shopCapPrismViewport">
+            <div class="pm-brand-prism__hud" aria-hidden="true">
+              <span class="pm-brand-prism__hud-line"></span>
+              <span class="pm-brand-prism__hud-reticle"></span>
+            </div>
+            <div class="pm-brand-prism__scene">
+              <div class="pm-brand-prism__camera">
+                <div class="pm-brand-prism__drum" id="shopCapPrismDrum">
+                  <div class="pm-brand-prism__wire" id="shopCapPrismWire" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__edges" id="shopCapPrismEdges" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__faces" id="shopCapPrismFaces"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="shopCapPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next pack size">
+            <span aria-hidden="true">▼</span>
+          </button>
+        </section>
       </aside>
 
       <div class="pm-shop-catalog__main">
@@ -162,22 +218,18 @@
         </div>
 
         <div id="shopListingPanel" class="pm-shop-listing-section space-y-3">
-          <div id="shopListingHead" class="flex flex-wrap gap-3 items-start justify-between">
-            <div>
-              <h2 class="text-xl" data-pm-t="shop_listed_h2">All products</h2>
-              <p class="text-sm text-slate-600 max-w-3xl" data-pm-t="shop_listed_sub">Rotate the brand prism on the left, or use category pills below.</p>
-            </div>
-            <label class="text-xs font-semibold text-slate-600 flex items-center gap-2">
-              <span data-pm-t="shop_sort">Sort</span>
-              <select id="sortSelect" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold"></select>
-            </label>
+          <div id="shopListingHead">
+            <h2 class="text-xl" data-pm-t="shop_listed_h2">All products</h2>
           </div>
-          <div class="flex flex-wrap gap-2 text-xs font-semibold">
+          <div class="shop-listing-pills hidden flex flex-wrap gap-2 text-xs font-semibold" aria-hidden="true">
             <button data-quick="building_paints" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Building</button>
             <button data-quick="steel_workshop_paints" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Steel</button>
             <button data-quick="carpentry_workshop_paints" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Wood</button>
             <button data-quick="thinner" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Thinner</button>
             <button data-quick="industrial" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Industrial</button>
+            <button data-quick="road_marking" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Road marking</button>
+            <button data-quick="water_proofing" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Water proofing</button>
+            <button data-quick="epoxy_flooring" type="button" class="pill px-3 py-1 rounded-full bg-white border border-slate-200">Epoxy flooring</button>
             <button data-quick="" type="button" class="pill px-3 py-1 rounded-full bg-teal-800 text-white">All</button>
           </div>
           <div id="listingMount" class="space-y-4"></div>
@@ -230,10 +282,32 @@
     let listings = [];
     let shopCustomColors = [];
     let categoryFilter = "";
+    let capacityFilter = "";
     let brandFilter = "";
     let sortMode = "popular";
     let shopPageHydrated = false;
+    let scrollProductsOnFilter = false;
     let brandPrism = null;
+    let categoryPrism = null;
+    let capacityPrism = null;
+
+    const SHOP_CAPACITY_ORDER = [1, 3.6, 18];
+
+    function shopCategorySlugOrder() {
+      if (typeof paintMarketDefaultBrowseCategories === "function") {
+        return paintMarketDefaultBrowseCategories().map((c) => c.slug);
+      }
+      return [
+        "building_paints",
+        "steel_workshop_paints",
+        "carpentry_workshop_paints",
+        "thinner",
+        "industrial",
+        "road_marking",
+        "water_proofing",
+        "epoxy_flooring"
+      ];
+    }
 
     function shopBrandsFromListings() {
       const map = new Map();
@@ -251,32 +325,69 @@
       );
     }
 
-    const SHOP_SORT_VALUES = ["popular", "price-asc", "price-desc", "name"];
+    function shopCapacityLabelLtr(cap) {
+      const n = Number(cap);
+      if (!Number.isFinite(n)) return String(cap ?? "");
+      if (Math.abs(n - 1) < 0.001) return "1L";
+      if (Math.abs(n - 3.6) < 0.001) return "3.6L";
+      if (Math.abs(n - 18) < 0.001) return "18L";
+      return `${n}L`;
+    }
+
+    function listingCapacityLtr(row) {
+      return PaintApi.normalizeCapacityLtr(row.capacity_ltr ?? row.capacityLtr);
+    }
+
+    function shopCapacitiesFromListings() {
+      const caps = new Set();
+      for (const l of listings) {
+        const c = listingCapacityLtr(l);
+        if (c != null) caps.add(c);
+      }
+      const ordered = SHOP_CAPACITY_ORDER.filter((c) => caps.has(c));
+      const rest = [...caps].filter((c) => !ordered.includes(c)).sort((a, b) => a - b);
+      return [...ordered, ...rest].map((cap) => ({
+        slug: String(cap),
+        name: shopCapacityLabelLtr(cap)
+      }));
+    }
+
+    /** All hub categories on the prism (same as main page), plus any extra slugs from this shop. */
+    function shopCategoriesFromListings() {
+      const inShop = new Set();
+      for (const l of listings) {
+        const s = String(l.category_slug || "").trim().toLowerCase();
+        if (s) inShop.add(s);
+      }
+      const order = shopCategorySlugOrder();
+      const slugs = [];
+      const seen = new Set();
+      for (const s of order) {
+        if (seen.has(s)) continue;
+        seen.add(s);
+        slugs.push(s);
+      }
+      for (const s of [...inShop].filter((x) => !seen.has(x)).sort()) {
+        seen.add(s);
+        slugs.push(s);
+      }
+      return slugs.map((slug) => ({
+        slug,
+        name: paintMarketCategoryLabel(slug, "")
+      }));
+    }
+
     const SHOP_PILL_I18N = {
       building_paints: "shop_pill_building",
       steel_workshop_paints: "shop_pill_steel",
       carpentry_workshop_paints: "shop_pill_carpentry",
       thinner: "shop_pill_thinner",
       industrial: "shop_pill_industrial",
+      road_marking: "shop_pill_road_marking",
+      water_proofing: "shop_pill_water_proofing",
+      epoxy_flooring: "shop_pill_epoxy_flooring",
       "": "shop_pill_all"
     };
-
-    function refillShopSortSelect() {
-      const sel = document.getElementById("sortSelect");
-      if (!sel) return;
-      const prev = sel.value || sortMode;
-      sel.innerHTML = [
-        ["popular", "shop_sort_popular"],
-        ["price-asc", "shop_sort_price_asc"],
-        ["price-desc", "shop_sort_price_desc"],
-        ["name", "shop_sort_name"]
-      ]
-        .map(([val, key]) => `<option value="${val}">${esc(paintMarketT(key))}</option>`)
-        .join("");
-      const next = SHOP_SORT_VALUES.includes(prev) ? prev : "popular";
-      sel.value = next;
-      sortMode = next;
-    }
 
     function translateShopPills() {
       document.querySelectorAll(".pill").forEach((btn) => {
@@ -296,7 +407,6 @@
       });
     }
 
-    refillShopSortSelect();
     document.getElementById("shopName").textContent = paintMarketT("shop_loading");
 
     async function activate(card, listingId) {
@@ -370,7 +480,17 @@
         brandPrism.setIndexForSlug(bslug);
         brandPrism.enterBrand(bslug);
       }
-      if (categorySlugHint) categoryFilter = categorySlugHint;
+      if (categorySlugHint && categoryPrism) {
+        categoryPrism.setIndexForSlug(categorySlugHint);
+        categoryPrism.enterBrand(categorySlugHint);
+      } else if (categorySlugHint) {
+        categoryFilter = categorySlugHint;
+      }
+      const rowCap = row && listingCapacityLtr(row);
+      if (rowCap != null && capacityPrism) {
+        capacityPrism.setIndexForSlug(String(rowCap));
+        capacityPrism.enterBrand(String(rowCap));
+      }
       renderList();
       PaintTheme.paintShopFilterRow();
       const focusCard = () => {
@@ -443,25 +563,42 @@
       return `<div class="pm-shop-amazon-card__media"><img class="pm-shop-amazon-card__img" src="${imgSrc}" alt="" loading="lazy" /></div><div class="pm-shop-amazon-card__body"><p class="pm-shop-amazon-card__title">${esc(productName)}</p>${priceHtml}${metaHtml}</div>`;
     }
 
-    function renderList() {
+    function scrollShopProductsToTop() {
+      const catalog = document.getElementById("shopCatalog");
+      const y = catalog ? catalog.getBoundingClientRect().top + window.scrollY - 10 : 0;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    }
+
+    function renderList(opts) {
+      const scrollTop = opts && opts.scrollTop;
       const listingMount = document.getElementById("listingMount");
       const listingPanel = document.getElementById("shopListingPanel");
       if (!listingMount || !listingPanel) return;
       listingPanel.classList.remove("hidden");
       listingMount.innerHTML = "";
       if (!listings.length) {
-        listingMount.innerHTML = `<p class="text-sm text-slate-500">${esc(paintMarketT("shop_empty_listings"))}</p>`;
+        listingMount.innerHTML = `<div class="pm-shop-listing-empty"><p class="text-sm text-slate-500">${esc(paintMarketT("shop_empty_listings"))}</p></div>`;
+        if (scrollTop) requestAnimationFrame(() => scrollShopProductsToTop());
         return;
       }
       const filtered = sortRows(
         listings.filter((l) => {
           if (brandFilter && String(l.brand_slug || "").toLowerCase() !== brandFilter) return false;
-          if (!categoryFilter) return true;
-          return (l.category_slug || "") === categoryFilter;
+          if (
+            categoryFilter &&
+            String(l.category_slug || "").trim().toLowerCase() !== categoryFilter
+          )
+            return false;
+          if (capacityFilter !== "") {
+            const cap = listingCapacityLtr(l);
+            if (cap == null || String(cap) !== capacityFilter) return false;
+          }
+          return true;
         })
       );
       if (!filtered.length) {
-        listingMount.innerHTML = `<p class="text-sm text-slate-500">${esc(paintMarketT("shop_empty_filter"))}</p>`;
+        listingMount.innerHTML = `<div class="pm-shop-listing-empty"><p class="text-sm text-slate-500">${esc(paintMarketT("shop_empty_filter"))}</p></div>`;
+        if (scrollTop) requestAnimationFrame(() => scrollShopProductsToTop());
         return;
       }
       const grid = document.createElement("div");
@@ -475,6 +612,11 @@
         card.addEventListener("click", () => activate(card, row.id));
         grid.appendChild(card);
       }
+      if (scrollTop) requestAnimationFrame(() => scrollShopProductsToTop());
+    }
+
+    function renderListFromFilter() {
+      renderList({ scrollTop: scrollProductsOnFilter });
     }
 
     function initBrandPrism() {
@@ -505,22 +647,83 @@
         onEnterBrand(slug) {
           brandFilter = slug ? String(slug).trim().toLowerCase() : "";
         },
-        onRenderProducts: renderList
+        onRenderProducts: renderListFromFilter
       });
       brandPrism.render();
     }
 
-    document.querySelectorAll(".pill").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        categoryFilter = btn.getAttribute("data-quick") || "";
-        renderList();
+    function initCategoryPrism() {
+      if (typeof initShopFilterPrism !== "function") return;
+      categoryPrism = initShopFilterPrism({
+        layout: "sidebar",
+        axis: "x",
+        modExtraClass: "category",
+        section: document.getElementById("shopCategoryPrism"),
+        viewport: document.getElementById("shopCatPrismViewport"),
+        drum: document.getElementById("shopCatPrismDrum"),
+        facesEl: document.getElementById("shopCatPrismFaces"),
+        wireEl: document.getElementById("shopCatPrismWire"),
+        edgesEl: document.getElementById("shopCatPrismEdges"),
+        prevBtn: document.getElementById("shopCatPrismPrev"),
+        nextBtn: document.getElementById("shopCatPrismNext"),
+        getItems: shopCategoriesFromListings,
+        allLabelKey: "shop_all_categories",
+        allFaceHtml: (name) =>
+          typeof paintMarketPrismAllCategoriesHtml === "function"
+            ? paintMarketPrismAllCategoriesHtml(name)
+            : name,
+        faceContentHtml: (item) =>
+          typeof paintMarketCategoryPrismFaceHtml === "function"
+            ? paintMarketCategoryPrismFaceHtml(item)
+            : "",
+        faceHeightSidebar: 58,
+        esc,
+        t: paintMarketT,
+        applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+        onSelect(slug) {
+          categoryFilter = slug ? String(slug).trim().toLowerCase() : "";
+        },
+        onRenderProducts: renderListFromFilter
       });
-    });
+      categoryPrism.render();
+    }
 
-    document.getElementById("sortSelect").addEventListener("change", (e) => {
-      sortMode = e.target.value;
-      renderList();
-    });
+    function initCapacityPrism() {
+      if (typeof initShopFilterPrism !== "function") return;
+      capacityPrism = initShopFilterPrism({
+        layout: "sidebar",
+        axis: "x",
+        modExtraClass: "capacity",
+        section: document.getElementById("shopCapacityPrism"),
+        viewport: document.getElementById("shopCapPrismViewport"),
+        drum: document.getElementById("shopCapPrismDrum"),
+        facesEl: document.getElementById("shopCapPrismFaces"),
+        wireEl: document.getElementById("shopCapPrismWire"),
+        edgesEl: document.getElementById("shopCapPrismEdges"),
+        prevBtn: document.getElementById("shopCapPrismPrev"),
+        nextBtn: document.getElementById("shopCapPrismNext"),
+        getItems: shopCapacitiesFromListings,
+        allLabelKey: "shop_all_capacities",
+        allFaceHtml: (name) =>
+          typeof paintMarketPrismAllCapacitiesHtml === "function"
+            ? paintMarketPrismAllCapacitiesHtml(name)
+            : name,
+        faceContentHtml: (item) =>
+          typeof paintMarketCapacityPrismFaceHtml === "function"
+            ? paintMarketCapacityPrismFaceHtml(item)
+            : "",
+        faceHeightSidebar: 36,
+        esc,
+        t: paintMarketT,
+        fitBrandMarks: typeof paintMarketScheduleFitBrandMarks === "function" ? paintMarketScheduleFitBrandMarks : null,
+        applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+        onSelect(slug) {
+          capacityFilter = slug !== "" && slug != null ? String(slug) : "";
+        },
+        onRenderProducts: renderListFromFilter
+      });
+      capacityPrism.render();
+    }
 
     PaintTheme.paintShopFilterRow();
 
@@ -556,7 +759,10 @@
         shopCustomColors = data.customColors || [];
         shopPageHydrated = true;
         initBrandPrism();
+        initCategoryPrism();
+        initCapacityPrism();
         renderPopularPickStrip(computePopularPickRows(listings, 6));
+        scrollProductsOnFilter = true;
       } catch (e) {
         errorBox.textContent =
           e.message === "Forbidden"
@@ -568,9 +774,10 @@
 
     document.addEventListener("paint-market-lang-change", () => {
       if (!shopPageHydrated) document.getElementById("shopName").textContent = paintMarketT("shop_loading");
-      refillShopSortSelect();
       translateShopPills();
       if (brandPrism) brandPrism.render();
+      if (categoryPrism) categoryPrism.render();
+      if (capacityPrism) capacityPrism.render();
       renderList();
     });
 

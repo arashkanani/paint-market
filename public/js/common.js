@@ -619,14 +619,32 @@ function paintMarketFitBrandMarks(root) {
       ? root.querySelectorAll(".pm-brand-icon__mark:not(.pm-brand-icon__mark--skip-fit)")
       : document.querySelectorAll(".pm-brand-icon__mark:not(.pm-brand-icon__mark--skip-fit)");
   for (const mark of marks) {
-    const box = mark.closest(".pm-brand-icon");
+    const box = mark.closest(".pm-brand-prism__face-fill") || mark.closest(".pm-brand-icon");
     if (!box || box.clientWidth < 1 || box.clientHeight < 1) continue;
     mark.style.fontSize = "";
     const textLen = (mark.textContent || "").trim().length;
-    let px = textLen <= 4 ? 26 : textLen <= 7 ? 22 : 17;
-    const minPx = 8.5;
-    const padW = 10;
-    const padH = 10;
+    const inPrism = box.classList.contains("pm-brand-prism__face-fill");
+    const isArabPrism =
+      inPrism &&
+      (box.classList.contains("pm-brand-prism__face-fill--arabpaint") ||
+        !!mark.closest(".pm-brand-icon--arabpaint"));
+    let px = inPrism
+      ? textLen <= 4
+        ? 22
+        : textLen <= 7
+          ? 19
+          : textLen <= 12
+            ? 16
+            : 13.5
+      : textLen <= 4
+        ? 26
+        : textLen <= 7
+          ? 22
+          : 17;
+    if (isArabPrism) px = Math.max(px, 14);
+    const minPx = inPrism ? 9 : 8.5;
+    const padW = inPrism ? 4 : 10;
+    const padH = inPrism ? 4 : 10;
     let guard = 0;
     do {
       mark.style.fontSize = `${px}px`;
@@ -635,12 +653,91 @@ function paintMarketFitBrandMarks(root) {
       px -= 0.5;
     } while (px > minPx && guard < 50);
   }
+  const capLabels =
+    root && typeof root.querySelectorAll === "function"
+      ? root.querySelectorAll(".pm-brand-prism__face-cap-label")
+      : document.querySelectorAll(".pm-brand-prism__face-cap-label");
+  for (const label of capLabels) {
+    const box = label.closest(".pm-brand-prism__face-fill");
+    if (!box || box.clientWidth < 1 || box.clientHeight < 1) continue;
+    label.style.fontSize = "";
+    const textLen = (label.textContent || "").trim().length;
+    let px = textLen <= 3 ? 26 : textLen <= 5 ? 22 : 18;
+    const minPx = 12;
+    let guard = 0;
+    do {
+      label.style.fontSize = `${px}px`;
+      guard += 1;
+      if (label.scrollWidth <= box.clientWidth - 2 && label.scrollHeight <= box.clientHeight - 2) break;
+      px -= 0.35;
+    } while (px > minPx && guard < 55);
+  }
 }
 
 function paintMarketScheduleFitBrandMarks(root) {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => paintMarketFitBrandMarks(root));
   });
+}
+
+/** Prism “all” face — always two lines (e.g. All / brands). */
+function paintMarketPrismAllLabelHtml(label) {
+  const n = String(label || "").trim();
+  if (!n) return "";
+  const sp = n.indexOf(" ");
+  const line1 = sp > 0 ? n.slice(0, sp) : n;
+  const line2 = sp > 0 ? n.slice(sp + 1).trim() : "";
+  const e = paintMarketEscapeHtml;
+  if (!line2) {
+    return `<span class="pm-brand-prism__face-all-label"><span class="pm-brand-prism__all-line">${e(line1)}</span></span>`;
+  }
+  return `<span class="pm-brand-prism__face-all-label"><span class="pm-brand-prism__all-line">${e(line1)}</span><span class="pm-brand-prism__all-line">${e(line2)}</span></span>`;
+}
+
+function paintMarketPrismAllBrandsHtml(label) {
+  return paintMarketPrismAllLabelHtml(label);
+}
+
+function paintMarketPrismAllCategoriesHtml(label) {
+  return paintMarketPrismAllLabelHtml(label);
+}
+
+/** Pack size label on a prism face (e.g. 1L, 3.6L). */
+function paintMarketCapacityPrismFaceHtml(item) {
+  const slug = String(item?.slug ?? "").trim();
+  const label = item?.name || (slug ? `${slug}L` : "");
+  const slugCls = paintMarketEscapeHtml(slug.replace(/\./g, "_") || "cap");
+  return `<span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--cap pm-brand-prism__face-fill--cap-${slugCls}"><span class="pm-brand-prism__face-cap-label">${paintMarketEscapeHtml(label)}</span></span>`;
+}
+
+function paintMarketPrismAllCapacitiesHtml(label) {
+  return paintMarketPrismAllLabelHtml(label);
+}
+
+/** Category icon on a full prism face (no white circle). */
+function paintMarketCategoryPrismFaceHtml(cat) {
+  const slug = String(cat?.slug || "").trim().toLowerCase();
+  const slugCls = paintMarketEscapeHtml(slug.replace(/[^a-z0-9_-]/gi, "") || "category");
+  const label = paintMarketCategoryLabel(slug, cat?.name || "");
+  const img = paintMarketCategoryIconImgHtml(slug, "pm-brand-prism__face-img pm-brand-prism__face-img--category");
+  if (img) {
+    return `<span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--cat pm-brand-prism__face-fill--${slugCls} pm-brand-prism__face-fill--image" title="${paintMarketEscapeHtml(label)}">${img}</span>`;
+  }
+  return `<span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--cat pm-brand-prism__face-fill--${slugCls}"><span class="pm-brand-prism__face-cat-fallback">${paintMarketEscapeHtml(label)}</span></span>`;
+}
+
+/** Full prism face: brand font/colors on the whole panel (no white icon circle). */
+function paintMarketBrandPrismFaceHtml(brand) {
+  const slug = brand?.slug != null ? String(brand.slug) : "";
+  const name = brand?.name != null ? String(brand.name) : "";
+  const slugKey = String(slug || "").trim().toLowerCase();
+  const slugCls = paintMarketEscapeHtml(slugKey.replace(/[^a-z0-9_-]/gi, "") || "brand");
+  const img = paintMarketBrandIconImgHtml(slugKey, "pm-brand-prism__face-img");
+  if (img) {
+    return `<span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--${slugCls} pm-brand-prism__face-fill--image">${img}</span>`;
+  }
+  const inner = paintMarketBrandMarkInnerHtml(paintMarketBrandMarkText(name), slugKey);
+  return `<span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--${slugCls}"><span class="pm-brand-icon pm-brand-icon--${slugCls} pm-brand-prism__face-brand"><span class="pm-brand-icon__mark">${inner}</span></span></span>`;
 }
 
 /** Colored logo-style badge for hub brand chips (pairs with label under the square). */

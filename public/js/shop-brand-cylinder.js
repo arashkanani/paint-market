@@ -5,15 +5,16 @@
   function prismRadius(n, viewportW, layout) {
     const w = viewportW || 360;
     if (layout === "sidebar") {
-      const cap = Math.min(92, w * 0.42);
-      return Math.min(cap, Math.max(52, 46 + n * 4));
+      const cap = Math.min(72, w * 0.52);
+      return Math.min(cap, Math.max(40, 34 + n * 3));
     }
     const cap = Math.min(195, w * 0.38);
     return Math.min(cap, Math.max(108, 95 + n * 12));
   }
 
-  function faceWidth(radius, n) {
-    return Math.floor(2 * radius * Math.sin(Math.PI / n) * 0.94);
+  function faceWidth(radius, n, layout) {
+    const k = layout === "sidebar" ? 0.98 : 0.94;
+    return Math.floor(2 * radius * Math.sin(Math.PI / n) * k);
   }
 
   function isTouchLike(pointerType) {
@@ -73,15 +74,27 @@
       listingPanel,
       listingHead,
       getBrands,
+      getItems,
       getListings,
       esc,
       t,
       onEnterBrand,
+      onSelect,
       onRenderProducts,
       brandIconHtml,
+      faceContentHtml,
+      allFaceHtml,
+      allLabelKey = "shop_all_brands",
+      prependAllFace = layout === "sidebar",
+      modExtraClass = "",
+      faceHeightSidebar = 68,
+      applySelectionOnRender = true,
       fitBrandMarks,
       applyI18n
     } = cfg;
+
+    const itemsFn = getItems || getBrands;
+    const selectFn = onSelect || onEnterBrand;
 
     const vertical = axis === "x";
     let index = 0;
@@ -91,15 +104,14 @@
     let blockFaceClick = false;
     let filterActive = false;
 
-    function brands() {
-      return getBrands();
+    function items() {
+      return itemsFn ? itemsFn() : [];
     }
 
-    /** Sidebar drum: first face = all brands; rest = shop brands. */
     function prismFaces() {
-      const raw = brands();
-      if (layout !== "sidebar") return raw;
-      return [{ slug: "", name: t("shop_all_brands"), all: true }, ...raw];
+      const raw = items();
+      if (!prependAllFace || layout !== "sidebar") return raw;
+      return [{ slug: "", name: t(allLabelKey), all: true }, ...raw];
     }
 
     /** Swipe up = next face (natural scroll); invert for vertical drum. */
@@ -114,10 +126,10 @@
       if (!b) return;
       if (b.all) {
         filterActive = false;
-        onEnterBrand("");
+        selectFn("");
       } else {
         filterActive = true;
-        onEnterBrand(String(b.slug || "").trim().toLowerCase());
+        selectFn(String(b.slug || "").trim().toLowerCase());
       }
       onRenderProducts();
     }
@@ -236,14 +248,14 @@
         const i = list.findIndex((b) => !b.all && String(b.slug).toLowerCase() === k);
         if (i >= 0) index = i;
         filterActive = true;
-        onEnterBrand(k);
+        selectFn(k);
         if (layout === "sidebar") insideBar?.classList.add("hidden");
         else showInside(k);
       } else {
         const allIdx = list.findIndex((b) => b.all);
         index = allIdx >= 0 ? allIdx : 0;
         filterActive = false;
-        onEnterBrand("");
+        selectFn("");
         if (layout !== "sidebar") showCarousel();
         else insideBar?.classList.add("hidden");
       }
@@ -299,7 +311,7 @@
       insideBar?.classList.remove("hidden");
       listingPanel?.classList.remove("hidden");
       listingHead?.classList.remove("hidden");
-      const list = brands();
+      const list = items();
       const b = list.find((x) => String(x.slug).toLowerCase() === slug);
       const name = b?.name || slug;
       const icon = brandIconHtml ? brandIconHtml({ slug, name }) : esc(name);
@@ -413,14 +425,14 @@
       facesEl.innerHTML = "";
       if (edgesEl) edgesEl.innerHTML = "";
       if (wireEl) wireEl.innerHTML = "";
-      const raw = brands();
+      const raw = items();
       const list = prismFaces();
       if (!raw.length) {
         section.classList.add("hidden");
         return;
       }
       const isSidebar = layout === "sidebar";
-      if (raw.length === 1 && !isSidebar) {
+      if (raw.length === 1 && !isSidebar && !prependAllFace) {
         enterBrand(raw[0].slug);
         return;
       }
@@ -429,38 +441,50 @@
       section.classList.toggle("pm-brand-prism--vertical", vertical);
       section.classList.toggle("pm-brand-prism--sci", isSidebar);
       section.classList.toggle("pm-brand-prism--touch", isSidebar && isMobilePrism());
+      if (modExtraClass) section.classList.add(`pm-brand-prism--${modExtraClass}`);
       const n = list.length;
       const step = 360 / n;
       const vw = viewport?.clientWidth || 360;
       const r = prismRadius(n, vw, layout);
-      const fw = faceWidth(r, n);
-      const fh = isSidebar ? 72 : 240;
+      const fw = faceWidth(r, n, layout);
+      const fh = isSidebar ? faceHeightSidebar : 240;
       drum.style.width = `${fw}px`;
       drum.style.height = `${fh}px`;
       drum.dataset.r = String(r);
       index = Math.max(0, Math.min(index, n - 1));
       buildWire(n, r, fh);
       buildEdges(n, step, r, fh);
-      const showNames = isSidebar && !isMobilePrism();
+      const defaultFaceHtml =
+        typeof global.paintMarketBrandPrismFaceHtml === "function"
+          ? global.paintMarketBrandPrismFaceHtml
+          : null;
+      const renderFace = faceContentHtml || defaultFaceHtml;
       for (let i = 0; i < n; i++) {
         const b = list[i];
         const isAll = !!b.all;
         const slug = isAll ? "" : String(b.slug || "").trim().toLowerCase();
-        const name = b.name || slug || t("shop_all_brands");
+        const name = b.name || slug || t(allLabelKey);
         const face = document.createElement("button");
         face.type = "button";
         face.className = "pm-brand-prism__face pm-brand-prism__face--gone";
         if (isAll) face.classList.add("pm-brand-prism__face--all");
+        else if (slug) face.classList.add(`pm-brand-prism__face--${slug.replace(/[^a-z0-9_-]/gi, "")}`);
         face.dataset.index = String(i);
         face.setAttribute("aria-label", name);
         face.style.cssText = `width:${fw}px;height:${fh}px;margin-left:${-fw / 2}px;margin-top:${-fh / 2}px;transform:${faceTransform(i, step, r, fw, fh)}`;
         let inner;
         if (isAll) {
-          inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span><span class="pm-brand-prism__face-icon pm-brand-prism__face-icon--all" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="pm-brand-prism__face-all-label">${esc(name)}</span>`;
+          const allHtml = allFaceHtml
+            ? allFaceHtml(name)
+            : typeof global.paintMarketPrismAllLabelHtml === "function"
+              ? global.paintMarketPrismAllLabelHtml(name)
+              : `<span class="pm-brand-prism__face-all-label"><span class="pm-brand-prism__all-line">${esc(name)}</span></span>`;
+          inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span><span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--all">${allHtml}</span>`;
+        } else if (isSidebar && renderFace) {
+          inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span>${renderFace({ slug, name, ...b })}`;
         } else {
           const icon = brandIconHtml ? brandIconHtml({ slug, name }) : esc(name);
-          const nameHtml = showNames ? `<span class="pm-brand-prism__face-name">${esc(name)}</span>` : "";
-          inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span><span class="pm-brand-prism__face-icon">${icon}</span>${nameHtml}`;
+          inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span><span class="pm-brand-prism__face-icon">${icon}</span><span class="pm-brand-prism__face-name">${esc(name)}</span>`;
         }
         face.innerHTML = inner;
         face.addEventListener("click", () => {
@@ -479,7 +503,7 @@
       if (fitBrandMarks) fitBrandMarks(facesEl);
       if (applyI18n) applyI18n();
       bindControls();
-      if (isSidebar) {
+      if (isSidebar && applySelectionOnRender) {
         const cur = list[index];
         if (cur?.all) applySelection("");
         else if (cur) applySelection(String(cur.slug).trim().toLowerCase());
@@ -503,4 +527,5 @@
   }
 
   global.initShopBrandCylinder = initShopBrandCylinder;
+  global.initShopFilterPrism = initShopBrandCylinder;
 })(typeof window !== "undefined" ? window : globalThis);
