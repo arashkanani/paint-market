@@ -516,7 +516,10 @@ const PAINT_MARKET_CATEGORY_SLUG_I18N = {
   steel_workshop_paints: "shop_pill_steel",
   carpentry_workshop_paints: "shop_pill_carpentry",
   thinner: "shop_pill_thinner",
-  industrial: "shop_pill_industrial"
+  industrial: "shop_pill_industrial",
+  road_marking: "shop_pill_road_marking",
+  water_proofing: "shop_pill_water_proofing",
+  epoxy_flooring: "shop_pill_epoxy_flooring"
 };
 
 /** Hub category picker fallback when browse API is unavailable (ids match default DB seed). */
@@ -525,7 +528,10 @@ const PAINT_MARKET_BROWSE_CATEGORIES = [
   { id: 2, slug: "steel_workshop_paints", name: "Steel" },
   { id: 3, slug: "carpentry_workshop_paints", name: "Wood" },
   { id: 4, slug: "thinner", name: "Thinner" },
-  { id: 5, slug: "industrial", name: "Industrial" }
+  { id: 5, slug: "industrial", name: "Industrial" },
+  { id: 11, slug: "road_marking", name: "Road marking" },
+  { id: 12, slug: "water_proofing", name: "Water proofing" },
+  { id: 13, slug: "epoxy_flooring", name: "Epoxy flooring" }
 ];
 
 function paintMarketDefaultBrowseCategories() {
@@ -656,13 +662,18 @@ const PAINT_MARKET_CATEGORY_ICON_FILES = {
   steel_workshop_paints: "steel.png",
   carpentry_workshop_paints: "wood.png",
   thinner: "thinner.png",
-  industrial: "industrial.png"
+  industrial: "industrial.png",
+  road_marking: "road_marking.png",
+  water_proofing: "water_proofing.png",
+  epoxy_flooring: "epoxy_flooring.png"
 };
 
 function paintMarketCategoryIconUrl(slug) {
-  const file = PAINT_MARKET_CATEGORY_ICON_FILES[String(slug || "")];
-  if (!file) return "";
-  return `/paint/img/categories/${file}`;
+  const key = String(slug || "").trim().toLowerCase();
+  if (!key) return "";
+  const file = PAINT_MARKET_CATEGORY_ICON_FILES[key];
+  if (file) return `/paint/img/categories/${file}`;
+  return `/paint/img/categories/${key}.png`;
 }
 
 function paintMarketEscapeHtml(s) {
@@ -676,10 +687,14 @@ function paintMarketEscapeHtml(s) {
 }
 
 function paintMarketCategoryIconImgHtml(slug, className) {
-  const url = paintMarketCategoryIconUrl(slug);
-  if (!url) return "";
   const cls = className ? paintMarketEscapeHtml(className) : "pm-cat-icon";
-  return `<img class="${cls}" src="${paintMarketEscapeHtml(url)}" alt="" loading="lazy" />`;
+  const url = paintMarketCategoryIconUrl(slug);
+  if (!url) {
+    const label = paintMarketCategoryLabel(slug, "");
+    const initial = paintMarketEscapeHtml((label || "?").slice(0, 2).toUpperCase());
+    return `<span class="${cls} pm-cat-icon--fallback" aria-hidden="true">${initial}</span>`;
+  }
+  return `<img class="${cls}" src="${paintMarketEscapeHtml(url)}" alt="" loading="lazy" decoding="async" />`;
 }
 
 /** Inner HTML for picker header brand/category buttons (label is plain text). */
