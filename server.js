@@ -41,7 +41,7 @@ function normalizeCategoryNameFields(row) {
 }
 const { hashPassword, verifyPassword, randomToken } = require("./auth");
 
-const PORT = Number(process.env.PAINT_PORT || 3010);
+const PORT = Number(process.env.PORT || process.env.PAINT_PORT || 3010);
 const ROOT = __dirname;
 
 const CAPACITIES = new Set([1, 3.6, 18]);

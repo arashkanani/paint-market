@@ -5,8 +5,8 @@
   function prismRadius(n, viewportW, layout) {
     const w = viewportW || 360;
     if (layout === "sidebar") {
-      const cap = Math.min(72, w * 0.52);
-      return Math.min(cap, Math.max(40, 34 + n * 3));
+      const cap = Math.min(92, w * 0.58);
+      return Math.min(cap, Math.max(44, 38 + n * 3));
     }
     const cap = Math.min(195, w * 0.38);
     return Math.min(cap, Math.max(108, 95 + n * 12));
@@ -479,9 +479,11 @@
             : typeof global.paintMarketPrismAllLabelHtml === "function"
               ? global.paintMarketPrismAllLabelHtml(name)
               : `<span class="pm-brand-prism__face-all-label"><span class="pm-brand-prism__all-line">${esc(name)}</span></span>`;
-          inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span><span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--all">${allHtml}</span>`;
+          inner = isSidebar
+            ? `<span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--all">${allHtml}</span>`
+            : `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span><span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--all">${allHtml}</span>`;
         } else if (isSidebar && renderFace) {
-          inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span>${renderFace({ slug, name, ...b })}`;
+          inner = renderFace({ slug, name, ...b });
         } else {
           const icon = brandIconHtml ? brandIconHtml({ slug, name }) : esc(name);
           inner = `<span class="pm-brand-prism__face-shine" aria-hidden="true"></span><span class="pm-brand-prism__face-icon">${icon}</span><span class="pm-brand-prism__face-name">${esc(name)}</span>`;

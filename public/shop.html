@@ -128,17 +128,12 @@
       <aside id="shopBrandSidebar" class="pm-shop-brand-sidebar" aria-label="Brand, category and pack size filters">
         <div class="pm-shop-brand-sidebar__head">
           <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_brands_filter">Brands</h2>
-          <span class="pm-shop-brand-sidebar__tag" data-pm-t="shop_brand_drum_tag">FILTER</span>
         </div>
         <section id="shopBrandPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci hidden" aria-label="Brand drum">
           <button type="button" id="shopPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous brand">
             <span aria-hidden="true">▲</span>
           </button>
           <div class="pm-brand-prism__viewport" id="shopPrismViewport">
-            <div class="pm-brand-prism__hud" aria-hidden="true">
-              <span class="pm-brand-prism__hud-line"></span>
-              <span class="pm-brand-prism__hud-reticle"></span>
-            </div>
             <div class="pm-brand-prism__scene">
               <div class="pm-brand-prism__camera">
                 <div class="pm-brand-prism__drum" id="shopPrismDrum">
@@ -156,45 +151,38 @@
 
         <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--categories">
           <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_categories_filter">Categories</h2>
-          <span class="pm-shop-brand-sidebar__tag" data-pm-t="shop_category_drum_tag">FILTER</span>
         </div>
-        <section id="shopCategoryPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--category hidden" aria-label="Category drum">
-          <button type="button" id="shopCatPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous category">
-            <span aria-hidden="true">▲</span>
-          </button>
-          <div class="pm-brand-prism__viewport" id="shopCatPrismViewport">
-            <div class="pm-brand-prism__hud" aria-hidden="true">
-              <span class="pm-brand-prism__hud-line"></span>
-              <span class="pm-brand-prism__hud-reticle"></span>
-            </div>
-            <div class="pm-brand-prism__scene">
-              <div class="pm-brand-prism__camera">
-                <div class="pm-brand-prism__drum" id="shopCatPrismDrum">
-                  <div class="pm-brand-prism__wire" id="shopCatPrismWire" aria-hidden="true"></div>
-                  <div class="pm-brand-prism__edges" id="shopCatPrismEdges" aria-hidden="true"></div>
-                  <div class="pm-brand-prism__faces" id="shopCatPrismFaces"></div>
+        <div class="pm-shop-category-filter">
+          <section id="shopCategoryPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--category hidden" aria-label="Category drum">
+            <button type="button" id="shopCatPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous category">
+              <span aria-hidden="true">▲</span>
+            </button>
+            <div class="pm-brand-prism__viewport" id="shopCatPrismViewport">
+              <div class="pm-brand-prism__scene">
+                <div class="pm-brand-prism__camera">
+                  <div class="pm-brand-prism__drum" id="shopCatPrismDrum">
+                    <div class="pm-brand-prism__wire" id="shopCatPrismWire" aria-hidden="true"></div>
+                    <div class="pm-brand-prism__edges" id="shopCatPrismEdges" aria-hidden="true"></div>
+                    <div class="pm-brand-prism__faces" id="shopCatPrismFaces"></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <button type="button" id="shopCatPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next category">
-            <span aria-hidden="true">▼</span>
-          </button>
-        </section>
+            <button type="button" id="shopCatPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next category">
+              <span aria-hidden="true">▼</span>
+            </button>
+          </section>
+          <p id="shopCatPrismCaption" class="pm-shop-category-filter__caption" aria-live="polite"></p>
+        </div>
 
         <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--capacity">
           <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_capacities_filter">Pack size</h2>
-          <span class="pm-shop-brand-sidebar__tag" data-pm-t="shop_capacity_drum_tag">FILTER</span>
         </div>
         <section id="shopCapacityPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--capacity hidden" aria-label="Capacity drum">
           <button type="button" id="shopCapPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous pack size">
             <span aria-hidden="true">▲</span>
           </button>
           <div class="pm-brand-prism__viewport" id="shopCapPrismViewport">
-            <div class="pm-brand-prism__hud" aria-hidden="true">
-              <span class="pm-brand-prism__hud-line"></span>
-              <span class="pm-brand-prism__hud-reticle"></span>
-            </div>
             <div class="pm-brand-prism__scene">
               <div class="pm-brand-prism__camera">
                 <div class="pm-brand-prism__drum" id="shopCapPrismDrum">
@@ -639,6 +627,7 @@
         listingHead: document.getElementById("shopListingHead"),
         getBrands: shopBrandsFromListings,
         getListings: () => listings,
+        faceHeightSidebar: 80,
         esc,
         t: paintMarketT,
         brandIconHtml: typeof paintMarketBrandIconHtml === "function" ? paintMarketBrandIconHtml : null,
@@ -650,6 +639,15 @@
         onRenderProducts: renderListFromFilter
       });
       brandPrism.render();
+    }
+
+    function updateShopCategoryCaption(slug) {
+      const el = document.getElementById("shopCatPrismCaption");
+      if (!el) return;
+      const key = String(slug || "").trim().toLowerCase();
+      el.textContent = key
+        ? paintMarketCategoryLabel(key, "")
+        : paintMarketT("shop_all_categories");
     }
 
     function initCategoryPrism() {
@@ -676,12 +674,13 @@
           typeof paintMarketCategoryPrismFaceHtml === "function"
             ? paintMarketCategoryPrismFaceHtml(item)
             : "",
-        faceHeightSidebar: 58,
+        faceHeightSidebar: 80,
         esc,
         t: paintMarketT,
         applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
         onSelect(slug) {
           categoryFilter = slug ? String(slug).trim().toLowerCase() : "";
+          updateShopCategoryCaption(slug);
         },
         onRenderProducts: renderListFromFilter
       });
@@ -712,7 +711,7 @@
           typeof paintMarketCapacityPrismFaceHtml === "function"
             ? paintMarketCapacityPrismFaceHtml(item)
             : "",
-        faceHeightSidebar: 36,
+        faceHeightSidebar: 44,
         esc,
         t: paintMarketT,
         fitBrandMarks: typeof paintMarketScheduleFitBrandMarks === "function" ? paintMarketScheduleFitBrandMarks : null,

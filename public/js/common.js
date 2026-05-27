@@ -624,27 +624,36 @@ function paintMarketFitBrandMarks(root) {
     mark.style.fontSize = "";
     const textLen = (mark.textContent || "").trim().length;
     const inPrism = box.classList.contains("pm-brand-prism__face-fill");
+    const onCenterFace = inPrism && !!mark.closest(".pm-brand-prism__face--center");
     const isArabPrism =
       inPrism &&
       (box.classList.contains("pm-brand-prism__face-fill--arabpaint") ||
         !!mark.closest(".pm-brand-icon--arabpaint"));
     let px = inPrism
-      ? textLen <= 4
-        ? 22
-        : textLen <= 7
-          ? 19
-          : textLen <= 12
-            ? 16
-            : 13.5
+      ? onCenterFace
+        ? textLen <= 4
+          ? 34
+          : textLen <= 7
+            ? 28
+            : textLen <= 12
+              ? 24
+              : 20
+        : textLen <= 4
+          ? 20
+          : textLen <= 7
+            ? 17
+            : textLen <= 12
+              ? 14.5
+              : 12
       : textLen <= 4
         ? 26
         : textLen <= 7
           ? 22
           : 17;
-    if (isArabPrism) px = Math.max(px, 14);
-    const minPx = inPrism ? 9 : 8.5;
-    const padW = inPrism ? 4 : 10;
-    const padH = inPrism ? 4 : 10;
+    if (isArabPrism) px = Math.max(px, onCenterFace ? 16 : 14);
+    const minPx = inPrism ? (onCenterFace ? 11 : 9) : 8.5;
+    const padW = inPrism ? (onCenterFace ? 2 : 3) : 10;
+    const padH = inPrism ? (onCenterFace ? 2 : 3) : 10;
     let guard = 0;
     do {
       mark.style.fontSize = `${px}px`;
@@ -662,13 +671,25 @@ function paintMarketFitBrandMarks(root) {
     if (!box || box.clientWidth < 1 || box.clientHeight < 1) continue;
     label.style.fontSize = "";
     const textLen = (label.textContent || "").trim().length;
-    let px = textLen <= 3 ? 26 : textLen <= 5 ? 22 : 18;
-    const minPx = 12;
+    const onCenterFace = !!label.closest(".pm-brand-prism__face--center");
+    let px = onCenterFace
+      ? textLen <= 3
+        ? 34
+        : textLen <= 5
+          ? 30
+          : 24
+      : textLen <= 3
+        ? 26
+        : textLen <= 5
+          ? 22
+          : 18;
+    const minPx = onCenterFace ? 14 : 12;
+    const pad = onCenterFace ? 2 : 4;
     let guard = 0;
     do {
       label.style.fontSize = `${px}px`;
       guard += 1;
-      if (label.scrollWidth <= box.clientWidth - 2 && label.scrollHeight <= box.clientHeight - 2) break;
+      if (label.scrollWidth <= box.clientWidth - pad && label.scrollHeight <= box.clientHeight - pad) break;
       px -= 0.35;
     } while (px > minPx && guard < 55);
   }
