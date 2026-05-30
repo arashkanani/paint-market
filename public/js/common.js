@@ -905,10 +905,28 @@ function paintMarketSortShopsFavoritesFirst(shops) {
   });
 }
 
-function paintMarketFavoriteHeartSvg(liked) {
-  const ic = "h-[1.375rem] w-[1.375rem] shrink-0";
+function paintMarketFavoriteHeartSvg(liked, plain) {
+  const ic = plain ? "h-5 w-5 shrink-0" : "h-[1.375rem] w-[1.375rem] shrink-0";
   const heart =
     "M12 20.35c-3.35-2.55-5.65-4.75-5.65-7.85 0-2.15 1.7-3.75 3.85-3.75 1.05 0 1.95.52 2.45 1.28.5-.76 1.4-1.28 2.45-1.28 2.15 0 3.85 1.6 3.85 3.75 0 3.1-2.3 5.3-5.65 7.85z";
+  if (plain) {
+    if (liked) {
+      return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="' +
+        ic +
+        '" aria-hidden="true"><path fill="currentColor" d="' +
+        heart +
+        '"/></svg>'
+      );
+    }
+    return (
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="' +
+      ic +
+      '" aria-hidden="true"><path stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="' +
+      heart +
+      '"/></svg>'
+    );
+  }
   const bucket =
     "M9.9 11.1h4.2M10.15 11.1 9.5 14.35h5L14.55 11.1M11.15 11.1V9.85a.9.9 0 0 1 1.7 0V11.1M12 14.35v1.4";
   if (liked) {
@@ -936,15 +954,16 @@ function paintMarketFavoriteHeartSvg(liked) {
 function paintMarketFavoriteApplyButton(btn, slug, variant) {
   if (!btn || !slug) return;
   const on = paintMarketFavoriteIs(slug);
+  const plain = variant === "inline";
   btn.setAttribute("data-shop-slug", String(slug));
-  btn.dataset.favVariant = variant === "inline" ? "inline" : "card";
+  btn.dataset.favVariant = plain ? "inline" : "card";
   btn.setAttribute("aria-pressed", on ? "true" : "false");
   btn.setAttribute("aria-label", paintMarketT(on ? "fav_remove" : "fav_add"));
-  btn.innerHTML = paintMarketFavoriteHeartSvg(on);
-  if (variant === "inline") {
+  btn.innerHTML = paintMarketFavoriteHeartSvg(on, plain);
+  if (plain) {
     btn.className =
-      "paint-market-fav-btn shrink-0 inline-flex items-center justify-center border-0 bg-transparent p-0 text-sky-300 transition hover:text-blue-400 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-400 " +
-      (on ? "!text-blue-400" : "");
+      "paint-market-fav-btn paint-market-fav-btn--inline shrink-0 inline-flex items-center justify-center border-0 bg-transparent p-0 transition focus-visible:outline focus-visible:ring-2 focus-visible:ring-rose-400 " +
+      (on ? "text-rose-500 hover:text-rose-400" : "text-slate-400 hover:text-rose-400");
   } else {
     btn.className =
       "paint-market-fav-btn pointer-events-auto absolute top-2 end-2 z-[5] inline-flex items-center justify-center border-0 bg-transparent p-0.5 text-blue-500 drop-shadow-[0_1px_2px_rgba(255,255,255,0.85)] transition hover:scale-105 hover:text-blue-600 focus-visible:outline focus-visible:ring-2 focus-visible:ring-blue-400 " +

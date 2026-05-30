@@ -9,14 +9,14 @@
   <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
-  <link rel="stylesheet" href="/paint/css/shop-brand-cylinder.css" />
+  <link rel="stylesheet" href="/paint/css/shop-brand-cylinder.css?v=20260524g" />
   <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
 </head>
 <body class="text-slate-900 min-h-screen" data-pm-page-title="shop_metaTitle">
-  <header class="border-b border-white/20 bg-slate-950/80 backdrop-blur">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap gap-3 items-center justify-between">
-      <div class="flex flex-wrap items-start gap-x-3 gap-y-2 min-w-0">
-        <button type="button" class="pm-geo-compact-btn md:hidden shrink-0 mt-1" aria-label="Country, city &amp; language">
+  <header class="sticky top-0 z-30 border-b border-white/20 bg-slate-950/80 backdrop-blur">
+    <div class="pm-header-bar max-w-6xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex flex-nowrap items-center justify-between gap-1 sm:gap-3 min-w-0">
+      <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2 min-w-0 shrink-0">
+        <button type="button" class="pm-geo-compact-btn md:hidden shrink-0" aria-label="Country, city &amp; language">
           <span class="pm-geo-compact-inner">
             <span class="pm-geo-compact-flag" aria-hidden="true"></span>
             <span class="pm-geo-compact-sep" aria-hidden="true">·</span>
@@ -25,107 +25,125 @@
             <span class="pm-geo-sym-lang" aria-hidden="true">En</span>
           </span>
         </button>
-        <div class="pm-geo-bar-desktop hidden md:flex flex-wrap items-center gap-x-5 gap-y-2">
-          <label class="pm-country-field flex items-center gap-2 shrink-0">
+        <div class="pm-geo-bar-desktop hidden md:flex flex-nowrap items-center gap-x-3 gap-y-0 min-w-0">
+          <label class="pm-country-field flex items-center gap-1.5 shrink-0 min-w-0">
             <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
             <span class="pm-select-with-flag pm-select-with-flag--header">
               <span class="pm-country-flag" aria-hidden="true"></span>
               <select
-                class="paint-market-country paint-market-header-select rounded-lg border border-white/20 text-sm py-1.5 pe-2.5 ps-9 shadow-sm focus:ring-2 focus:ring-teal-500/50"
+                class="paint-market-country paint-market-header-select rounded-lg border border-white/20 text-sm py-1.5 pe-2.5 ps-9 shadow-sm focus:ring-2 focus:ring-teal-500/50 max-w-[9.5rem]"
                 aria-label="Country"
               ></select>
             </span>
           </label>
-          <label class="flex items-center gap-2 shrink-0">
+          <label class="flex items-center gap-1.5 shrink-0 min-w-0">
             <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_city">City</span>
             <select
-              class="paint-market-city paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[9rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+              class="paint-market-city paint-market-header-select rounded-lg border border-white/20 text-sm px-2 py-1.5 min-w-0 max-w-[8.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
               aria-label="City"
             ></select>
           </label>
-          <label class="flex items-center gap-2 shrink-0">
+          <label class="flex items-center gap-1.5 shrink-0 min-w-0">
             <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-300 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
             <select
-              class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2.5 py-1.5 min-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
+              class="paint-market-lang paint-market-header-select rounded-lg border border-white/20 text-sm px-2 py-1.5 min-w-0 max-w-[6.5rem] shadow-sm focus:ring-2 focus:ring-teal-500/50"
               aria-label="Language"
             ></select>
           </label>
         </div>
-        <div class="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1">
-          <div class="min-w-0 flex-1">
-            <p class="text-xs uppercase tracking-wide text-slate-300" data-pm-t="shop_hdr_sub">Virtual showroom</p>
-            <h1 id="shopName" class="text-2xl font-semibold text-white">Loading…</h1>
-          </div>
-          <button
-            type="button"
-            id="shopFavBtn"
-            class="paint-market-fav-btn hidden"
-            aria-hidden="true"
-          ></button>
-        </div>
       </div>
-      <div class="text-sm flex gap-3">
-        <a class="px-3 py-1.5 rounded-lg border border-white/20 text-slate-200" href="/paint/" data-pm-t="shop_browse">Browse shops</a>
-        <a class="px-3 py-1.5 rounded-lg bg-teal-500 text-slate-950 font-semibold" href="/paint/login.html" data-pm-t="shop_shop_login">Shop login</a>
-      </div>
+      <nav class="pm-header-nav flex flex-nowrap items-center gap-1 sm:gap-2 min-w-0 shrink">
+        <a class="pm-header-nav-link px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-white/20 text-slate-200 hover:bg-white/10" href="/paint/" data-pm-t="shop_browse">Browse shops</a>
+        <a class="pm-header-nav-link px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-teal-500 text-slate-950 hover:bg-teal-400 font-semibold" href="/paint/login.html" data-pm-t="shop_shop_login">Shop login</a>
+      </nav>
     </div>
   </header>
 
   <main class="max-w-[min(1920px,100%)] mx-auto px-3 sm:px-4 py-8 space-y-8">
-    <div class="flex flex-col lg:flex-row lg:items-stretch gap-4 w-full max-w-full lg:w-fit">
-      <section class="pm-shop-hero rounded-2xl p-2.5 sm:p-3 w-fit max-w-full min-w-0 flex-1 lg:flex-initial flex flex-col h-full lg:min-h-0">
-        <div class="pm-shop-hero-layout">
-          <div class="pm-shop-hero-col pm-shop-hero-col--photo">
-            <div class="shop-photo-frame pm-shop-hero-photo-frame">
-              <img id="heroImg" alt="" class="shop-photo-frame__img" loading="lazy" />
-            </div>
-          </div>
-          <div class="pm-shop-hero-col pm-shop-hero-col--info">
-            <div class="pm-shop-hero-meta" aria-label="Shop details">
-              <p id="locationText" class="pm-shop-hero-meta__line"></p>
-              <p id="addressText" class="pm-shop-hero-meta__line"></p>
-              <p class="pm-shop-hero-meta__line pm-shop-hero-meta__line--muted">
-                <span data-pm-t="index_last_update">Last update:</span>
-                <span id="lastUpdated"></span>
-              </p>
-            </div>
-            <div id="shopMapInfo" class="pm-shop-hero-map-actions" hidden>
-              <a
-                id="openExtMap"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="pm-shop-hero-map-btn"
-                data-pm-t="shop_map_hint"
-              >Show on map</a>
-              <a
-                id="openDirectionsMap"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="pm-shop-hero-map-btn pm-shop-hero-map-btn--dir"
-                data-pm-t="shop_get_directions"
-              >Get directions</a>
-            </div>
-          </div>
+    <section class="pm-shop-hero pm-shop-hero-bar w-full max-w-full min-w-0">
+      <div class="pm-shop-hero-bar__row">
+        <div class="pm-shop-hero-bar__logo shop-photo-frame pm-shop-hero-bar__logo-frame">
+          <img id="heroImg" alt="" class="shop-photo-frame__img" loading="lazy" />
         </div>
-      </section>
-      <div
-        id="popularPickWrap"
-        class="pm-shop-panel hidden shrink-0 rounded-2xl px-2.5 py-2 sm:px-3 sm:py-2.5 w-full max-w-full sm:w-auto sm:max-w-[19rem] lg:w-[min(100%,19rem)] flex flex-col h-full min-h-0 lg:min-h-full self-stretch"
-      >
-        <div class="shrink-0">
-          <p class="pm-shop-panel-title" data-pm-t="shop_popular_here">Popular here</p>
-          <p class="text-[10px] text-slate-500 mb-2" data-pm-t="shop_popular_sub">From customer taps in this showroom</p>
+        <div class="pm-shop-hero-bar__title">
+          <h1 id="shopName" class="min-w-0">Loading…</h1>
+          <button
+            type="button"
+            id="shopFavBtn"
+            class="paint-market-fav-btn hidden shrink-0"
+            aria-hidden="true"
+          ></button>
         </div>
-        <div id="popularPickStrip" class="flex-1 min-h-[10rem] lg:min-h-0 grid grid-cols-3 gap-2 min-w-0 w-full [grid-template-rows:repeat(2,minmax(0,1fr))]"></div>
+        <div class="pm-shop-hero-bar__actions">
+          <button
+            type="button"
+            id="shopInfoBtn"
+            class="pm-shop-hero-bar__btn pm-shop-hero-bar__btn--info"
+            aria-expanded="false"
+            aria-controls="shopInfoDropdown"
+          >
+            <span data-pm-t="shop_info_btn">Description</span>
+          </button>
+          <a
+            id="openDirectionsMap"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="pm-shop-hero-bar__btn pm-shop-hero-bar__btn--dir hidden"
+            data-pm-t="shop_get_directions"
+          >Get directions</a>
+        </div>
       </div>
-    </div>
+      <div id="shopInfoDropdown" class="pm-shop-hero-info-drop" hidden>
+        <div class="pm-shop-hero-info-drop__inner" aria-label="Shop information">
+          <p id="locationText" class="pm-shop-hero-info-drop__line"></p>
+          <p id="addressText" class="pm-shop-hero-info-drop__line"></p>
+          <p id="phoneText" class="pm-shop-hero-info-drop__line pm-shop-hero-info-drop__line--phone" hidden>
+            <span class="pm-shop-hero-info-drop__label" data-pm-t="shop_info_phone">Phone</span>
+            <span id="phoneTextValue"></span>
+          </p>
+          <p class="pm-shop-hero-info-drop__line pm-shop-hero-info-drop__line--muted">
+            <span data-pm-t="index_last_update">Last update:</span>
+            <span id="lastUpdated"></span>
+          </p>
+          <a
+            id="openExtMap"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="pm-shop-hero-info-drop__map-link hidden"
+            data-pm-t="shop_map_hint"
+          >Show on map</a>
+        </div>
+      </div>
+    </section>
 
     <div id="errorBox" class="hidden rounded-xl border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3 text-sm"></div>
 
     <section class="pm-shop-catalog" id="shopCatalog">
-      <aside id="shopBrandSidebar" class="pm-shop-brand-sidebar" aria-label="Brand, category and pack size filters">
+      <div id="shopFilterBackdrop" class="pm-shop-filter-drawer__backdrop" hidden aria-hidden="true"></div>
+      <button
+        type="button"
+        id="shopFilterDrawerTab"
+        class="pm-shop-filter-drawer__peek"
+        aria-controls="shopBrandSidebar"
+        aria-expanded="false"
+        aria-label="Open filters — swipe from the edge"
+      >
+        <span class="pm-shop-filter-drawer__peek-label" data-pm-t="shop_filters_tab">Filter</span>
+        <span class="pm-shop-filter-drawer__peek-arrow" aria-hidden="true">›</span>
+      </button>
+      <div id="shopFilterDrawer" class="pm-shop-filter-drawer" aria-hidden="true">
+        <aside id="shopBrandSidebar" class="pm-shop-brand-sidebar" aria-label="Brand, category and pack size filters">
+        <div
+          id="shopFilterCloseGrip"
+          class="pm-shop-filter-drawer__close-grip"
+          role="button"
+          tabindex="-1"
+          aria-label="Swipe right to close filters"
+        >
+          <span class="pm-shop-filter-drawer__close-grip-icon" aria-hidden="true">›</span>
+        </div>
         <div class="pm-shop-brand-sidebar__head">
           <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_brands_filter">Brands</h2>
         </div>
@@ -198,6 +216,7 @@
           </button>
         </section>
       </aside>
+      </div>
 
       <div class="pm-shop-catalog__main">
         <div id="shopBrandInside" class="pm-shop-brand-inside hidden">
@@ -248,13 +267,13 @@
     const listingMount = document.getElementById("listingMount");
 
     function setupPublicShopLinks(shop) {
-      const sec = document.getElementById("shopMapInfo");
       const link = document.getElementById("openExtMap");
       const dir = document.getElementById("openDirectionsMap");
-      if (!sec || !link || !dir) return false;
+      if (!link || !dir) return false;
       const locationQuery = [shop.name, shop.location_text, shop.address].filter(Boolean).join(", ");
       if (!locationQuery) return false;
-      sec.hidden = false;
+      dir.classList.remove("hidden");
+      link.classList.remove("hidden");
       const mlat = shop.lat != null ? Number(shop.lat) : NaN;
       const mlng = shop.lng != null ? Number(shop.lng) : NaN;
       if (Number.isFinite(mlat) && Number.isFinite(mlng)) {
@@ -266,6 +285,31 @@
         dir.href = `https://www.google.com/maps/dir/?api=1&destination=${encodedQuery}`;
       }
       return true;
+    }
+
+    function initShopInfoDropdown() {
+      const btn = document.getElementById("shopInfoBtn");
+      const panel = document.getElementById("shopInfoDropdown");
+      if (!btn || !panel || btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+
+      function setOpen(open) {
+        panel.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        btn.classList.toggle("is-open", open);
+      }
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setOpen(panel.hidden);
+      });
+      document.addEventListener("click", (e) => {
+        if (panel.hidden) return;
+        if (!panel.contains(e.target) && !btn.contains(e.target)) setOpen(false);
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !panel.hidden) setOpen(false);
+      });
     }
     let listings = [];
     let shopCustomColors = [];
@@ -400,104 +444,6 @@
     async function activate(card, listingId) {
       card.classList.add("ring-2", "ring-teal-600");
       await PaintApi.trackListing(listingId);
-    }
-
-    /** One row per SKU (capacity); group by master product for “popular picks”. */
-    function computePopularPickRows(listings, limit = 6) {
-      const byPid = new Map();
-      for (const row of listings) {
-        const pid = row.master_product_id;
-        if (pid == null) continue;
-        let agg = byPid.get(pid);
-        const v = Number(row.view_count || 0);
-        if (!agg) {
-          agg = { viewsSum: v, listingId: row.id, anchor: row };
-          byPid.set(pid, agg);
-        } else {
-          agg.viewsSum += v;
-          if (v > Number(agg.anchor.view_count || 0)) {
-            agg.anchor = row;
-            agg.listingId = row.id;
-          }
-        }
-      }
-      const rows = [...byPid.values()].map((agg) => ({
-        ...agg.anchor,
-        listingId: agg.listingId,
-        shopViews: agg.viewsSum
-      }));
-      rows.sort((a, b) => {
-        if (b.shopViews !== a.shopViews) return b.shopViews - a.shopViews;
-        return b.popularityScore - a.popularityScore;
-      });
-      return rows.slice(0, limit);
-    }
-
-    function renderPopularPickStrip(rows) {
-      const wrap = document.getElementById("popularPickWrap");
-      const strip = document.getElementById("popularPickStrip");
-      if (!wrap || !strip) return;
-      strip.innerHTML = "";
-      if (!rows.length) {
-        wrap.classList.add("hidden");
-        return;
-      }
-      wrap.classList.remove("hidden");
-      for (const row of rows) {
-        const tip =
-          row.shopViews > 0
-            ? `${row.productName} — ${row.shopViews} showroom tap${row.shopViews === 1 ? "" : "s"}`
-            : `${row.productName} — trending in catalogue`;
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.title = tip;
-        btn.className =
-          "pm-shop-popular-tile pm-shop-amazon-card group h-full w-full min-h-0 min-w-0 flex flex-col cursor-pointer select-none outline-none ring-offset-white focus-visible:ring-2 focus-visible:ring-teal-500 text-left";
-        btn.innerHTML = shopProductCardBodyHtml(row);
-        btn.addEventListener("click", () => goToListing(row.listingId, row.categorySlug));
-        strip.appendChild(btn);
-      }
-    }
-
-    function goToListing(listingId, categorySlugHint) {
-      if (listingId == null) return;
-      PaintApi.trackListing(listingId).catch(() => {});
-      const row = listings.find((l) => String(l.id) === String(listingId));
-      if (row?.brand_slug && brandPrism) {
-        const bslug = String(row.brand_slug).trim().toLowerCase();
-        brandPrism.setIndexForSlug(bslug);
-        brandPrism.enterBrand(bslug);
-      }
-      if (categorySlugHint && categoryPrism) {
-        categoryPrism.setIndexForSlug(categorySlugHint);
-        categoryPrism.enterBrand(categorySlugHint);
-      } else if (categorySlugHint) {
-        categoryFilter = categorySlugHint;
-      }
-      const rowCap = row && listingCapacityLtr(row);
-      if (rowCap != null && capacityPrism) {
-        capacityPrism.setIndexForSlug(String(rowCap));
-        capacityPrism.enterBrand(String(rowCap));
-      }
-      renderList();
-      PaintTheme.paintShopFilterRow();
-      const focusCard = () => {
-        const el = document.querySelector(`article[data-listing-id="${listingId}"]`);
-        if (!el) return false;
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.classList.add("ring-2", "ring-teal-400", "ring-offset-2", "ring-offset-slate-100");
-        window.setTimeout(() => {
-          el.classList.remove("ring-2", "ring-teal-400", "ring-offset-2", "ring-offset-slate-100");
-        }, 2200);
-        return true;
-      };
-      requestAnimationFrame(() => {
-        if (focusCard()) return;
-        categoryFilter = "";
-        renderList();
-        PaintTheme.paintShopFilterRow();
-        requestAnimationFrame(() => focusCard());
-      });
     }
 
     function sortRows(rows) {
@@ -724,7 +670,160 @@
       capacityPrism.render();
     }
 
+    function initShopFilterDrawer() {
+      const drawer = document.getElementById("shopFilterDrawer");
+      const tab = document.getElementById("shopFilterDrawerTab");
+      const closeGrip = document.getElementById("shopFilterCloseGrip");
+      const backdrop = document.getElementById("shopFilterBackdrop");
+      if (!drawer || !tab || tab.dataset.bound === "1") return;
+      tab.dataset.bound = "1";
+
+      const EDGE_PX = 32;
+      const SNAP_RATIO = 0.2;
+      let drag = null;
+
+      function isRtl() {
+        return document.documentElement.getAttribute("dir") === "rtl";
+      }
+
+      function drawerOnRight() {
+        return !isRtl();
+      }
+
+      function closedTranslateX() {
+        const amount = drawer.offsetWidth;
+        return drawerOnRight() ? amount : -amount;
+      }
+
+      function clampTranslateX(tx, closedX) {
+        if (drawerOnRight()) return Math.max(0, Math.min(closedX, tx));
+        return Math.min(0, Math.max(closedX, tx));
+      }
+
+      function clearInlineTransform() {
+        drawer.classList.remove("is-dragging");
+        drawer.style.transform = "";
+      }
+
+      function setOpen(open) {
+        clearInlineTransform();
+        drawer.classList.toggle("is-open", open);
+        tab.classList.toggle("is-hidden", open);
+        if (backdrop) {
+          backdrop.hidden = !open;
+          backdrop.classList.toggle("is-visible", open);
+          backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+        }
+        tab.setAttribute("aria-expanded", open ? "true" : "false");
+        drawer.setAttribute("aria-hidden", open ? "false" : "true");
+      }
+
+      function pointerXY(e) {
+        if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        if (e.changedTouches && e.changedTouches.length) {
+          return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function beginDrag(e, intent) {
+        const p = pointerXY(e);
+        drag = {
+          intent,
+          startX: p.x,
+          startY: p.y,
+          wasOpen: drawer.classList.contains("is-open"),
+          closedX: closedTranslateX(),
+          baseX: drawer.classList.contains("is-open") ? 0 : closedTranslateX()
+        };
+        drawer.classList.add("is-dragging");
+        if (intent === "open" || intent === "edge") tab.classList.add("is-hidden");
+      }
+
+      function moveDrag(e) {
+        if (!drag) return;
+        const p = pointerXY(e);
+        const dx = p.x - drag.startX;
+        const dy = p.y - drag.startY;
+        if (drag.intent === "edge") {
+          if (Math.abs(dx) < Math.abs(dy)) return;
+        }
+        const tx = clampTranslateX(drag.baseX + dx, drag.closedX);
+        drawer.style.transform = `translateX(${tx}px)`;
+      }
+
+      function endDrag(e) {
+        if (!drag) return;
+        const p = pointerXY(e);
+        const dx = p.x - drag.startX;
+        const onRight = drawerOnRight();
+        const threshold = Math.abs(drag.closedX) * SNAP_RATIO;
+        if (drag.wasOpen) {
+          if ((onRight && dx > threshold) || (!onRight && dx < -threshold)) setOpen(false);
+          else setOpen(true);
+        } else if ((onRight && dx < -threshold) || (!onRight && dx > threshold)) {
+          setOpen(true);
+        } else {
+          setOpen(false);
+        }
+        drag = null;
+      }
+
+      tab.addEventListener("click", () => {
+        if (!drawer.classList.contains("is-open")) setOpen(true);
+      });
+
+      tab.addEventListener("touchstart", (e) => {
+        if (!drawer.classList.contains("is-open")) beginDrag(e, "open");
+      }, { passive: true });
+
+      closeGrip?.addEventListener("touchstart", (e) => {
+        if (drawer.classList.contains("is-open")) {
+          e.stopPropagation();
+          beginDrag(e, "close");
+        }
+      }, { passive: true });
+
+      closeGrip?.addEventListener("mousedown", (e) => {
+        if (!drawer.classList.contains("is-open")) return;
+        e.preventDefault();
+        beginDrag(e, "close");
+      });
+
+      backdrop?.addEventListener("click", () => setOpen(false));
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && drawer.classList.contains("is-open")) setOpen(false);
+      });
+
+      document.addEventListener(
+        "touchstart",
+        (e) => {
+          if (drag || drawer.classList.contains("is-open")) return;
+          if (e.touches.length !== 1) return;
+          const x = e.touches[0].clientX;
+          const onRight = drawerOnRight();
+          if ((onRight && x >= window.innerWidth - EDGE_PX) || (!onRight && x <= EDGE_PX)) {
+            beginDrag(e, "edge");
+          }
+        },
+        { passive: true }
+      );
+
+      document.addEventListener("touchmove", moveDrag, { passive: true });
+      document.addEventListener("touchend", endDrag);
+      document.addEventListener("mousemove", (e) => {
+        if (drag) moveDrag(e);
+      });
+      document.addEventListener("mouseup", endDrag);
+
+      if (typeof paintMarketApplyDomI18n === "function") paintMarketApplyDomI18n(tab);
+      tab.setAttribute("aria-label", paintMarketT("shop_filters_tab_aria"));
+    }
+
     PaintTheme.paintShopFilterRow();
+    initShopInfoDropdown();
+    initShopFilterDrawer();
 
     (async () => {
       const errorBox = document.getElementById("errorBox");
@@ -749,6 +848,12 @@
         locEl.hidden = !String(shop.location_text || "").trim();
         addrEl.textContent = shop.address || "—";
         addrEl.hidden = !String(shop.address || "").trim();
+        const phoneWrap = document.getElementById("phoneText");
+        const phoneVal = document.getElementById("phoneTextValue");
+        if (phoneWrap && phoneVal) {
+          phoneVal.textContent = shop.phone || "—";
+          phoneWrap.hidden = !String(shop.phone || "").trim();
+        }
         document.getElementById("lastUpdated").textContent =
           shop.last_catalog_update || paintMarketT("index_last_update_na");
         setupPublicShopLinks(shop);
@@ -760,7 +865,6 @@
         initBrandPrism();
         initCategoryPrism();
         initCapacityPrism();
-        renderPopularPickStrip(computePopularPickRows(listings, 6));
         scrollProductsOnFilter = true;
       } catch (e) {
         errorBox.textContent =
