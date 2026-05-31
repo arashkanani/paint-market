@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
+  <link rel="stylesheet" href="/paint/css/shop-brand-cylinder.css?v=20260527" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body { font-family: "DM Sans", system-ui, sans-serif; }
@@ -83,11 +84,11 @@
           </div>
           <button
             type="button"
-            id="searchMapPricesBtn"
-            class="shrink-0 self-stretch px-3 py-2.5 rounded-xl border border-teal-200 bg-teal-50 text-teal-900 text-xs sm:text-sm font-semibold hover:bg-teal-100"
-            data-pm-t="index_search_map_prices"
+            id="indexMapModeBtn"
+            class="pm-index-map-mode-btn shrink-0 self-stretch"
+            data-pm-t="index_view_map"
           >
-            Prices on map
+            Map
           </button>
         </div>
       </div>
@@ -145,10 +146,24 @@
       <button type="button" id="indexBrandViewMore" class="pm-index-brand-view-more hidden" data-pm-t="index_brand_view_more">View more</button>
     </section>
 
+      <section id="indexMapSection" class="pm-index-map-section hidden" aria-label="Products on map">
+        <p id="indexMapStatus" class="pm-index-map-section__status hidden"></p>
+        <div id="indexMapCanvas" class="pm-index-map-canvas"></div>
+      </section>
 
       <section id="shopsSection" class="pm-shops-section mt-3 space-y-4 hidden">
         <p id="shopsSectionTitle" class="pm-shops-section__title-bar" role="heading" aria-level="2"></p>
         <div id="shopGrid" class="grid"></div>
+        <button type="button" id="indexShopsShowAll" class="pm-index-panel-show-all hidden" data-pm-t="index_panel_show_all">Show all</button>
+      </section>
+
+      <section id="indexProductsSection" class="pm-index-browse-panel pm-index-browse-panel--products mt-3 hidden" aria-label="Products">
+        <p id="indexProductsSectionTitle" class="pm-shops-section__title-bar" role="heading" aria-level="2" data-pm-t="browse_products_heading">Products</p>
+        <p id="indexProductsFilterHint" class="pm-index-products-panel__status" data-pm-t="index_products_all_hint">All listed products — open Filter on the right to narrow the list.</p>
+        <p id="indexProductLoading" class="pm-index-products-panel__status hidden" data-pm-t="index_category_products_loading">Loading products…</p>
+        <p id="indexProductEmpty" class="pm-index-products-panel__status hidden" data-pm-t="index_category_products_empty">No products found.</p>
+        <ul id="indexProductList" class="pm-index-product-grid" role="list"></ul>
+        <button type="button" id="indexProductsShowAll" class="pm-index-panel-show-all hidden" data-pm-t="index_panel_show_all">Show all</button>
       </section>
 
       <section id="lockedShops" class="mt-3 rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600 hidden">
@@ -163,6 +178,103 @@
       <footer class="mt-6 pb-8 text-xs text-slate-500" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
     </div>
   </main>
+
+  <div id="indexFilterBackdrop" class="pm-shop-filter-drawer__backdrop" hidden aria-hidden="true"></div>
+  <button
+    type="button"
+    id="indexFilterDrawerTab"
+    class="pm-shop-filter-drawer__peek hidden"
+    aria-controls="indexFilterSidebar"
+    aria-expanded="false"
+    aria-label="Open filters — swipe from the edge"
+  >
+    <span class="pm-shop-filter-drawer__peek-label" data-pm-t="shop_filters_tab">Filter</span>
+    <span class="pm-shop-filter-drawer__peek-arrow" aria-hidden="true">›</span>
+  </button>
+  <div id="indexFilterDrawer" class="pm-shop-filter-drawer" aria-hidden="true">
+    <aside id="indexFilterSidebar" class="pm-shop-brand-sidebar" aria-label="Brand, category and pack size filters">
+      <div
+        id="indexFilterCloseGrip"
+        class="pm-shop-filter-drawer__close-grip"
+        role="button"
+        tabindex="-1"
+        aria-label="Swipe right to close filters"
+      >
+        <span class="pm-shop-filter-drawer__close-grip-icon" aria-hidden="true">›</span>
+      </div>
+      <div class="pm-shop-brand-sidebar__head">
+        <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_brands_filter">Brands</h2>
+      </div>
+      <section id="indexBrandPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci hidden" aria-label="Brand drum">
+        <button type="button" id="indexBrandPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous brand">
+          <span aria-hidden="true">▲</span>
+        </button>
+        <div class="pm-brand-prism__viewport" id="indexBrandPrismViewport">
+          <div class="pm-brand-prism__scene">
+            <div class="pm-brand-prism__camera">
+              <div class="pm-brand-prism__drum" id="indexBrandPrismDrum">
+                <div class="pm-brand-prism__wire" id="indexBrandPrismWire" aria-hidden="true"></div>
+                <div class="pm-brand-prism__edges" id="indexBrandPrismEdges" aria-hidden="true"></div>
+                <div class="pm-brand-prism__faces" id="indexBrandPrismFaces"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="indexBrandPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next brand">
+          <span aria-hidden="true">▼</span>
+        </button>
+      </section>
+
+      <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--categories">
+        <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_categories_filter">Categories</h2>
+      </div>
+      <div class="pm-shop-category-filter">
+        <section id="indexCategoryPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--category hidden" aria-label="Category drum">
+          <button type="button" id="indexCatPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous category">
+            <span aria-hidden="true">▲</span>
+          </button>
+          <div class="pm-brand-prism__viewport" id="indexCatPrismViewport">
+            <div class="pm-brand-prism__scene">
+              <div class="pm-brand-prism__camera">
+                <div class="pm-brand-prism__drum" id="indexCatPrismDrum">
+                  <div class="pm-brand-prism__wire" id="indexCatPrismWire" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__edges" id="indexCatPrismEdges" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__faces" id="indexCatPrismFaces"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="indexCatPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next category">
+            <span aria-hidden="true">▼</span>
+          </button>
+        </section>
+        <p id="indexCatPrismCaption" class="pm-shop-category-filter__caption" aria-live="polite"></p>
+      </div>
+
+      <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--capacity">
+        <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_capacities_filter">Pack size</h2>
+      </div>
+      <section id="indexCapacityPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--capacity hidden" aria-label="Capacity drum">
+        <button type="button" id="indexCapPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous pack size">
+          <span aria-hidden="true">▲</span>
+        </button>
+        <div class="pm-brand-prism__viewport" id="indexCapPrismViewport">
+          <div class="pm-brand-prism__scene">
+            <div class="pm-brand-prism__camera">
+              <div class="pm-brand-prism__drum" id="indexCapPrismDrum">
+                <div class="pm-brand-prism__wire" id="indexCapPrismWire" aria-hidden="true"></div>
+                <div class="pm-brand-prism__edges" id="indexCapPrismEdges" aria-hidden="true"></div>
+                <div class="pm-brand-prism__faces" id="indexCapPrismFaces"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="indexCapPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next pack size">
+          <span aria-hidden="true">▼</span>
+        </button>
+      </section>
+    </aside>
+  </div>
 
   <dialog id="searchPriceMapDialog" class="rounded-2xl border border-slate-200 bg-white p-0 max-w-4xl w-[min(96vw,56rem)] shadow-2xl backdrop:bg-slate-950/50">
     <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
@@ -184,6 +296,7 @@
   <script src="/paint/js/common.js"></script>
   <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/theme.js"></script>
+  <script src="/paint/js/shop-brand-cylinder.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     const shopGrid = document.getElementById("shopGrid");
@@ -197,20 +310,48 @@
     const searchWrap = document.getElementById("searchWrap");
     const searchInput = document.getElementById("searchInput");
     const suggestPanel = document.getElementById("suggestPanel");
-    const searchMapPricesBtn = document.getElementById("searchMapPricesBtn");
+    const indexProductsSection = document.getElementById("indexProductsSection");
+    const indexProductList = document.getElementById("indexProductList");
+    const indexProductLoading = document.getElementById("indexProductLoading");
+    const indexProductEmpty = document.getElementById("indexProductEmpty");
+    const indexMapSection = document.getElementById("indexMapSection");
+    const indexMapCanvas = document.getElementById("indexMapCanvas");
+    const indexMapStatus = document.getElementById("indexMapStatus");
     const searchPriceMapDialog = document.getElementById("searchPriceMapDialog");
     const searchPriceMapCanvas = document.getElementById("searchPriceMapCanvas");
     const searchPriceMapStatus = document.getElementById("searchPriceMapStatus");
     const searchPriceMapClose = document.getElementById("searchPriceMapClose");
+    const indexMapModeBtn = document.getElementById("indexMapModeBtn");
+    const indexFilterDrawer = document.getElementById("indexFilterDrawer");
+    const indexFilterDrawerTab = document.getElementById("indexFilterDrawerTab");
     const indexCategoryPickWrap = document.getElementById("indexCategoryPickWrap");
     const indexCategoryBar = document.getElementById("indexCategoryBar");
     const indexBrandPickWrap = document.getElementById("indexBrandPickWrap");
     const indexBrandBar = document.getElementById("indexBrandBar");
     const indexBrandViewMore = document.getElementById("indexBrandViewMore");
+    const indexShopsShowAll = document.getElementById("indexShopsShowAll");
+    const indexProductsShowAll = document.getElementById("indexProductsShowAll");
     const INDEX_BRAND_PREVIEW_COUNT = 6;
+    const INDEX_PANEL_PREVIEW_COUNT = 8;
     let indexBrowseCategories = [];
     let indexBrowseBrands = [];
     let indexBrandsExpanded = false;
+    let indexShopsExpanded = false;
+    let indexProductsExpanded = false;
+    let indexBrandPrism = null;
+    let indexCategoryPrism = null;
+    let indexCapacityPrism = null;
+    let indexFilterDrawerCtl = null;
+    let indexViewMode = "shops";
+    let indexProducts = [];
+    let indexProductsLoadToken = 0;
+    let indexInlineMap = null;
+    let indexInlineMapLayers = [];
+    let indexMapFocusProductId = null;
+    let indexFilterBrandId = null;
+    let indexFilterCategoryId = null;
+    let indexFilterCapacityLtr = null;
+    const INDEX_CAPACITY_ORDER = [1, 3.6, 18];
 
     function pmIndexLayoutSync() {
       const header = document.querySelector("header");
@@ -257,7 +398,6 @@
     const searchPriceMapAllBrands = document.getElementById("searchPriceMapAllBrands");
     const INDEX_MAP_DEFAULT_CENTER = [25.2048, 55.2708];
     let indexSearchPriceMap = null;
-    let indexSearchPriceLayers = [];
     let searchPriceMapProductId = null;
     let searchPriceMapQuery = "";
     const adCarouselStrip = document.getElementById("adCarouselStrip");
@@ -316,12 +456,291 @@
       return `<span class="index-suggest-cap-ral">${cap ? `<span class="index-suggest-cap-ral__cap">${esc(cap)}</span>` : ""}${ralDot}</span>`;
     }
 
-    function clearSearchPriceMapLayers() {
-      if (!indexSearchPriceMap) return;
-      for (const layer of indexSearchPriceLayers) {
-        indexSearchPriceMap.removeLayer(layer);
+    function renderPriceMapOnMap(map, layersRef, shops) {
+      if (!map) return;
+      for (const layer of layersRef.list) {
+        map.removeLayer(layer);
       }
-      indexSearchPriceLayers = [];
+      layersRef.list = [];
+      const bounds = [];
+      for (const shop of shops) {
+        const offers = filterMapOffersByCapacity(shop.offers || []);
+        if (!offers.length) continue;
+        const lat = Number(shop.lat);
+        const lng = Number(shop.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        const marker = L.marker([lat, lng], { icon: createPriceMarkerIcon(offers) });
+        marker.bindPopup(
+          `<div class="pm-map-price-popup">
+            <p class="pm-map-price-popup__shop"><strong>${esc(shop.name)}</strong></p>
+            <p class="pm-map-price-popup__loc">${esc([shop.location_text, shop.address].filter(Boolean).join(" · "))}</p>
+            <p class="pm-map-price-popup__link"><a href="/paint/shop.html?slug=${encodeURIComponent(
+              shop.slug
+            )}">${esc(paintMarketT("index_card_showroom"))}</a></p>
+          </div>`
+        );
+        marker.addTo(map);
+        layersRef.list.push(marker);
+        bounds.push([lat, lng]);
+      }
+      if (bounds.length === 1) map.setView(bounds[0], 13);
+      else if (bounds.length > 1) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
+      else map.setView(INDEX_MAP_DEFAULT_CENTER, 10);
+      setTimeout(() => map.invalidateSize(), 80);
+    }
+
+    function renderSearchPriceMap(shops) {
+      const map = ensureSearchPriceMap();
+      if (!map) return;
+      clearSearchPriceMapLayers();
+      renderPriceMapOnMap(map, indexSearchPriceLayersRef, shops);
+    }
+
+    const indexSearchPriceLayersRef = { list: [] };
+    let indexSearchPriceLayers = indexSearchPriceLayersRef.list;
+    const indexInlineMapLayersRef = { list: [] };
+
+    function clearSearchPriceMapLayers() {
+      if (indexSearchPriceMap) {
+        for (const layer of indexSearchPriceLayersRef.list) {
+          indexSearchPriceMap.removeLayer(layer);
+        }
+      }
+      indexSearchPriceLayersRef.list = [];
+      indexSearchPriceLayers = indexSearchPriceLayersRef.list;
+    }
+
+    function ensureIndexInlineMap() {
+      if (indexInlineMap || typeof L === "undefined" || !indexMapCanvas) return indexInlineMap;
+      indexInlineMap = L.map(indexMapCanvas, { zoomControl: true }).setView(INDEX_MAP_DEFAULT_CENTER, 10);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(indexInlineMap);
+      return indexInlineMap;
+    }
+
+    function renderIndexInlineMap(shops) {
+      const map = ensureIndexInlineMap();
+      renderPriceMapOnMap(map, indexInlineMapLayersRef, shops);
+    }
+
+    async function refreshIndexMapView() {
+      if (indexViewMode !== "map" || !indexMapStatus) return;
+      indexMapStatus.textContent = paintMarketT("index_search_map_loading");
+      indexMapStatus.classList.remove("hidden");
+      try {
+        const q = searchInput.value.trim();
+        const pid = indexMapFocusProductId;
+        let data;
+        if (pid) {
+          data = await loadSearchPriceMapData(q, pid, false);
+        } else if (q) {
+          data = await loadSearchPriceMapData(q, null, false);
+        } else {
+          const prodData = await PaintApi.publicBrowseProducts(withSearchCapacity({}));
+          const ids = (prodData.products || [])
+            .map((p) => Number(p.id))
+            .filter((n) => Number.isFinite(n) && n > 0);
+          data = ids.length
+            ? await PaintApi.searchPricesMap(withSearchCapacity({ productIds: ids.slice(0, 120) }))
+            : { shops: [] };
+        }
+        const shops = shopsForMapView(data.shops || []);
+        if (!shops.length) {
+          indexMapStatus.textContent = paintMarketT("index_search_map_empty");
+          indexMapStatus.classList.remove("hidden");
+        } else {
+          indexMapStatus.classList.add("hidden");
+        }
+        renderIndexInlineMap(shops);
+      } catch (e) {
+        console.error(e);
+        const msg =
+          e && e.status === 404
+            ? paintMarketT("index_search_map_unavailable")
+            : (e && e.message) || paintMarketT("index_err_api");
+        indexMapStatus.textContent = msg;
+        indexMapStatus.classList.remove("hidden");
+      }
+    }
+
+    function renderIndexProductList(products) {
+      if (!indexProductList) return;
+      indexProductList.innerHTML = "";
+      indexProductList.classList.toggle("pm-index-product-grid--expanded", indexProductsExpanded);
+      const list = products || [];
+      if (indexProductEmpty) {
+        indexProductEmpty.classList.toggle("hidden", list.length > 0);
+      }
+      const visible = indexProductsExpanded ? list : list.slice(0, INDEX_PANEL_PREVIEW_COUNT);
+      for (const p of visible) {
+        const li = document.createElement("li");
+        li.className = "pm-index-product-card";
+        li.setAttribute("role", "listitem");
+        const brandObj = { slug: p.brand_slug, name: p.brand_name };
+        const brandIcon =
+          typeof paintMarketBrandIconHtml === "function"
+            ? paintMarketBrandIconHtml(brandObj)
+            : esc(p.brand_name || "");
+        const media = document.createElement("div");
+        media.className = "pm-index-product-card__media";
+        const img = document.createElement("img");
+        img.className = "pm-index-product-card__img";
+        img.alt = "";
+        img.loading = "lazy";
+        img.src =
+          typeof paintMarketProductImageUrl === "function"
+            ? paintMarketProductImageUrl(p)
+            : String(p.default_image_url || p.listing_image_url || p.image_url || "");
+        media.appendChild(img);
+        const body = document.createElement("div");
+        body.className = "pm-index-product-card__body";
+        body.innerHTML = `<p class="pm-index-product-card__name">${esc(p.name)}</p>
+            <div class="pm-index-product-card__brand">
+              <span class="pm-index-compact-brand-icon">${brandIcon}</span>
+              <span class="pm-index-product-card__brand-name">${esc(p.brand_name || "")}</span>
+            </div>
+            <button type="button" class="index-product-row-map pm-index-product-card__map" data-product-id="${esc(String(p.id))}" title="${esc(paintMarketT("index_search_map_for_product"))}">${esc(paintMarketT("index_view_map"))}</button>`;
+        li.appendChild(media);
+        li.appendChild(body);
+        indexProductList.appendChild(li);
+      }
+      syncIndexPanelShowAll(indexProductsShowAll, list.length, indexProductsExpanded);
+      syncIndexProductsFilterHint();
+    }
+
+    function syncIndexPanelShowAll(btn, total, expanded) {
+      if (!btn) return;
+      const extra = total > INDEX_PANEL_PREVIEW_COUNT;
+      btn.classList.toggle("hidden", !extra);
+      if (!extra) return;
+      const moreCount = Math.max(0, total - INDEX_PANEL_PREVIEW_COUNT);
+      if (!expanded && moreCount > 0) {
+        const label = `${paintMarketT("index_panel_show_all")} (+${moreCount})`;
+        btn.textContent = label;
+        btn.setAttribute("aria-label", label);
+      } else {
+        btn.textContent = paintMarketT(expanded ? "index_panel_show_less" : "index_panel_show_all");
+        btn.setAttribute("aria-label", btn.textContent);
+      }
+    }
+
+    function clearIndexBrowseFilters() {
+      indexFilterBrandId = null;
+      indexFilterCategoryId = null;
+      indexFilterCapacityLtr = null;
+    }
+
+    function indexActiveCapacityLtr() {
+      if (indexFilterCapacityLtr != null) return indexFilterCapacityLtr;
+      return getSearchCapacityLtr();
+    }
+
+    function syncIndexProductsFilterHint() {
+      const el = document.getElementById("indexProductsFilterHint");
+      if (!el) return;
+      const total = indexProducts.length;
+      const shown = indexProductsExpanded
+        ? total
+        : Math.min(total, INDEX_PANEL_PREVIEW_COUNT);
+      const countText =
+        total > INDEX_PANEL_PREVIEW_COUNT && !indexProductsExpanded
+          ? paintMarketTf("index_products_count_partial", { shown, total })
+          : paintMarketTf("index_products_count_all", { total });
+      const parts = [];
+      if (indexFilterBrandId) {
+        const b = indexBrowseBrands.find((x) => x.id === indexFilterBrandId);
+        if (b && b.name) parts.push(b.name);
+      }
+      if (indexFilterCategoryId) {
+        const c = indexBrowseCategories.find((x) => x.id === indexFilterCategoryId);
+        if (c) {
+          parts.push(
+            paintMarketCategoryLabel(c.slug, c.name) || c.name || ""
+          );
+        }
+      }
+      if (indexFilterCapacityLtr != null) {
+        parts.push(indexCapacityLabelLtr(indexFilterCapacityLtr));
+      }
+      if (!parts.length) {
+        el.textContent = total ? countText : paintMarketT("index_products_all_hint");
+      } else {
+        el.textContent = paintMarketTf("index_products_filtered_hint", {
+          filters: parts.join(" · "),
+          count: countText
+        });
+      }
+      el.classList.remove("hidden");
+    }
+
+    function applyIndexDrawerFilter() {
+      syncIndexProductsFilterHint();
+      loadIndexProducts();
+    }
+
+    async function loadIndexProducts() {
+      if (!indexLastCustomerEnabled || !indexProductsSection || indexProductsSection.classList.contains("hidden")) return;
+      indexProductsExpanded = false;
+      const token = ++indexProductsLoadToken;
+      const q = searchInput.value.trim();
+      if (indexProductLoading) indexProductLoading.classList.remove("hidden");
+      if (indexProductEmpty) indexProductEmpty.classList.add("hidden");
+      try {
+        const payload = { q: q || undefined };
+        if (indexFilterCategoryId) payload.categoryId = indexFilterCategoryId;
+        if (indexFilterBrandId) payload.brandId = indexFilterBrandId;
+        const data = await PaintApi.publicBrowseProducts(withSearchCapacity(payload));
+        if (token !== indexProductsLoadToken) return;
+        indexProducts = data.products || [];
+        renderIndexProductList(indexProducts);
+      } catch (e) {
+        if (token !== indexProductsLoadToken) return;
+        console.warn("index products", e);
+        indexProducts = [];
+        renderIndexProductList([]);
+      } finally {
+        if (token === indexProductsLoadToken && indexProductLoading) {
+          indexProductLoading.classList.add("hidden");
+        }
+      }
+    }
+
+    function setIndexViewMode(mode, opts = {}) {
+      if (!["products", "shops", "map"].includes(mode)) return;
+      indexViewMode = mode;
+      if (opts.productId != null) {
+        const pid = Number(opts.productId);
+        indexMapFocusProductId = Number.isFinite(pid) && pid > 0 ? pid : null;
+      } else {
+        indexMapFocusProductId = null;
+      }
+      document.body.setAttribute("data-pm-index-view", mode);
+      if (indexMapModeBtn) {
+        indexMapModeBtn.classList.toggle("active", mode === "map");
+        indexMapModeBtn.setAttribute("aria-pressed", mode === "map" ? "true" : "false");
+      }
+      if (indexProductsSection && indexLastCustomerEnabled) {
+        indexProductsSection.classList.toggle("hidden", mode === "map");
+      }
+      if (shopsSection && indexLastCustomerEnabled) {
+        shopsSection.classList.toggle("hidden", mode !== "shops");
+      }
+      if (indexMapSection) indexMapSection.classList.toggle("hidden", mode !== "map");
+      suggestPanel.classList.add("hidden");
+      if (mode === "shops") {
+        if (indexLastShops.length) renderShops(indexLastShops);
+        else loadIndexShops();
+        loadIndexProducts();
+      } else if (mode === "map") {
+        pmIndexCollapseAd();
+        refreshIndexMapView();
+      } else if (mode === "products") {
+        if (opts.clearFilters) clearIndexBrowseFilters();
+        loadIndexProducts();
+      }
+      pmIndexLayoutSync();
     }
 
     function buildPriceMarkerHtml(offers) {
@@ -379,50 +798,6 @@
       return indexSearchPriceMap;
     }
 
-    function renderSearchPriceMap(shops) {
-      const map = ensureSearchPriceMap();
-      if (!map) return;
-      clearSearchPriceMapLayers();
-      const bounds = [];
-      for (const shop of shops) {
-        const offers = filterMapOffersByCapacity(shop.offers || []);
-        if (!offers.length) continue;
-        const lat = Number(shop.lat);
-        const lng = Number(shop.lng);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-        const marker = L.marker([lat, lng], { icon: createPriceMarkerIcon(offers) });
-        const lines = offers
-          .map((o) => {
-            const ralHex =
-              o.ral_hex ||
-              (o.ralCode && typeof paintMarketRalHex === "function" ? paintMarketRalHex(o.ralCode, []) : null);
-            const ralDot = ralHex
-              ? `<span class="pm-card-ral-swatch index-suggest-ral" style="background:${esc(ralHex)}" title="${esc(o.ral_label || o.ralCode || "")}"></span>`
-              : "";
-            return `<div class="text-sm flex flex-wrap items-center gap-1"><span class="font-semibold">${esc(o.brandName || "")}</span> · ${esc(
-              o.productName || ""
-            )} · <span class="inline-flex flex-col items-center gap-0.5">${esc(formatMapCapacity(o.capacityLtr))}${ralDot}</span> — ${esc(formatMapPrice(o.priceAmount, o.currency))}</div>`;
-          })
-          .join("");
-        marker.bindPopup(
-          `<div class="space-y-1">
-            <p class="font-semibold text-slate-900">${esc(shop.name || "")}</p>
-            ${lines}
-            <p class="pt-1"><a class="text-teal-700 font-semibold" href="/paint/shop.html?slug=${encodeURIComponent(
-              shop.slug || ""
-            )}">${esc(paintMarketT("index_card_showroom"))}</a></p>
-          </div>`
-        );
-        marker.addTo(map);
-        indexSearchPriceLayers.push(marker);
-        bounds.push([lat, lng]);
-      }
-      if (bounds.length === 1) map.setView(bounds[0], 13);
-      else if (bounds.length > 1) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
-      else map.setView(INDEX_MAP_DEFAULT_CENTER, 10);
-      setTimeout(() => map.invalidateSize(), 80);
-    }
-
     function normalizeCapacityLtr(n) {
       const v = Number(n);
       if (!Number.isFinite(v)) return null;
@@ -453,7 +828,7 @@
     }
 
     function withSearchCapacity(payload) {
-      const cap = getSearchCapacityLtr();
+      const cap = indexActiveCapacityLtr();
       const out = { ...payload };
       if (cap != null) out.capacityLtr = cap;
       return out;
@@ -755,9 +1130,225 @@
       { passive: true }
     );
 
-    function indexCategoryChipActive(btn, on) {
-      btn.classList.toggle("pm-index-category-chip--active", on);
-      btn.setAttribute("aria-selected", on ? "true" : "false");
+    function indexCategoriesForPrism() {
+      return indexBrowseCategories.map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        id: c.id
+      }));
+    }
+
+    function indexCategoryBySlug(slug) {
+      const key = String(slug || "").trim().toLowerCase();
+      if (!key) return null;
+      return indexBrowseCategories.find((c) => String(c.slug || "").trim().toLowerCase() === key) || null;
+    }
+
+    function updateIndexCategoryCaption(slug) {
+      const el = document.getElementById("indexCatPrismCaption");
+      if (!el) return;
+      const key = String(slug || "").trim().toLowerCase();
+      el.textContent = key
+        ? paintMarketCategoryLabel(key, "")
+        : paintMarketT("shop_all_categories");
+    }
+
+    function indexBrandsForPrism() {
+      return indexBrowseBrands.map((b) => ({
+        slug: b.slug,
+        name: b.name,
+        id: b.id
+      }));
+    }
+
+    function indexBrandBySlug(slug) {
+      const key = String(slug || "").trim().toLowerCase();
+      if (!key) return null;
+      return indexBrowseBrands.find((b) => String(b.slug || "").trim().toLowerCase() === key) || null;
+    }
+
+    function indexCapacityLabelLtr(cap) {
+      const n = Number(cap);
+      if (!Number.isFinite(n)) return String(cap ?? "");
+      if (Math.abs(n - 1) < 0.001) return "1L";
+      if (Math.abs(n - 3.6) < 0.001) return "3.6L";
+      if (Math.abs(n - 18) < 0.001) return "18L";
+      return `${n}L`;
+    }
+
+    function indexCapacitiesForPrism() {
+      return INDEX_CAPACITY_ORDER.map((cap) => ({
+        slug: String(cap),
+        name: indexCapacityLabelLtr(cap)
+      }));
+    }
+
+    function showIndexFilterDrawerUi(show) {
+      indexFilterDrawerTab?.classList.toggle("hidden", !show);
+    }
+
+    function initIndexBrandPrism() {
+      if (typeof initShopBrandCylinder !== "function" || !indexBrowseBrands.length) return;
+      indexBrandPrism = initShopBrandCylinder({
+        layout: "sidebar",
+        axis: "x",
+        section: document.getElementById("indexBrandPrism"),
+        viewport: document.getElementById("indexBrandPrismViewport"),
+        drum: document.getElementById("indexBrandPrismDrum"),
+        facesEl: document.getElementById("indexBrandPrismFaces"),
+        wireEl: document.getElementById("indexBrandPrismWire"),
+        edgesEl: document.getElementById("indexBrandPrismEdges"),
+        prevBtn: document.getElementById("indexBrandPrismPrev"),
+        nextBtn: document.getElementById("indexBrandPrismNext"),
+        getBrands: indexBrandsForPrism,
+        faceHeightSidebar: 80,
+        esc,
+        t: paintMarketT,
+        brandIconHtml: typeof paintMarketBrandIconHtml === "function" ? paintMarketBrandIconHtml : null,
+        fitBrandMarks: typeof paintMarketScheduleFitBrandMarks === "function" ? paintMarketScheduleFitBrandMarks : null,
+        applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+        applySelectionOnRender: false,
+        onRenderProducts() {},
+        onSelect(slug) {
+          const brand = indexBrandBySlug(slug);
+          indexFilterBrandId = brand && brand.id ? brand.id : null;
+          applyIndexDrawerFilter();
+        }
+      });
+      indexBrandPrism.render();
+    }
+
+    function initIndexCategoryPrism() {
+      if (typeof initShopFilterPrism !== "function") return;
+      indexCategoryPrism = initShopFilterPrism({
+        layout: "sidebar",
+        axis: "x",
+        modExtraClass: "category",
+        section: document.getElementById("indexCategoryPrism"),
+        viewport: document.getElementById("indexCatPrismViewport"),
+        drum: document.getElementById("indexCatPrismDrum"),
+        facesEl: document.getElementById("indexCatPrismFaces"),
+        wireEl: document.getElementById("indexCatPrismWire"),
+        edgesEl: document.getElementById("indexCatPrismEdges"),
+        prevBtn: document.getElementById("indexCatPrismPrev"),
+        nextBtn: document.getElementById("indexCatPrismNext"),
+        getItems: indexCategoriesForPrism,
+        allLabelKey: "shop_all_categories",
+        allFaceHtml: (name) =>
+          typeof paintMarketPrismAllCategoriesHtml === "function"
+            ? paintMarketPrismAllCategoriesHtml(name)
+            : name,
+        faceContentHtml: (item) =>
+          typeof paintMarketCategoryPrismFaceHtml === "function"
+            ? paintMarketCategoryPrismFaceHtml(item)
+            : "",
+        faceHeightSidebar: 80,
+        esc,
+        t: paintMarketT,
+        applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+        applySelectionOnRender: false,
+        onRenderProducts() {},
+        onSelect(slug) {
+          updateIndexCategoryCaption(slug);
+          const cat = indexCategoryBySlug(slug);
+          indexFilterCategoryId = cat && cat.id ? cat.id : null;
+          applyIndexDrawerFilter();
+        }
+      });
+      indexCategoryPrism.render();
+      updateIndexCategoryCaption("");
+    }
+
+    function initIndexCapacityPrism() {
+      if (typeof initShopFilterPrism !== "function") return;
+      indexCapacityPrism = initShopFilterPrism({
+        layout: "sidebar",
+        axis: "x",
+        modExtraClass: "capacity",
+        section: document.getElementById("indexCapacityPrism"),
+        viewport: document.getElementById("indexCapPrismViewport"),
+        drum: document.getElementById("indexCapPrismDrum"),
+        facesEl: document.getElementById("indexCapPrismFaces"),
+        wireEl: document.getElementById("indexCapPrismWire"),
+        edgesEl: document.getElementById("indexCapPrismEdges"),
+        prevBtn: document.getElementById("indexCapPrismPrev"),
+        nextBtn: document.getElementById("indexCapPrismNext"),
+        getItems: indexCapacitiesForPrism,
+        allLabelKey: "shop_all_capacities",
+        allFaceHtml: (name) =>
+          typeof paintMarketPrismAllCapacitiesHtml === "function"
+            ? paintMarketPrismAllCapacitiesHtml(name)
+            : name,
+        faceContentHtml: (item) =>
+          typeof paintMarketCapacityPrismFaceHtml === "function"
+            ? paintMarketCapacityPrismFaceHtml(item)
+            : "",
+        faceHeightSidebar: 44,
+        esc,
+        t: paintMarketT,
+        applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+        applySelectionOnRender: false,
+        onRenderProducts() {},
+        onSelect(slug) {
+          const cap = slug !== "" && slug != null ? Number(slug) : null;
+          indexFilterCapacityLtr = Number.isFinite(cap) ? cap : null;
+          applyIndexDrawerFilter();
+        }
+      });
+      indexCapacityPrism.render();
+    }
+
+    function initIndexFilterDrawer() {
+      if (indexFilterDrawerCtl) return;
+      indexFilterDrawerCtl = paintMarketInitFilterDrawer({
+        drawerId: "indexFilterDrawer",
+        tabId: "indexFilterDrawerTab",
+        closeGripId: "indexFilterCloseGrip",
+        backdropId: "indexFilterBackdrop"
+      });
+    }
+
+    initIndexFilterDrawer();
+    showIndexFilterDrawerUi(false);
+
+    function indexBrandFallbackList() {
+      return typeof paintMarketDefaultBrowseBrands === "function"
+        ? paintMarketDefaultBrowseBrands()
+        : [];
+    }
+
+    function indexCategoryFallbackList() {
+      return typeof paintMarketDefaultBrowseCategories === "function"
+        ? paintMarketDefaultBrowseCategories()
+        : [];
+    }
+
+    async function initIndexBrowseFilters() {
+      try {
+        const [catData, brandData] = await Promise.all([
+          PaintApi.publicBrowseCategories().catch(() => ({ categories: [] })),
+          PaintApi.publicBrowseBrands().catch(() => ({ brands: [] }))
+        ]);
+        const fromCatApi = catData.categories || [];
+        const fromBrandApi = brandData.brands || [];
+        indexBrowseCategories = fromCatApi.length ? fromCatApi : indexCategoryFallbackList();
+        indexBrowseBrands = fromBrandApi.length ? fromBrandApi : indexBrandFallbackList();
+      } catch (e) {
+        console.warn("browse filters", e);
+        indexBrowseCategories = indexCategoryFallbackList();
+        indexBrowseBrands = indexBrandFallbackList();
+      }
+      showIndexFilterDrawerUi(true);
+      initIndexBrandPrism();
+      initIndexCategoryPrism();
+      initIndexCapacityPrism();
+      refreshIndexBrowsePanels();
+    }
+
+    function showIndexBrowsePanels(show) {
+      indexCategoryPickWrap?.classList.toggle("hidden", !show);
+      indexBrandPickWrap?.classList.toggle("hidden", !show);
+      indexProductsSection?.classList.toggle("hidden", !show);
     }
 
     function renderIndexCategoryBar() {
@@ -779,23 +1370,6 @@
         chips.push(btn);
       }
       indexCategoryBar.replaceChildren(...chips);
-    }
-
-    async function loadIndexShops() {
-      try {
-        const shopsData = await PaintApi.publicShops();
-        indexLastShops = shopsData.shops || [];
-      } catch (e) {
-        console.warn("load index shops", e);
-        indexLastShops = [];
-      }
-      renderShops(indexLastShops);
-      syncShopsSectionTitle();
-    }
-
-    function indexBrandChipActive(btn, on) {
-      btn.classList.toggle("pm-index-brand-chip--active", on);
-      btn.setAttribute("aria-selected", on ? "true" : "false");
     }
 
     function renderIndexBrandBar() {
@@ -828,7 +1402,6 @@
       if (typeof paintMarketScheduleFitBrandMarks === "function") {
         paintMarketScheduleFitBrandMarks(indexBrandBar);
       }
-
       if (indexBrandViewMore) {
         const extra = indexBrowseBrands.length > INDEX_BRAND_PREVIEW_COUNT;
         indexBrandViewMore.classList.toggle("hidden", !extra);
@@ -846,49 +1419,27 @@
       }
     }
 
-    function indexBrandFallbackList() {
-      return typeof paintMarketDefaultBrowseBrands === "function"
-        ? paintMarketDefaultBrowseBrands()
-        : [];
-    }
-
-    async function loadIndexBrands() {
-      if (!indexBrandPickWrap || !indexBrandBar) return;
-      indexBrandPickWrap.classList.remove("hidden");
-      try {
-        const data = await PaintApi.publicBrowseBrands();
-        const fromApi = data.brands || [];
-        indexBrowseBrands = fromApi.length ? fromApi : indexBrandFallbackList();
-      } catch (e) {
-        console.warn("browse brands", e);
-        indexBrowseBrands = indexBrandFallbackList();
-      }
-      renderIndexBrandBar();
-    }
-
-
-    function indexCategoryFallbackList() {
-      return typeof paintMarketDefaultBrowseCategories === "function"
-        ? paintMarketDefaultBrowseCategories()
-        : [];
-    }
-
-    async function initIndexCategoryPicker() {
-      if (!indexCategoryPickWrap || !indexCategoryBar) return;
-      indexCategoryPickWrap.classList.remove("hidden");
-      try {
-        const data = await PaintApi.publicBrowseCategories();
-        const fromApi = data.categories || [];
-        indexBrowseCategories = fromApi.length ? fromApi : indexCategoryFallbackList();
-      } catch (e) {
-        console.warn("browse categories", e);
-        indexBrowseCategories = indexCategoryFallbackList();
-      }
-      if (!indexBrowseCategories.length) {
-        indexCategoryPickWrap.classList.add("hidden");
+    function refreshIndexBrowsePanels() {
+      if (!indexLastCustomerEnabled) {
+        showIndexBrowsePanels(false);
         return;
       }
-      renderIndexCategoryBar();
+      if (!indexBrowseCategories.length) {
+        indexCategoryPickWrap?.classList.add("hidden");
+      } else {
+        indexCategoryPickWrap?.classList.remove("hidden");
+        renderIndexCategoryBar();
+      }
+      if (!indexBrowseBrands.length) {
+        indexBrandPickWrap?.classList.add("hidden");
+      } else {
+        indexBrandPickWrap?.classList.remove("hidden");
+        renderIndexBrandBar();
+      }
+      if (indexViewMode !== "map") {
+        indexProductsSection?.classList.remove("hidden");
+        loadIndexProducts();
+      }
     }
 
     if (indexBrandViewMore) {
@@ -898,6 +1449,19 @@
       });
     }
 
+    if (indexShopsShowAll) {
+      indexShopsShowAll.addEventListener("click", () => {
+        indexShopsExpanded = !indexShopsExpanded;
+        renderShops(indexLastShops);
+      });
+    }
+
+    if (indexProductsShowAll) {
+      indexProductsShowAll.addEventListener("click", () => {
+        indexProductsExpanded = !indexProductsExpanded;
+        renderIndexProductList(indexProducts);
+      });
+    }
 
     let indexBrandFitResizeTimer = 0;
     window.addEventListener("resize", () => {
@@ -908,6 +1472,19 @@
         }
       }, 120);
     });
+
+    async function loadIndexShops() {
+      indexShopsExpanded = false;
+      try {
+        const shopsData = await PaintApi.publicShops();
+        indexLastShops = shopsData.shops || [];
+      } catch (e) {
+        console.warn("load index shops", e);
+        indexLastShops = [];
+      }
+      renderShops(indexLastShops);
+      syncShopsSectionTitle();
+    }
 
     function syncShopsSectionTitle() {
       const el = document.getElementById("shopsSectionTitle");
@@ -942,7 +1519,8 @@
         typeof paintMarketSortShopsFavoritesFirst === "function"
           ? paintMarketSortShopsFavoritesFirst(shops)
           : [...shops];
-      for (const s of ordered) {
+      const visible = indexShopsExpanded ? ordered : ordered.slice(0, INDEX_PANEL_PREVIEW_COUNT);
+      for (const s of visible) {
         const card = document.createElement("article");
         card.className = "pm-shop-card group flex flex-col min-w-0";
         const main = document.createElement("a");
@@ -975,6 +1553,7 @@
         }
         shopGrid.appendChild(card);
       }
+      syncIndexPanelShowAll(indexShopsShowAll, ordered.length, indexShopsExpanded);
     }
 
     const runSuggest = debounce(async () => {
@@ -1036,18 +1615,42 @@
       suggestPanel.classList.remove("hidden");
     }, 220);
 
-    searchInput.addEventListener("input", runSuggest);
-    if (searchMapPricesBtn) {
-      searchMapPricesBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        openSearchPriceMap({ q: searchInput.value.trim() });
+    const debouncedLoadIndexProducts = debounce(() => loadIndexProducts(), 220);
+    const debouncedRefreshIndexMap = debounce(() => refreshIndexMapView(), 280);
+
+    searchInput.addEventListener("input", () => {
+      if (indexViewMode === "map") {
+        debouncedRefreshIndexMap();
+        return;
+      }
+      debouncedLoadIndexProducts();
+      const q = searchInput.value.trim();
+      if (q.length >= 1) runSuggest();
+      else suggestPanel.classList.add("hidden");
+    });
+
+    if (indexMapModeBtn) {
+      indexMapModeBtn.addEventListener("click", () => {
+        setIndexViewMode(indexViewMode === "map" ? "shops" : "map");
       });
     }
+
+    if (indexProductList) {
+      indexProductList.addEventListener("click", (e) => {
+        const mapBtn = e.target.closest(".index-product-row-map");
+        if (!mapBtn) return;
+        e.preventDefault();
+        const pid = Number(mapBtn.getAttribute("data-product-id"));
+        if (Number.isFinite(pid) && pid > 0) PaintApi.trackProduct(pid).catch(() => {});
+        setIndexViewMode("map", { productId: pid });
+      });
+    }
+
     suggestPanel.addEventListener("click", (e) => {
       const allBtn = e.target.closest(".index-suggest-map-all");
       if (allBtn) {
         e.preventDefault();
-        openSearchPriceMap({ q: searchInput.value.trim() });
+        setIndexViewMode("map");
         return;
       }
       const prodBtn = e.target.closest(".index-product-map");
@@ -1055,7 +1658,7 @@
         e.preventDefault();
         const pid = Number(prodBtn.getAttribute("data-product-id"));
         if (Number.isFinite(pid) && pid > 0) PaintApi.trackProduct(pid).catch(() => {});
-        openSearchPriceMap({ q: searchInput.value.trim(), productId: pid });
+        setIndexViewMode("map", { productId: pid });
       }
     });
     if (searchPriceMapClose && searchPriceMapDialog) {
@@ -1078,11 +1681,17 @@
         phaseBannerBody.classList.remove("hidden");
       }
       syncShopsSectionTitle();
+      syncShopsSectionTitle();
       renderIndexCategoryBar();
       renderIndexBrandBar();
       if (indexBrandBar && typeof paintMarketScheduleFitBrandMarks === "function") {
         paintMarketScheduleFitBrandMarks(indexBrandBar);
       }
+      if (indexBrandPrism) indexBrandPrism.render();
+      if (indexCategoryPrism) indexCategoryPrism.render();
+      if (indexCapacityPrism) indexCapacityPrism.render();
+      if (indexLastCustomerEnabled && indexProducts.length) renderIndexProductList(indexProducts);
+      if (indexLastCustomerEnabled) syncIndexProductsFilterHint();
       loadAds(indexLastCustomerEnabled).catch(() => {});
       pmIndexLayoutSync();
       if (indexLastShops.length && !shopsSection.classList.contains("hidden")) renderShops(indexLastShops);
@@ -1108,18 +1717,19 @@
           phaseBannerBody.classList.remove("hidden");
           lockedShops.classList.remove("hidden");
           searchWrap.classList.add("hidden");
+          showIndexFilterDrawerUi(false);
+          showIndexBrowsePanels(false);
           indexLastShops = [];
         } else {
           phaseBanner.classList.add("hidden");
           shopsSection.classList.remove("hidden");
           searchWrap.classList.remove("hidden");
-          if (indexCategoryPickWrap) indexCategoryPickWrap.classList.remove("hidden");
-          if (indexBrandPickWrap) indexBrandPickWrap.classList.remove("hidden");
+          document.body.setAttribute("data-pm-index-view", "shops");
           syncShopsSectionTitle();
           pmIndexLayoutSync();
-          await initIndexCategoryPicker();
-          await loadIndexBrands();
+          await initIndexBrowseFilters();
           await loadIndexShops();
+          setIndexViewMode("shops");
         }
         await loadAds(enabled);
         pmIndexLayoutSync();

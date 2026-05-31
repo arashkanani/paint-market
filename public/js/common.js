@@ -511,6 +511,29 @@ function paintMarketTf(key, vars) {
   return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? String(vars[k]) : `{${k}}`));
 }
 
+function paintMarketIsPlaceholderImageUrl(url) {
+  const u = String(url || "").trim().toLowerCase();
+  return !u || u.includes("placehold.co/");
+}
+
+function paintMarketProductPlaceholderDataUri(label) {
+  const text = String(label || "•").slice(0, 2).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f7f7f7" width="200" height="200"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="48" font-weight="700">${text.replace(/[<>&"]/g, "")}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function paintMarketProductImageUrl(product) {
+  const p = product || {};
+  const name = p.name || p.product_name || p.productName || "";
+  const listing = String(p.listing_image_url || p.custom_photo_url || "").trim();
+  if (listing) return listing;
+  const imageUrl = String(p.image_url || p.imageUrl || "").trim();
+  if (imageUrl && !paintMarketIsPlaceholderImageUrl(imageUrl)) return imageUrl;
+  const fallback = String(p.default_image_url || "").trim();
+  if (fallback && !paintMarketIsPlaceholderImageUrl(fallback)) return fallback;
+  return paintMarketProductPlaceholderDataUri(name);
+}
+
 const PAINT_MARKET_CATEGORY_SLUG_I18N = {
   building_paints: "shop_pill_building",
   steel_workshop_paints: "shop_pill_steel",
@@ -1431,6 +1454,169 @@ function paintMarketGeoInit() {
   paintMarketSyncGeoCompactBtn();
 }
 
+function paintMarketInitFilterDrawer(cfg = {}) {
+  const drawer = document.getElementById(cfg.drawerId || "shopFilterDrawer");
+  const tab = document.getElementById(cfg.tabId || "shopFilterDrawerTab");
+  const closeGrip = document.getElementById(cfg.closeGripId || "shopFilterCloseGrip");
+  const backdrop = document.getElementById(cfg.backdropId || "shopFilterBackdrop");
+  if (!drawer || !tab || tab.dataset.bound === "1") return null;
+  tab.dataset.bound = "1";
+
+  const EDGE_PX = 32;
+  const SNAP_RATIO = 0.2;
+  let drag = null;
+
+  function isRtl() {
+    return document.documentElement.getAttribute("dir") === "rtl";
+  }
+
+  function drawerOnRight() {
+    return !isRtl();
+  }
+
+  function closedTranslateX() {
+    const amount = drawer.offsetWidth;
+    return drawerOnRight() ? amount : -amount;
+  }
+
+  function clampTranslateX(tx, closedX) {
+    if (drawerOnRight()) return Math.max(0, Math.min(closedX, tx));
+    return Math.min(0, Math.max(closedX, tx));
+  }
+
+  function clearInlineTransform() {
+    drawer.classList.remove("is-dragging");
+    drawer.style.transform = "";
+  }
+
+  function setOpen(open) {
+    clearInlineTransform();
+    drawer.classList.toggle("is-open", open);
+    tab.classList.toggle("is-hidden", open);
+    if (backdrop) {
+      backdrop.hidden = !open;
+      backdrop.classList.toggle("is-visible", open);
+      backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+    tab.setAttribute("aria-expanded", open ? "true" : "false");
+    drawer.setAttribute("aria-hidden", open ? "false" : "true");
+    if (open && typeof cfg.onOpen === "function") cfg.onOpen();
+  }
+
+  function pointerXY(e) {
+    if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    if (e.changedTouches && e.changedTouches.length) {
+      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function beginDrag(e, intent) {
+    const p = pointerXY(e);
+    drag = {
+      intent,
+      startX: p.x,
+      startY: p.y,
+      wasOpen: drawer.classList.contains("is-open"),
+      closedX: closedTranslateX(),
+      baseX: drawer.classList.contains("is-open") ? 0 : closedTranslateX()
+    };
+    drawer.classList.add("is-dragging");
+    if (intent === "open" || intent === "edge") tab.classList.add("is-hidden");
+  }
+
+  function moveDrag(e) {
+    if (!drag) return;
+    const p = pointerXY(e);
+    const dx = p.x - drag.startX;
+    const dy = p.y - drag.startY;
+    if (drag.intent === "edge") {
+      if (Math.abs(dx) < Math.abs(dy)) return;
+    }
+    const tx = clampTranslateX(drag.baseX + dx, drag.closedX);
+    drawer.style.transform = `translateX(${tx}px)`;
+  }
+
+  function endDrag(e) {
+    if (!drag) return;
+    const p = pointerXY(e);
+    const dx = p.x - drag.startX;
+    const onRight = drawerOnRight();
+    const threshold = Math.abs(drag.closedX) * SNAP_RATIO;
+    if (drag.wasOpen) {
+      if ((onRight && dx > threshold) || (!onRight && dx < -threshold)) setOpen(false);
+      else setOpen(true);
+    } else if ((onRight && dx < -threshold) || (!onRight && dx > threshold)) {
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+    drag = null;
+  }
+
+  tab.addEventListener("click", () => {
+    if (!drawer.classList.contains("is-open")) setOpen(true);
+  });
+
+  tab.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!drawer.classList.contains("is-open")) beginDrag(e, "open");
+    },
+    { passive: true }
+  );
+
+  closeGrip?.addEventListener(
+    "touchstart",
+    (e) => {
+      if (drawer.classList.contains("is-open")) {
+        e.stopPropagation();
+        beginDrag(e, "close");
+      }
+    },
+    { passive: true }
+  );
+
+  closeGrip?.addEventListener("mousedown", (e) => {
+    if (!drawer.classList.contains("is-open")) return;
+    e.preventDefault();
+    beginDrag(e, "close");
+  });
+
+  backdrop?.addEventListener("click", () => setOpen(false));
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && drawer.classList.contains("is-open")) setOpen(false);
+  });
+
+  document.addEventListener(
+    "touchstart",
+    (e) => {
+      if (drag || drawer.classList.contains("is-open")) return;
+      if (e.touches.length !== 1) return;
+      const x = e.touches[0].clientX;
+      const onRight = drawerOnRight();
+      if ((onRight && x >= window.innerWidth - EDGE_PX) || (!onRight && x <= EDGE_PX)) {
+        beginDrag(e, "edge");
+      }
+    },
+    { passive: true }
+  );
+
+  document.addEventListener("touchmove", moveDrag, { passive: true });
+  document.addEventListener("touchend", endDrag);
+  document.addEventListener("mousemove", (e) => {
+    if (drag) moveDrag(e);
+  });
+  document.addEventListener("mouseup", endDrag);
+
+  if (typeof paintMarketApplyDomI18n === "function") paintMarketApplyDomI18n(tab);
+  const ariaKey = cfg.ariaKey || "shop_filters_tab_aria";
+  tab.setAttribute("aria-label", paintMarketT(ariaKey));
+
+  return { setOpen };
+}
+
 /** @deprecated use paintMarketGeoInit */
 function paintMarketCountryInit() {
   paintMarketGeoInit();
@@ -1455,6 +1641,7 @@ window.paintMarketCountryLabelCurrent = paintMarketCountryLabelCurrent;
 window.paintMarketLangGet = paintMarketLangGet;
 window.paintMarketLangSet = paintMarketLangSet;
 window.paintMarketGeoInit = paintMarketGeoInit;
+window.paintMarketInitFilterDrawer = paintMarketInitFilterDrawer;
 window.paintMarketInitShopLocationForm = paintMarketInitShopLocationForm;
 window.paintMarketReadShopLocationFields = paintMarketReadShopLocationFields;
 window.paintMarketParseShopLocationText = paintMarketParseShopLocationText;
@@ -1466,6 +1653,7 @@ window.paintMarketCategoryIconUrl = paintMarketCategoryIconUrl;
 window.paintMarketCategoryIconImgHtml = paintMarketCategoryIconImgHtml;
 window.paintMarketContextHitInnerHtml = paintMarketContextHitInnerHtml;
 window.paintMarketEscapeHtml = paintMarketEscapeHtml;
+window.paintMarketProductImageUrl = paintMarketProductImageUrl;
 window.paintMarketFavoritesGet = paintMarketFavoritesGet;
 window.paintMarketFavoriteIs = paintMarketFavoriteIs;
 window.paintMarketFavoriteToggle = paintMarketFavoriteToggle;

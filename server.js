@@ -711,15 +711,21 @@ async function main() {
       const brandId = Number(req.query.brandId);
       const hasCategory = Number.isFinite(categoryId) && categoryId > 0;
       const hasBrand = Number.isFinite(brandId) && brandId > 0;
-      if (!hasCategory && !hasBrand) {
-        res.json({ products: [] });
-        return;
-      }
       const q = String(req.query.q || "").trim();
       const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
       const listed = buildProductListedExists(capacityLtr);
-      let sql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score,
-                        b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name
+      let sql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, mp.default_image_url,
+                        b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name,
+                        (
+                          SELECT sl.custom_photo_url
+                          FROM shop_listings sl
+                          WHERE sl.master_product_id = mp.id
+                            AND sl.available = 1
+                            AND sl.custom_photo_url IS NOT NULL
+                            AND TRIM(sl.custom_photo_url) != ''
+                          ORDER BY sl.updated_at DESC
+                          LIMIT 1
+                        ) AS listing_image_url
                  FROM master_products mp
                  JOIN brands b ON b.id = mp.brand_id
                  WHERE ${listed.sql}`;
@@ -737,8 +743,13 @@ async function main() {
         const like = `%${q}%`;
         params.push(like, like);
       }
-      sql += ` ORDER BY mp.popularity_score DESC, mp.name ASC LIMIT 200`;
-      const products = await dbm.all(db, sql, params);
+      sql += ` ORDER BY mp.popularity_score DESC, mp.name ASC LIMIT 500`;
+      const rows = await dbm.all(db, sql, params);
+      const products = rows.map((p) => {
+        const listing = String(p.listing_image_url || "").trim();
+        const fallback = String(p.default_image_url || "").trim();
+        return { ...p, image_url: listing || fallback };
+      });
       res.json({ products, capacityLtr });
     })
   );

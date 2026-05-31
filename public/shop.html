@@ -468,13 +468,11 @@
 
     /** Amazon-style card: image on top, title + price below. */
     function shopProductCardBodyHtml(row) {
-      const rawImg = row.default_image_url || row.imageUrl || "";
       const productName = row.product_name || row.productName || "";
-      const imgSrc = rawImg
-        ? esc(rawImg)
-        : esc(
-            `https://placehold.co/200x200/f7f7f7/64748b/png?text=${encodeURIComponent(String(productName || "•").slice(0, 2).toUpperCase())}`
-          );
+      const imgSrc =
+        typeof paintMarketProductImageUrl === "function"
+          ? esc(paintMarketProductImageUrl(row))
+          : esc(row.custom_photo_url || row.default_image_url || row.imageUrl || "");
       const cap = formatCapacityLtr(row.capacity_ltr ?? row.capacityLtr);
       const cur = row.currency || (typeof paintMarketCurrencyGet === "function" ? paintMarketCurrencyGet() : "AED");
       const amt = row.price_amount ?? row.priceAmount;
