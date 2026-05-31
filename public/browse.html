@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@700;800;900&family=Nunito:wght@800;900&family=Playfair+Display:wght@700;800&family=Archivo+Black&family=Varela+Round:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="/paint/css/shop-brand-cylinder.css?v=20260527" />
   <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
@@ -101,7 +102,7 @@
       </div>
       <p id="browseProductLoading" class="pm-index-products-panel__status hidden" data-pm-t="index_category_products_loading">Loading products…</p>
       <p id="browseProductEmpty" class="pm-index-products-panel__status hidden" data-pm-t="index_category_products_empty">No products found.</p>
-      <ul id="browseProductList" class="pm-index-product-list" role="list"></ul>
+      <ul id="browseProductList" class="pm-index-product-grid pm-index-product-grid--expanded" role="list"></ul>
     </section>
 
     <section id="shopsSection" class="pm-shops-section mt-1 space-y-4 hidden">
@@ -111,6 +112,103 @@
 
     <footer class="pt-2 pb-6 text-xs text-slate-500" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
   </main>
+
+  <div id="browseFilterBackdrop" class="pm-shop-filter-drawer__backdrop" hidden aria-hidden="true"></div>
+  <button
+    type="button"
+    id="browseFilterDrawerTab"
+    class="pm-shop-filter-drawer__peek hidden"
+    aria-controls="browseFilterSidebar"
+    aria-expanded="false"
+    aria-label="Open filters — swipe from the edge"
+  >
+    <span class="pm-shop-filter-drawer__peek-label" data-pm-t="shop_filters_tab">Filter</span>
+    <span class="pm-shop-filter-drawer__peek-arrow" aria-hidden="true">›</span>
+  </button>
+  <div id="browseFilterDrawer" class="pm-shop-filter-drawer" aria-hidden="true">
+    <aside id="browseFilterSidebar" class="pm-shop-brand-sidebar" aria-label="Brand, category and pack size filters">
+      <div
+        id="browseFilterCloseGrip"
+        class="pm-shop-filter-drawer__close-grip"
+        role="button"
+        tabindex="-1"
+        aria-label="Swipe right to close filters"
+      >
+        <span class="pm-shop-filter-drawer__close-grip-icon" aria-hidden="true">›</span>
+      </div>
+      <div class="pm-shop-brand-sidebar__head">
+        <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_brands_filter">Brands</h2>
+      </div>
+      <section id="browseBrandPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci hidden" aria-label="Brand drum">
+        <button type="button" id="browseBrandPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous brand">
+          <span aria-hidden="true">▲</span>
+        </button>
+        <div class="pm-brand-prism__viewport" id="browseBrandPrismViewport">
+          <div class="pm-brand-prism__scene">
+            <div class="pm-brand-prism__camera">
+              <div class="pm-brand-prism__drum" id="browseBrandPrismDrum">
+                <div class="pm-brand-prism__wire" id="browseBrandPrismWire" aria-hidden="true"></div>
+                <div class="pm-brand-prism__edges" id="browseBrandPrismEdges" aria-hidden="true"></div>
+                <div class="pm-brand-prism__faces" id="browseBrandPrismFaces"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="browseBrandPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next brand">
+          <span aria-hidden="true">▼</span>
+        </button>
+      </section>
+
+      <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--categories">
+        <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_categories_filter">Categories</h2>
+      </div>
+      <div class="pm-shop-category-filter">
+        <section id="browseCategoryPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--category hidden" aria-label="Category drum">
+          <button type="button" id="browseCatPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous category">
+            <span aria-hidden="true">▲</span>
+          </button>
+          <div class="pm-brand-prism__viewport" id="browseCatPrismViewport">
+            <div class="pm-brand-prism__scene">
+              <div class="pm-brand-prism__camera">
+                <div class="pm-brand-prism__drum" id="browseCatPrismDrum">
+                  <div class="pm-brand-prism__wire" id="browseCatPrismWire" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__edges" id="browseCatPrismEdges" aria-hidden="true"></div>
+                  <div class="pm-brand-prism__faces" id="browseCatPrismFaces"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="browseCatPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next category">
+            <span aria-hidden="true">▼</span>
+          </button>
+        </section>
+        <p id="browseCatPrismCaption" class="pm-shop-category-filter__caption" aria-live="polite"></p>
+      </div>
+
+      <div class="pm-shop-brand-sidebar__head pm-shop-brand-sidebar__head--capacity">
+        <h2 class="pm-shop-brand-sidebar__title" data-pm-t="shop_capacities_filter">Pack size</h2>
+      </div>
+      <section id="browseCapacityPrism" class="pm-brand-prism pm-brand-prism--vertical pm-brand-prism--sci pm-brand-prism--capacity hidden" aria-label="Capacity drum">
+        <button type="button" id="browseCapPrismPrev" class="pm-brand-prism__arrow pm-brand-prism__arrow--up" aria-label="Previous pack size">
+          <span aria-hidden="true">▲</span>
+        </button>
+        <div class="pm-brand-prism__viewport" id="browseCapPrismViewport">
+          <div class="pm-brand-prism__scene">
+            <div class="pm-brand-prism__camera">
+              <div class="pm-brand-prism__drum" id="browseCapPrismDrum">
+                <div class="pm-brand-prism__wire" id="browseCapPrismWire" aria-hidden="true"></div>
+                <div class="pm-brand-prism__edges" id="browseCapPrismEdges" aria-hidden="true"></div>
+                <div class="pm-brand-prism__faces" id="browseCapPrismFaces"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="browseCapPrismNext" class="pm-brand-prism__arrow pm-brand-prism__arrow--down" aria-label="Next pack size">
+          <span aria-hidden="true">▼</span>
+        </button>
+      </section>
+    </aside>
+  </div>
 
   <dialog id="browseCategoryDialog" class="pm-browse-picker-dialog">
     <form method="dialog" class="pm-browse-picker-form">
@@ -162,6 +260,7 @@
   <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/paint/js/shop-brand-cylinder.js"></script>
   <script src="/paint/js/browse-page.js"></script>
 </body>
 </html>

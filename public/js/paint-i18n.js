@@ -70,6 +70,9 @@
     index_shops_h2: "Shops",
     index_shops_title_city: "Top shops of {city}",
     index_shops_title_country: "Top shops in {country}",
+    index_shops_map_title: "Shops on map",
+    index_shops_map_empty: "No shops have pinned a map location yet.",
+    index_shops_map_count: "{count} of {total} shops on map",
     index_shops_sub:
       "Each card shows the shop logo and a green–blue strip with name and area. If the shop pinned a location, use Directions for Google Maps.",
     index_shops_sort_hint: "Sorted by last catalog update",
@@ -481,6 +484,9 @@
     index_shops_h2: "المتاجر",
     index_shops_title_city: "أفضل متاجر {city}",
     index_shops_title_country: "أفضل المتاجر في {country}",
+    index_shops_map_title: "المتاجر على الخريطة",
+    index_shops_map_empty: "لا يوجد متجر ثبّت موقعًا على الخريطة بعد.",
+    index_shops_map_count: "{count} من {total} متجر على الخريطة",
     index_shops_sub:
       "كل بطاقة تعرض شعار المتجر وشريطًا أخضر–أزرق للاسم والمنطقة. إذا ثبّت المتجر موقعًا، استخدم «الاتجاهات» في خرائط Google.",
     index_shops_sort_hint: "مرتبة حسب آخر تحديث للكتالوج",

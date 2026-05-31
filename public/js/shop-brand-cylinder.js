@@ -519,9 +519,14 @@
       enterBrand,
       exitBrand,
       setIndexForSlug(slug) {
-        const i = prismFaces().findIndex(
-          (b) => !b.all && String(b.slug).toLowerCase() === String(slug).toLowerCase()
-        );
+        const list = prismFaces();
+        const k = slug != null ? String(slug).trim().toLowerCase() : "";
+        if (!k) {
+          const allIdx = list.findIndex((b) => b.all);
+          if (allIdx >= 0) index = allIdx;
+          return;
+        }
+        const i = list.findIndex((b) => !b.all && String(b.slug).toLowerCase() === k);
         if (i >= 0) index = i;
       },
       stepBy

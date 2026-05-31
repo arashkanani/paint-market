@@ -594,6 +594,92 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
   min-height: 14rem;
 }
 
+.pm-index-shops-map-section {
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.pm-index-shops-map-section__status {
+  margin: 0;
+  padding: 0.55rem 0.85rem 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.pm-index-shops-map-section .pm-shops-section__title-bar {
+  margin: 0;
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+  font-size: 0.6875rem;
+  color: #f8fafc;
+  background: #64748b;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: none;
+}
+
+@media (min-width: 640px) {
+  .pm-index-shops-map-section .pm-shops-section__title-bar {
+    font-size: 0.75rem;
+    padding: 0.7rem 1rem;
+  }
+}
+
+html[lang="ar"] .pm-index-shops-map-section .pm-shops-section__title-bar {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8125rem;
+}
+
+.pm-index-shops-map-canvas {
+  height: min(42vh, 26rem);
+  width: 100%;
+  min-height: 13rem;
+}
+
+.leaflet-marker-icon.pm-map-shop-logo-marker {
+  background: transparent;
+  border: none;
+}
+
+.pm-map-shop-logo-marker__wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.28),
+    0 0 0 1px rgba(13, 148, 136, 0.35);
+  background: #f8fafc;
+}
+
+.pm-map-shop-logo-marker__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pm-map-shop-logo-popup {
+  text-align: center;
+}
+
+.pm-map-shop-logo-popup__link {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f766e;
+  text-decoration: none;
+}
+
+.pm-map-shop-logo-popup__link:hover {
+  text-decoration: underline;
+}
+
 body[data-pm-index-view="shops"] .pm-index-product-grid,
 body[data-pm-index-view="products"] .pm-index-product-grid {
   max-height: none;
@@ -897,6 +983,7 @@ html[lang="ar"] .pm-index-browse-panel--products .pm-index-products-panel__headi
 }
 
 .pm-index-browse-panel--products.pm-index-products-panel--suggest-open .pm-index-product-list,
+.pm-index-browse-panel--products.pm-index-products-panel--suggest-open .pm-index-product-grid,
 .pm-index-browse-panel--products.pm-index-products-panel--suggest-open .pm-index-products-panel__status {
   visibility: hidden;
   pointer-events: none;
@@ -1245,13 +1332,16 @@ html[lang="ar"] .pm-index-browse-panel--products .pm-index-products-panel__headi
 }
 
 .pm-browse-picker-grid .pm-index-category-chip__icon {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 5.75rem;
+  height: 5.75rem;
+  padding: 0.2rem;
 }
 
 .pm-browse-picker-grid .pm-index-category-chip__icon .pm-cat-icon--bar {
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 html[lang="ar"] .pm-browse-filter-btn__label {
@@ -1301,12 +1391,12 @@ html[lang="ar"] .pm-index-browse-panel__heading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0;
+  justify-content: flex-start;
+  gap: 0.3rem;
   width: 100%;
   min-width: 0;
   max-width: none;
-  padding: 0.4rem 0.35rem;
+  padding: 0.35rem 0.25rem 0.45rem;
   border: 2px solid transparent;
   border-radius: 0.85rem;
   background: #fff;
@@ -1341,10 +1431,21 @@ html[lang="ar"] .pm-index-browse-panel__heading {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 5.78rem;
-  height: 5.78rem;
-  border-radius: 1.2rem;
+  width: 100%;
+  max-width: 7.25rem;
+  aspect-ratio: 1;
+  padding: 0.22rem;
+  border-radius: 1.35rem;
   background: #f8fafc;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .pm-index-category-chip__icon {
+    max-width: 7.75rem;
+    padding: 0.25rem;
+    border-radius: 1.45rem;
+  }
 }
 
 .pm-index-category-chip--active .pm-index-category-chip__icon {
@@ -1352,8 +1453,11 @@ html[lang="ar"] .pm-index-browse-panel__heading {
 }
 
 .pm-index-category-chip__icon .pm-cat-icon--bar {
-  width: 4.37rem;
-  height: 4.37rem;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .pm-index-category-chip__icon--all {
@@ -1370,16 +1474,38 @@ html[lang="ar"] .pm-index-browse-panel__heading {
 }
 
 .pm-index-category-chip__label {
-  display: block;
+  display: -webkit-box;
   width: 100%;
-  font-size: 0.875rem;
+  padding: 0 0.15rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   text-align: center;
   letter-spacing: 0.01em;
+  color: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  min-height: 2.5em;
+}
+
+.pm-index-category-chip[data-category-slug="water_proofing"] .pm-index-category-chip__label,
+.pm-index-category-chip[data-category-slug="epoxy_flooring"] .pm-index-category-chip__label {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  overflow: visible;
+  text-overflow: unset;
+  min-height: 2.55em;
+  line-height: 1.22;
+}
+
+@media (min-width: 640px) {
+  .pm-index-category-chip__label {
+    font-size: 0.8125rem;
+  }
 }
 
 html[lang="ar"] .pm-index-category-chip__label {
@@ -1582,6 +1708,7 @@ html[lang="ar"] .pm-brand-icon__mark {
 #homeAdSection,
 .pm-index-browse-panel,
 .pm-index-map-section,
+.pm-index-shops-map-section,
 .pm-shops-section {
   width: 100%;
   max-width: 100%;

@@ -1,4 +1,4 @@
-/* global PaintApi, paintMarketT, paintMarketTf, paintMarketBrowsePageUrl, paintMarketCategoryLabel, paintMarketCategoryIconImgHtml, paintMarketBrandIconHtml, paintMarketDefaultBrowseCategories, paintMarketDefaultBrowseBrands, paintMarketSortShopsFavoritesFirst, paintMarketFavoriteApplyButton, paintMarketFormatPrice, paintMarketFormatPriceCompact, paintMarketRalHex, PaintTheme, debounce, L */
+/* global PaintApi, paintMarketT, paintMarketTf, paintMarketBrowsePageUrl, paintMarketCategoryLabel, paintMarketCategoryIconImgHtml, paintMarketBrandIconHtml, paintMarketDefaultBrowseCategories, paintMarketDefaultBrowseBrands, paintMarketSortShopsFavoritesFirst, paintMarketFavoriteApplyButton, paintMarketFormatPrice, paintMarketFormatPriceCompact, paintMarketRalHex, PaintTheme, debounce, L, initShopBrandCylinder, initShopFilterPrism, paintMarketInitFilterDrawer, paintMarketCategoryPrismFaceHtml, paintMarketCapacityPrismFaceHtml, paintMarketPrismAllCategoriesHtml, paintMarketPrismAllCapacitiesHtml, paintMarketApplyDomI18n, paintMarketScheduleFitBrandMarks */
 
 (function paintMarketBrowsePage() {
   const browseTitle = document.getElementById("browseTitle");
@@ -41,6 +41,12 @@
   let browsePriceMapLayers = [];
   let browsePriceMapProductId = null;
   let browsePriceMapQuery = "";
+
+  const BROWSE_CAPACITY_ORDER = [1, 3.6, 18];
+  let browseBrandPrism = null;
+  let browseCategoryPrism = null;
+  let browseCapacityPrism = null;
+  let browseFilterDrawerInited = false;
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({
@@ -200,12 +206,13 @@
       btn.className = "pm-index-category-chip";
       btn.setAttribute("role", "tab");
       btn.dataset.categoryId = String(c.id);
+      btn.dataset.categorySlug = c.slug || "";
       const selected = browseSelectedCategory && browseSelectedCategory.id === c.id;
       categoryChipActive(btn, selected);
       const label = paintMarketCategoryLabel(c.slug, c.name);
       btn.setAttribute("aria-label", label);
       btn.title = label;
-      btn.innerHTML = `<span class="pm-index-category-chip__icon">${paintMarketCategoryIconImgHtml(c.slug, "pm-cat-icon pm-cat-icon--bar")}</span>`;
+      btn.innerHTML = `<span class="pm-index-category-chip__icon">${paintMarketCategoryIconImgHtml(c.slug, "pm-cat-icon pm-cat-icon--bar")}</span><span class="pm-index-category-chip__label">${paintMarketCategoryChipLabelHtml(c.slug, c.name)}</span>`;
       btn.addEventListener("click", async () => {
         if (browseCategoryDialog?.open) browseCategoryDialog.close();
         await selectBrowseCategory(selected ? null : c);
@@ -271,19 +278,34 @@
     if (!canShow) return;
     for (const p of list) {
       const li = document.createElement("li");
-      li.className = "pm-index-product-row";
+      li.className = "pm-index-product-card";
+      li.setAttribute("role", "listitem");
       const brandObj = { slug: p.brand_slug, name: p.brand_name };
       const brandIcon =
         typeof paintMarketBrandIconHtml === "function"
           ? paintMarketBrandIconHtml(brandObj)
           : esc(p.brand_name || "");
-      li.innerHTML = `<div class="pm-index-product-row__main">
-          <div class="pm-index-product-row__text">
-            <div class="pm-index-product-row__name">${esc(p.name)}</div>
-            <div class="pm-index-product-row__brand"><span class="pm-index-compact-brand-icon">${brandIcon}</span><span class="pm-index-product-row__brand-name">${esc(p.brand_name || "")}</span></div>
+      const media = document.createElement("div");
+      media.className = "pm-index-product-card__media";
+      const img = document.createElement("img");
+      img.className = "pm-index-product-card__img";
+      img.alt = "";
+      img.loading = "lazy";
+      img.src =
+        typeof paintMarketProductImageUrl === "function"
+          ? paintMarketProductImageUrl(p)
+          : String(p.default_image_url || p.listing_image_url || p.image_url || "");
+      media.appendChild(img);
+      const body = document.createElement("div");
+      body.className = "pm-index-product-card__body";
+      body.innerHTML = `<p class="pm-index-product-card__name">${esc(p.name)}</p>
+          <div class="pm-index-product-card__brand">
+            <span class="pm-index-compact-brand-icon">${brandIcon}</span>
+            <span class="pm-index-product-card__brand-name">${esc(p.brand_name || "")}</span>
           </div>
-          <button type="button" class="browse-product-map pm-index-product-row__map" data-product-id="${esc(String(p.id))}" title="${esc(paintMarketT("index_search_map_for_product"))}">${esc(paintMarketT("index_search_map_prices"))}</button>
-        </div>`;
+          <button type="button" class="browse-product-map pm-index-product-card__map" data-product-id="${esc(String(p.id))}" title="${esc(paintMarketT("index_search_map_for_product"))}">${esc(paintMarketT("index_view_map"))}</button>`;
+      li.appendChild(media);
+      li.appendChild(body);
       browseProductList.appendChild(li);
     }
   }
@@ -437,9 +459,11 @@
     renderBrowseCategoryBar();
     await loadBrowseBrands();
     renderBrowseBrandBar();
+    if (browseBrandPrism) browseBrandPrism.render();
     await loadBrowseProducts();
     await loadBrowseShops();
     syncBrowseUrl(true);
+    syncBrowseFilterPrisms();
   }
 
   async function selectBrowseCategory(cat) {
@@ -455,6 +479,224 @@
   async function applyBrowseSelection() {
     hideBrowseSuggest();
     await refreshBrowse();
+  }
+
+  function browseCategoriesForPrism() {
+    return browseCategories.map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      id: c.id
+    }));
+  }
+
+  function browseCategoryBySlug(slug) {
+    const key = String(slug || "").trim().toLowerCase();
+    if (!key) return null;
+    return browseCategories.find((c) => String(c.slug || "").trim().toLowerCase() === key) || null;
+  }
+
+  function updateBrowseCategoryCaption(slug) {
+    const el = document.getElementById("browseCatPrismCaption");
+    if (!el) return;
+    const key = String(slug || "").trim().toLowerCase();
+    el.textContent = key
+      ? paintMarketCategoryLabel(key, "")
+      : paintMarketT("shop_all_categories");
+  }
+
+  function browseBrandsForPrism() {
+    return browseBrands.map((b) => ({
+      slug: b.slug,
+      name: b.name,
+      id: b.id
+    }));
+  }
+
+  function browseBrandBySlug(slug) {
+    const key = String(slug || "").trim().toLowerCase();
+    if (!key) return null;
+    return browseBrands.find((b) => String(b.slug || "").trim().toLowerCase() === key) || null;
+  }
+
+  function browseCapacityLabelLtr(cap) {
+    const n = Number(cap);
+    if (!Number.isFinite(n)) return String(cap ?? "");
+    if (Math.abs(n - 1) < 0.001) return "1L";
+    if (Math.abs(n - 3.6) < 0.001) return "3.6L";
+    if (Math.abs(n - 18) < 0.001) return "18L";
+    return `${n}L`;
+  }
+
+  function browseCapacitiesForPrism() {
+    return BROWSE_CAPACITY_ORDER.map((cap) => ({
+      slug: String(cap),
+      name: browseCapacityLabelLtr(cap)
+    }));
+  }
+
+  async function browseSidebarSelectCategory(slug) {
+    updateBrowseCategoryCaption(slug);
+    const cat = browseCategoryBySlug(slug);
+    if (!cat && !browseSelectedBrand?.id) {
+      window.location.replace("/paint/");
+      return;
+    }
+    await selectBrowseCategory(cat);
+  }
+
+  async function browseSidebarSelectBrand(slug) {
+    const brand = browseBrandBySlug(slug);
+    if (!brand && !browseSelectedCategory?.id) {
+      window.location.replace("/paint/");
+      return;
+    }
+    await selectBrowseBrand(brand);
+  }
+
+  function initBrowseBrandPrism() {
+    if (browseBrandPrism || typeof initShopBrandCylinder !== "function" || !browseBrands.length) return;
+    browseBrandPrism = initShopBrandCylinder({
+      layout: "sidebar",
+      axis: "x",
+      section: document.getElementById("browseBrandPrism"),
+      viewport: document.getElementById("browseBrandPrismViewport"),
+      drum: document.getElementById("browseBrandPrismDrum"),
+      facesEl: document.getElementById("browseBrandPrismFaces"),
+      wireEl: document.getElementById("browseBrandPrismWire"),
+      edgesEl: document.getElementById("browseBrandPrismEdges"),
+      prevBtn: document.getElementById("browseBrandPrismPrev"),
+      nextBtn: document.getElementById("browseBrandPrismNext"),
+      getBrands: browseBrandsForPrism,
+      faceHeightSidebar: 80,
+      esc,
+      t: paintMarketT,
+      brandIconHtml: typeof paintMarketBrandIconHtml === "function" ? paintMarketBrandIconHtml : null,
+      fitBrandMarks: typeof paintMarketScheduleFitBrandMarks === "function" ? paintMarketScheduleFitBrandMarks : null,
+      applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+      applySelectionOnRender: false,
+      onRenderProducts() {},
+      onSelect(slug) {
+        browseSidebarSelectBrand(slug);
+      }
+    });
+    browseBrandPrism.render();
+  }
+
+  function initBrowseCategoryPrism() {
+    if (browseCategoryPrism || typeof initShopFilterPrism !== "function" || !browseCategories.length) return;
+    browseCategoryPrism = initShopFilterPrism({
+      layout: "sidebar",
+      axis: "x",
+      modExtraClass: "category",
+      section: document.getElementById("browseCategoryPrism"),
+      viewport: document.getElementById("browseCatPrismViewport"),
+      drum: document.getElementById("browseCatPrismDrum"),
+      facesEl: document.getElementById("browseCatPrismFaces"),
+      wireEl: document.getElementById("browseCatPrismWire"),
+      edgesEl: document.getElementById("browseCatPrismEdges"),
+      prevBtn: document.getElementById("browseCatPrismPrev"),
+      nextBtn: document.getElementById("browseCatPrismNext"),
+      getItems: browseCategoriesForPrism,
+      allLabelKey: "shop_all_categories",
+      allFaceHtml: (name) =>
+        typeof paintMarketPrismAllCategoriesHtml === "function"
+          ? paintMarketPrismAllCategoriesHtml(name)
+          : name,
+      faceContentHtml: (item) =>
+        typeof paintMarketCategoryPrismFaceHtml === "function" ? paintMarketCategoryPrismFaceHtml(item) : "",
+      faceHeightSidebar: 80,
+      esc,
+      t: paintMarketT,
+      applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+      applySelectionOnRender: false,
+      onRenderProducts() {},
+      onSelect(slug) {
+        browseSidebarSelectCategory(slug);
+      }
+    });
+    browseCategoryPrism.render();
+    updateBrowseCategoryCaption("");
+  }
+
+  function initBrowseCapacityPrism() {
+    if (browseCapacityPrism || typeof initShopFilterPrism !== "function") return;
+    browseCapacityPrism = initShopFilterPrism({
+      layout: "sidebar",
+      axis: "x",
+      modExtraClass: "capacity",
+      section: document.getElementById("browseCapacityPrism"),
+      viewport: document.getElementById("browseCapPrismViewport"),
+      drum: document.getElementById("browseCapPrismDrum"),
+      facesEl: document.getElementById("browseCapPrismFaces"),
+      wireEl: document.getElementById("browseCapPrismWire"),
+      edgesEl: document.getElementById("browseCapPrismEdges"),
+      prevBtn: document.getElementById("browseCapPrismPrev"),
+      nextBtn: document.getElementById("browseCapPrismNext"),
+      getItems: browseCapacitiesForPrism,
+      allLabelKey: "shop_all_capacities",
+      allFaceHtml: (name) =>
+        typeof paintMarketPrismAllCapacitiesHtml === "function"
+          ? paintMarketPrismAllCapacitiesHtml(name)
+          : name,
+      faceContentHtml: (item) =>
+        typeof paintMarketCapacityPrismFaceHtml === "function" ? paintMarketCapacityPrismFaceHtml(item) : "",
+      faceHeightSidebar: 44,
+      esc,
+      t: paintMarketT,
+      applyI18n: typeof paintMarketApplyDomI18n === "function" ? paintMarketApplyDomI18n : null,
+      applySelectionOnRender: false,
+      onRenderProducts() {},
+      async onSelect(slug) {
+        const cap = slug !== "" && slug != null ? Number(slug) : null;
+        applyBrowseCapacityFromUrl(Number.isFinite(cap) ? cap : null);
+        syncBrowseUrl(true);
+        await loadBrowseProducts();
+        const q = browseProductSearch ? browseProductSearch.value.trim() : "";
+        if (q.length >= 1) runBrowseProductSuggest();
+      }
+    });
+    browseCapacityPrism.render();
+  }
+
+  function initBrowseFilterDrawer() {
+    if (browseFilterDrawerInited || typeof paintMarketInitFilterDrawer !== "function") return;
+    paintMarketInitFilterDrawer({
+      drawerId: "browseFilterDrawer",
+      tabId: "browseFilterDrawerTab",
+      closeGripId: "browseFilterCloseGrip",
+      backdropId: "browseFilterBackdrop"
+    });
+    browseFilterDrawerInited = true;
+  }
+
+  function initBrowseFilterSidebar() {
+    document.getElementById("browseBrandPrism")?.classList.remove("hidden");
+    document.getElementById("browseCategoryPrism")?.classList.remove("hidden");
+    document.getElementById("browseCapacityPrism")?.classList.remove("hidden");
+    initBrowseFilterDrawer();
+    initBrowseBrandPrism();
+    initBrowseCategoryPrism();
+    initBrowseCapacityPrism();
+    document.getElementById("browseFilterDrawerTab")?.classList.remove("hidden");
+  }
+
+  function syncBrowseFilterPrisms() {
+    if (browseBrandPrism) {
+      const slug = browseSelectedBrand?.slug ? String(browseSelectedBrand.slug).trim().toLowerCase() : "";
+      browseBrandPrism.setIndexForSlug(slug);
+      browseBrandPrism.render();
+    }
+    if (browseCategoryPrism) {
+      const slug = browseSelectedCategory?.slug ? String(browseSelectedCategory.slug).trim().toLowerCase() : "";
+      browseCategoryPrism.setIndexForSlug(slug);
+      browseCategoryPrism.render();
+      updateBrowseCategoryCaption(slug);
+    }
+    if (browseCapacityPrism) {
+      const cap = getBrowseSearchCapacityLtr();
+      browseCapacityPrism.setIndexForSlug(cap != null ? String(cap) : "");
+      browseCapacityPrism.render();
+    }
   }
 
   function dedupeSuggestProducts(products) {
@@ -740,6 +982,8 @@
     syncBrowseTitle();
     syncBrowseFilterButtons();
     syncShopsSectionTitle();
+    initBrowseFilterSidebar();
+    syncBrowseFilterPrisms();
     await loadBrowseProducts();
     await loadBrowseShops();
 
@@ -765,6 +1009,7 @@
           el.classList.toggle("active", el === btn);
         });
         syncBrowseUrl(true);
+        syncBrowseFilterPrisms();
         await loadBrowseProducts();
         const q = browseProductSearch ? browseProductSearch.value.trim() : "";
         if (q.length >= 1) runBrowseProductSuggest();
@@ -834,6 +1079,9 @@
       syncShopsSectionTitle();
       renderBrowseCategoryBar();
       renderBrowseBrandBar();
+      if (browseBrandPrism) browseBrandPrism.render();
+      if (browseCategoryPrism) browseCategoryPrism.render();
+      if (browseCapacityPrism) browseCapacityPrism.render();
       renderBrowseProductList(browseProducts);
       if (browseLastShops.length) renderBrowseShops(browseLastShops);
     });

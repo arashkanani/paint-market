@@ -855,6 +855,19 @@ function paintMarketCategoryLabel(slug, name) {
   return n || k;
 }
 
+/** Category chip label — two-line break for long names (water proofing, epoxy flooring). */
+function paintMarketCategoryChipLabelHtml(slug, name) {
+  const label = paintMarketCategoryLabel(slug, name);
+  const key = String(slug || "").trim().toLowerCase();
+  if (key === "water_proofing" || key === "epoxy_flooring") {
+    const space = label.indexOf(" ");
+    if (space > 0) {
+      return `${paintMarketEscapeHtml(label.slice(0, space))}<br>${paintMarketEscapeHtml(label.slice(space + 1).trim())}`;
+    }
+  }
+  return paintMarketEscapeHtml(label);
+}
+
 const PAINT_MARKET_FAV_K = "paint_market_favorite_shops";
 
 function paintMarketFavoritesGet() {
@@ -1649,6 +1662,7 @@ window.paintMarketShopCityLabel = paintMarketShopCityLabel;
 window.paintMarketT = paintMarketT;
 window.paintMarketTf = paintMarketTf;
 window.paintMarketCategoryLabel = paintMarketCategoryLabel;
+window.paintMarketCategoryChipLabelHtml = paintMarketCategoryChipLabelHtml;
 window.paintMarketCategoryIconUrl = paintMarketCategoryIconUrl;
 window.paintMarketCategoryIconImgHtml = paintMarketCategoryIconImgHtml;
 window.paintMarketContextHitInnerHtml = paintMarketContextHitInnerHtml;

@@ -51,7 +51,10 @@ const CATEGORY_DEFS = [
   { slug: "steel_workshop_paints", name: "Steel", sort_order: 2 },
   { slug: "carpentry_workshop_paints", name: "Wood", sort_order: 3 },
   { slug: "thinner", name: "Thinner", sort_order: 4 },
-  { slug: "industrial", name: "Industrial", sort_order: 5 }
+  { slug: "industrial", name: "Industrial", sort_order: 5 },
+  { slug: "road_marking", name: "Road marking", sort_order: 6 },
+  { slug: "water_proofing", name: "Water proofing", sort_order: 7 },
+  { slug: "epoxy_flooring", name: "Epoxy flooring", sort_order: 8 }
 ];
 
 const CATEGORY_NAMES_BY_SLUG = Object.fromEntries(CATEGORY_DEFS.map((c) => [c.slug, c.name]));
@@ -89,7 +92,10 @@ const PRODUCT_STEMS = {
     "High-build interior lacquer"
   ],
   thinner: ["Standard cellulose thinner", "Epoxy-compliant reducer", "PU thinner", "Acrylic reducer"],
-  industrial: ["High-build tank lining", "Chemical-resistant coating", "Floor epoxy system", "Heat-resistant enamel"]
+  industrial: ["High-build tank lining", "Chemical-resistant coating", "Floor epoxy system", "Heat-resistant enamel"],
+  road_marking: ["Traffic line paint", "Cold-applied road marking", "Reflective road paint", "Parking bay marking"],
+  water_proofing: ["Bitumen membrane primer", "Flexible roof coating", "Basement waterproof slurry", "Crack-bridging sealant"],
+  epoxy_flooring: ["Self-leveling epoxy floor", "Anti-slip floor coating", "Garage floor epoxy", "Heavy-duty floor screed"]
 };
 
 async function seedMasterCatalog(db) {
@@ -323,8 +329,21 @@ async function migrate(db) {
       );
     }
   }
-  for (const [slug, name] of Object.entries(CATEGORY_NAMES_BY_SLUG)) {
-    await run(db, "UPDATE catalog_categories SET name = ? WHERE slug = ?", [name, slug]);
+  for (const c of CATEGORY_DEFS) {
+    const row = await get(db, "SELECT id FROM catalog_categories WHERE slug = ?", [c.slug]);
+    if (!row) {
+      await run(
+        db,
+        "INSERT INTO catalog_categories (slug, name, sort_order) VALUES (?, ?, ?)",
+        [c.slug, c.name, c.sort_order]
+      );
+    } else {
+      await run(db, "UPDATE catalog_categories SET name = ?, sort_order = ? WHERE slug = ?", [
+        c.name,
+        c.sort_order,
+        c.slug
+      ]);
+    }
   }
 
   const brandCount = await get(db, "SELECT COUNT(*) AS c FROM brands");
