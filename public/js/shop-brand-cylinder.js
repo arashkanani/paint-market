@@ -200,6 +200,7 @@
       const n = list.length;
       if (!facesEl || !n) return;
       const step = 360 / n;
+      const baseR = Number(drum?.dataset.r) || prismRadius(n, viewport?.clientWidth || 360, layout);
       facesEl.querySelectorAll(".pm-brand-prism__face").forEach((face) => {
         const i = Number(face.dataset.index);
         let show = false;
@@ -208,18 +209,24 @@
         if (!soft && n >= 2) {
           const rel = (i - index + n) % n;
           center = rel === 0;
-          side = rel === 1 || rel === n - 1;
-          show = center || side;
+          show = center;
         } else {
           const ang = (((i * step + deg) % 360) + 360) % 360;
           const diff = ang > 180 ? 360 - ang : ang;
-          show = diff <= step * 2.1;
-          center = diff < step * 0.5;
-          side = !center && diff <= step * 1.1;
+          show = diff <= step * 1.55;
+          center = diff < step * 0.38;
+          side = !center && diff <= step * 0.95;
         }
         face.classList.toggle("pm-brand-prism__face--center", center);
         face.classList.toggle("pm-brand-prism__face--side", side);
         face.classList.toggle("pm-brand-prism__face--gone", !show);
+
+        if (layout === "sidebar" && drum) {
+          const fw = face.offsetWidth || parseInt(face.style.width, 10) || 60;
+          const fh = face.offsetHeight || parseInt(face.style.height, 10) || 68;
+          const zOff = center ? 16 : side ? -10 : 0;
+          face.style.transform = faceTransform(i, step, baseR + zOff, fw, fh);
+        }
       });
     }
 

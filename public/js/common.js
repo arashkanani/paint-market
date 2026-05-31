@@ -648,10 +648,6 @@ function paintMarketFitBrandMarks(root) {
     const textLen = (mark.textContent || "").trim().length;
     const inPrism = box.classList.contains("pm-brand-prism__face-fill");
     const onCenterFace = inPrism && !!mark.closest(".pm-brand-prism__face--center");
-    const isArabPrism =
-      inPrism &&
-      (box.classList.contains("pm-brand-prism__face-fill--arabpaint") ||
-        !!mark.closest(".pm-brand-icon--arabpaint"));
     let px = inPrism
       ? onCenterFace
         ? textLen <= 4
@@ -673,8 +669,7 @@ function paintMarketFitBrandMarks(root) {
         : textLen <= 7
           ? 22
           : 17;
-    if (isArabPrism) px = Math.max(px, onCenterFace ? 16 : 14);
-    const minPx = inPrism ? (onCenterFace ? 11 : 9) : 8.5;
+    const minPx = inPrism ? (onCenterFace ? 9 : 8) : 8.5;
     const padW = inPrism ? (onCenterFace ? 2 : 3) : 10;
     const padH = inPrism ? (onCenterFace ? 2 : 3) : 10;
     let guard = 0;
@@ -724,18 +719,11 @@ function paintMarketScheduleFitBrandMarks(root) {
   });
 }
 
-/** Prism “all” face — always two lines (e.g. All / brands). */
+/** Prism “all” face — single line label. */
 function paintMarketPrismAllLabelHtml(label) {
   const n = String(label || "").trim();
   if (!n) return "";
-  const sp = n.indexOf(" ");
-  const line1 = sp > 0 ? n.slice(0, sp) : n;
-  const line2 = sp > 0 ? n.slice(sp + 1).trim() : "";
-  const e = paintMarketEscapeHtml;
-  if (!line2) {
-    return `<span class="pm-brand-prism__face-all-label"><span class="pm-brand-prism__all-line">${e(line1)}</span></span>`;
-  }
-  return `<span class="pm-brand-prism__face-all-label"><span class="pm-brand-prism__all-line">${e(line1)}</span><span class="pm-brand-prism__all-line">${e(line2)}</span></span>`;
+  return `<span class="pm-brand-prism__face-all-label"><span class="pm-brand-prism__all-line">${paintMarketEscapeHtml(n)}</span></span>`;
 }
 
 function paintMarketPrismAllBrandsHtml(label) {
