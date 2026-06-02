@@ -5,6 +5,11 @@ const cors = require("cors");
 const multer = require("multer");
 const dbm = require("./db");
 const { CATEGORY_NAMES_BY_SLUG } = require("./db");
+const {
+  parseCatalogZipBuffer,
+  resolveZipImagePath,
+  extractImageFromZip
+} = require("./catalog-import");
 const ralColors = require("./public/js/ral-colors");
 
 async function loadShopCustomColors(db, shopId) {
@@ -120,6 +125,10 @@ const storageAd = multer.diskStorage({
 const uploadShop = multer({ storage: storageShop, limits: { fileSize: 6 * 1024 * 1024 } });
 const uploadProduct = multer({ storage: storageProduct, limits: { fileSize: 6 * 1024 * 1024 } });
 const uploadAd = multer({ storage: storageAd, limits: { fileSize: 40 * 1024 * 1024 } });
+const uploadCatalogZip = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 80 * 1024 * 1024 }
+});
 
 function publicUrlForUpload(subpath) {
   return `/paint/uploads/${subpath.replace(/\\/g, "/")}`;
@@ -135,6 +144,152 @@ function inferAdKindFromUpload(file, requestedKind) {
   if (mime.startsWith("video/") || AD_VIDEO_EXTS.has(ext)) return "video";
   if (mime.startsWith("image/")) return "image";
   return req;
+}
+
+async function uniqueMasterProductSlug(db, baseSlug) {
+  let slug = String(baseSlug || "product").trim() || "product";
+  let n = 2;
+  while (await dbm.get(db, "SELECT id FROM master_products WHERE slug = ?", [slug])) {
+    slug = `${baseSlug}-${n}`;
+    n += 1;
+  }
+  return slug;
+}
+
+async function importCatalogZipToDb(db, buffer, opts = {}) {
+  const parsed = parseCatalogZipBuffer(buffer);
+  let brand = null;
+  const formBrandId = Number(opts.brandId);
+  if (Number.isFinite(formBrandId) && formBrandId > 0) {
+    brand = await dbm.get(db, "SELECT id, slug, name FROM brands WHERE id = ?", [formBrandId]);
+  }
+  if (!brand) {
+    const slugKey = String(opts.brandSlug || parsed.brandSlug || "")
+      .trim()
+      .toLowerCase();
+    if (slugKey) {
+      brand = await dbm.get(db, "SELECT id, slug, name FROM brands WHERE slug = ?", [slugKey]);
+    }
+  }
+  if (!brand && parsed.brandName && !opts.shopId) {
+    const slugKey = dbm.slugify(parsed.brandName);
+    brand = await dbm.get(db, "SELECT id, slug, name FROM brands WHERE slug = ?", [slugKey]);
+    if (!brand) {
+      const maxRow = await dbm.get(db, "SELECT COALESCE(MAX(sort_order), 0) AS m FROM brands");
+      const ins = await dbm.run(db, "INSERT INTO brands (slug, name, sort_order) VALUES (?, ?, ?)", [
+        slugKey,
+        parsed.brandName,
+        Number(maxRow?.m || 0) + 1
+      ]);
+      brand = await dbm.get(db, "SELECT id, slug, name FROM brands WHERE id = ?", [ins.lastID]);
+    }
+  }
+  if (!brand) {
+    throw Object.assign(
+      new Error(
+        opts.shopId
+          ? "Select brand (and category) before import — ZIP should use category folders with photos"
+          : "Brand required: set brand in ZIP manifest or choose a brand before import"
+      ),
+      { status: 400 }
+    );
+  }
+
+  const shopId = Number(opts.shopId) || null;
+  const filterCategoryId = Number(opts.categoryId) || null;
+
+  const categories = await dbm.all(db, "SELECT id, slug FROM catalog_categories");
+  const catBySlug = Object.fromEntries(categories.map((c) => [c.slug, c.id]));
+
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+  const errors = [];
+
+  for (const row of parsed.products) {
+    const catSlug = String(row.categorySlug || "").trim().toLowerCase();
+    const categoryId = catBySlug[catSlug];
+    if (!categoryId) {
+      errors.push(`Unknown category "${catSlug}" for product "${row.name}"`);
+      skipped += 1;
+      continue;
+    }
+    if (filterCategoryId && categoryId !== filterCategoryId) {
+      skipped += 1;
+      continue;
+    }
+    const baseSlug = dbm.slugify(row.slug || `${brand.slug}-${catSlug}-${row.name}`);
+    let imageUrl = "";
+    if (row.image) {
+      const zipPath = resolveZipImagePath(parsed.names, row.image, parsed.baseDir);
+      if (zipPath) {
+        const ext = path.extname(zipPath) || ".jpg";
+        const fname = `import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+        const abs = path.join(uploadDirProduct, fname);
+        if (extractImageFromZip(parsed.zip, zipPath, abs)) {
+          imageUrl = publicUrlForUpload(path.join("products", fname).replace(/\\/g, "/"));
+        }
+      }
+    }
+    const existing = shopId
+      ? await dbm.get(
+          db,
+          `SELECT id FROM master_products
+           WHERE brand_id = ? AND category_id = ? AND name = ? COLLATE NOCASE AND created_by_shop_id = ?`,
+          [brand.id, categoryId, row.name, shopId]
+        )
+      : await dbm.get(
+          db,
+          `SELECT id FROM master_products
+           WHERE brand_id = ? AND category_id = ? AND name = ? COLLATE NOCASE AND created_by_shop_id IS NULL`,
+          [brand.id, categoryId, row.name]
+        );
+    if (existing) {
+      await dbm.run(
+        db,
+        `UPDATE master_products SET description = ?, default_image_url = COALESCE(?, default_image_url, '')
+         WHERE id = ?`,
+        [row.description || "", imageUrl || null, existing.id]
+      );
+      updated += 1;
+    } else {
+      const slug = await uniqueMasterProductSlug(db, baseSlug);
+      await dbm.run(
+        db,
+        `INSERT INTO master_products (brand_id, category_id, created_by_shop_id, name, slug, description, default_image_url, popularity_score, sort_index)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)`,
+        [brand.id, categoryId, shopId, row.name, slug, row.description || "", imageUrl || ""]
+      );
+      created += 1;
+    }
+  }
+
+  if (shopId) {
+    await dbm.touchShopCatalogUpdate(db, shopId);
+  }
+
+  return { created, updated, skipped, errors, brand, productCount: parsed.products.length };
+}
+
+function mapAdminProductRow(row) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    defaultImageUrl: row.default_image_url,
+    popularityScore: row.popularity_score,
+    brandId: row.brand_id,
+    brandSlug: row.brand_slug,
+    brandName: row.brand_name,
+    categoryId: row.category_id,
+    categorySlug: row.category_slug,
+    categoryName: categoryDisplayName(row.category_slug, row.category_name),
+    createdByShopId: row.created_by_shop_id,
+    listingCount: row.listing_count,
+    isReference: row.created_by_shop_id == null
+  };
 }
 
 function uploadPathFromMediaUrl(mediaUrl) {
@@ -447,12 +602,21 @@ async function main() {
 
   app.use("/paint/uploads", express.static(path.join(ROOT, "uploads")));
 
+  const PUBLIC_DIR = path.join(ROOT, "public");
+  const UI_BUILD = "20260602";
+  app.get("/paint/dashboard.html", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("X-Paint-UI-Build", UI_BUILD);
+    res.sendFile(path.join(PUBLIC_DIR, "dashboard.html"));
+  });
+
   app.get("/", (_req, res) => {
     res.redirect(302, "/paint/");
   });
 
   app.get("/paint/api/health", (_req, res) => {
-    res.json({ ok: true, service: "paint-market" });
+    res.json({ ok: true, service: "paint-market", uiBuild: UI_BUILD });
   });
 
   app.get(
@@ -1341,73 +1505,15 @@ async function main() {
          FROM master_products mp
          LEFT JOIN shop_listings sl ON sl.master_product_id = mp.id
          WHERE mp.brand_id = ? AND mp.category_id = ?
+           AND (mp.created_by_shop_id IS NULL OR mp.created_by_shop_id = ?)
          GROUP BY mp.id
          ORDER BY shop_count DESC,
                   (mp.popularity_score + COALESCE(SUM(sl.view_count), 0)) DESC,
                   mp.name ASC`,
-        [brandId, categoryId]
+        [brandId, categoryId, u.shop_id]
       );
       await enrichShopCatalogPicks(db, u.shop_id, products);
       res.json({ products });
-    })
-  );
-
-  app.get(
-    "/paint/api/shop/recent-entries",
-    asyncHandler(async (req, res) => {
-      const u = await requireRole(db, req, "shop");
-      const rows = await dbm.all(
-        db,
-        `SELECT mp.id AS product_id, mp.name AS product_name,
-                b.id AS brand_id, b.name AS brand_name,
-                c.id AS category_id, c.slug AS category_slug, c.name AS category_name,
-                sl.capacity_ltr, sl.price_amount, sl.currency, sl.ral_code, sl.updated_at,
-                mp.default_image_url
-         FROM shop_listings sl
-         JOIN master_products mp ON mp.id = sl.master_product_id
-         JOIN brands b ON b.id = mp.brand_id
-         JOIN catalog_categories c ON c.id = mp.category_id
-         WHERE sl.shop_id = ?
-           AND sl.available = 1
-           AND sl.price_amount IS NOT NULL
-           AND sl.updated_at >= datetime('now', '-3 hours')
-         ORDER BY sl.updated_at DESC`,
-        [u.shop_id]
-      );
-      const customColors = await loadShopCustomColors(db, u.shop_id);
-      const byProduct = new Map();
-      for (const r of rows) {
-        let entry = byProduct.get(r.product_id);
-        if (!entry) {
-          entry = {
-            productId: r.product_id,
-            productName: r.product_name,
-            brandId: r.brand_id,
-            brandName: r.brand_name,
-            categoryId: r.category_id,
-            categoryName: categoryDisplayName(r.category_slug, r.category_name),
-            imageUrl: r.default_image_url || "",
-            lastUpdatedAt: r.updated_at,
-            listings: []
-          };
-          byProduct.set(r.product_id, entry);
-        }
-        const ralCode = r.ral_code ? normalizeListingRalCode(r.ral_code) : "";
-        entry.listings.push({
-          capacityLtr: r.capacity_ltr,
-          priceAmount: r.price_amount,
-          currency: r.currency,
-          ralCode: ralCode || "",
-          ralHex: ralCode ? ralColors.paintMarketRalHex(ralCode, customColors) : null
-        });
-        if (String(r.updated_at) > String(entry.lastUpdatedAt)) {
-          entry.lastUpdatedAt = r.updated_at;
-        }
-      }
-      const entries = [...byProduct.values()].sort((a, b) =>
-        String(b.lastUpdatedAt).localeCompare(String(a.lastUpdatedAt))
-      );
-      res.json({ entries });
     })
   );
 
@@ -1770,7 +1876,419 @@ async function main() {
     })
   );
 
-  app.use("/paint", express.static(path.join(ROOT, "public")));
+  app.get(
+    "/paint/api/admin/stats",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const row = await dbm.get(
+        db,
+        `SELECT
+          (SELECT COUNT(*) FROM master_products) AS products_total,
+          (SELECT COUNT(*) FROM master_products WHERE created_by_shop_id IS NULL) AS products_reference,
+          (SELECT COUNT(*) FROM master_products WHERE created_by_shop_id IS NOT NULL) AS products_shop_owned,
+          (SELECT COUNT(*) FROM shop_listings) AS listings_total,
+          (SELECT COUNT(*) FROM shop_listings WHERE available = 1 AND price_amount IS NOT NULL) AS listings_priced,
+          (SELECT COUNT(*) FROM shops) AS shops_total,
+          (SELECT COUNT(*) FROM brands) AS brands_total,
+          (SELECT COUNT(*) FROM catalog_categories) AS categories_total,
+          (SELECT COUNT(*) FROM users WHERE role = 'shop') AS shop_users_total`
+      );
+      res.json({ stats: row });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/categories",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const categories = (
+        await dbm.all(
+          db,
+          `SELECT c.id, c.slug, c.name, c.sort_order,
+                  (SELECT COUNT(*) FROM master_products mp WHERE mp.category_id = c.id) AS product_count
+           FROM catalog_categories c
+           ORDER BY c.sort_order ASC, c.name ASC`
+        )
+      ).map(normalizeCategoryRow);
+      res.json({ categories });
+    })
+  );
+
+  app.post(
+    "/paint/api/admin/categories",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const body = req.body || {};
+      const name = String(body.name || "").trim();
+      let slug = String(body.slug || "").trim().toLowerCase();
+      if (!name) {
+        res.status(400).json({ error: "name required" });
+        return;
+      }
+      if (!slug) slug = dbm.slugify(name);
+      const maxRow = await dbm.get(db, "SELECT COALESCE(MAX(sort_order), 0) AS m FROM catalog_categories");
+      try {
+        const ins = await dbm.run(db, "INSERT INTO catalog_categories (slug, name, sort_order) VALUES (?, ?, ?)", [
+          slug,
+          name,
+          Number(maxRow?.m || 0) + 1
+        ]);
+        const category = await dbm.get(db, "SELECT * FROM catalog_categories WHERE id = ?", [ins.lastID]);
+        res.json({ category: normalizeCategoryRow(category) });
+      } catch (e) {
+        if (String(e.message || "").includes("UNIQUE")) {
+          res.status(409).json({ error: "Category slug already exists" });
+          return;
+        }
+        throw e;
+      }
+    })
+  );
+
+  app.patch(
+    "/paint/api/admin/categories/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const body = req.body || {};
+      const patches = [];
+      const params = [];
+      if (body.name !== undefined) {
+        patches.push("name = ?");
+        params.push(String(body.name).trim());
+      }
+      if (body.slug !== undefined) {
+        patches.push("slug = ?");
+        params.push(String(body.slug).trim().toLowerCase());
+      }
+      if (body.sortOrder !== undefined) {
+        patches.push("sort_order = ?");
+        params.push(Number(body.sortOrder));
+      }
+      if (!patches.length) {
+        res.status(400).json({ error: "No fields" });
+        return;
+      }
+      params.push(id);
+      await dbm.run(db, `UPDATE catalog_categories SET ${patches.join(", ")} WHERE id = ?`, params);
+      const category = await dbm.get(db, "SELECT * FROM catalog_categories WHERE id = ?", [id]);
+      res.json({ category: normalizeCategoryRow(category) });
+    })
+  );
+
+  app.delete(
+    "/paint/api/admin/categories/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const used = await dbm.get(db, "SELECT COUNT(*) AS c FROM master_products WHERE category_id = ?", [id]);
+      if (used?.c > 0) {
+        res.status(409).json({ error: "Category has products — remove or reassign them first" });
+        return;
+      }
+      await dbm.run(db, "DELETE FROM catalog_categories WHERE id = ?", [id]);
+      res.json({ ok: true });
+    })
+  );
+
+  app.post(
+    "/paint/api/admin/brands",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const body = req.body || {};
+      const name = String(body.name || "").trim();
+      let slug = String(body.slug || "").trim().toLowerCase();
+      if (!name) {
+        res.status(400).json({ error: "name required" });
+        return;
+      }
+      if (!slug) slug = dbm.slugify(name);
+      const maxRow = await dbm.get(db, "SELECT COALESCE(MAX(sort_order), 0) AS m FROM brands");
+      try {
+        const ins = await dbm.run(db, "INSERT INTO brands (slug, name, sort_order) VALUES (?, ?, ?)", [
+          slug,
+          name,
+          Number(maxRow?.m || 0) + 1
+        ]);
+        const brand = await dbm.get(db, "SELECT id, slug, name, sort_order FROM brands WHERE id = ?", [ins.lastID]);
+        res.json({ brand });
+      } catch (e) {
+        if (String(e.message || "").includes("UNIQUE")) {
+          res.status(409).json({ error: "Brand slug already exists" });
+          return;
+        }
+        throw e;
+      }
+    })
+  );
+
+  app.patch(
+    "/paint/api/admin/brands/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const body = req.body || {};
+      const patches = [];
+      const params = [];
+      if (body.name !== undefined) {
+        patches.push("name = ?");
+        params.push(String(body.name).trim());
+      }
+      if (body.slug !== undefined) {
+        patches.push("slug = ?");
+        params.push(String(body.slug).trim().toLowerCase());
+      }
+      if (!patches.length) {
+        res.status(400).json({ error: "No fields" });
+        return;
+      }
+      params.push(id);
+      await dbm.run(db, `UPDATE brands SET ${patches.join(", ")} WHERE id = ?`, params);
+      const brand = await dbm.get(db, "SELECT id, slug, name, sort_order FROM brands WHERE id = ?", [id]);
+      res.json({ brand });
+    })
+  );
+
+  app.delete(
+    "/paint/api/admin/brands/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const used = await dbm.get(db, "SELECT COUNT(*) AS c FROM master_products WHERE brand_id = ?", [id]);
+      if (used?.c > 0) {
+        res.status(409).json({ error: "Brand has products — remove or reassign them first" });
+        return;
+      }
+      await dbm.run(db, "DELETE FROM brands WHERE id = ?", [id]);
+      res.json({ ok: true });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/products",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const brandId = Number(req.query.brandId);
+      const categoryId = Number(req.query.categoryId);
+      const q = String(req.query.q || "").trim();
+      const referenceOnly = req.query.referenceOnly !== "0";
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
+      const offset = (page - 1) * limit;
+      const where = [];
+      const params = [];
+      if (Number.isFinite(brandId) && brandId > 0) {
+        where.push("mp.brand_id = ?");
+        params.push(brandId);
+      }
+      if (Number.isFinite(categoryId) && categoryId > 0) {
+        where.push("mp.category_id = ?");
+        params.push(categoryId);
+      }
+      if (referenceOnly) {
+        where.push("mp.created_by_shop_id IS NULL");
+      }
+      if (q) {
+        where.push("(mp.name LIKE ? OR mp.slug LIKE ?)");
+        params.push(`%${q}%`, `%${q}%`);
+      }
+      const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+      const totalRow = await dbm.get(
+        db,
+        `SELECT COUNT(*) AS c FROM master_products mp ${whereSql}`,
+        params
+      );
+      const rows = await dbm.all(
+        db,
+        `SELECT mp.*, b.slug AS brand_slug, b.name AS brand_name,
+                c.slug AS category_slug, c.name AS category_name,
+                (SELECT COUNT(*) FROM shop_listings sl WHERE sl.master_product_id = mp.id) AS listing_count
+         FROM master_products mp
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         ${whereSql}
+         ORDER BY b.sort_order ASC, c.sort_order ASC, mp.name ASC
+         LIMIT ? OFFSET ?`,
+        [...params, limit, offset]
+      );
+      res.json({
+        products: rows.map(mapAdminProductRow),
+        page,
+        limit,
+        total: totalRow?.c || 0
+      });
+    })
+  );
+
+  app.post(
+    "/paint/api/admin/products",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const body = req.body || {};
+      const brandId = Number(body.brandId);
+      const categoryId = Number(body.categoryId);
+      const name = String(body.name || "").trim();
+      const description = String(body.description || "").trim();
+      const defaultImageUrl = String(body.defaultImageUrl || "").trim();
+      if (!Number.isFinite(brandId) || !Number.isFinite(categoryId) || !name) {
+        res.status(400).json({ error: "brandId, categoryId, and name required" });
+        return;
+      }
+      const brand = await dbm.get(db, "SELECT id FROM brands WHERE id = ?", [brandId]);
+      const category = await dbm.get(db, "SELECT id, slug FROM catalog_categories WHERE id = ?", [categoryId]);
+      if (!brand || !category) {
+        res.status(400).json({ error: "Invalid brand or category" });
+        return;
+      }
+      const baseSlug = dbm.slugify(body.slug || `${brandId}-${category.slug}-${name}`);
+      const slug = await uniqueMasterProductSlug(db, baseSlug);
+      const ins = await dbm.run(
+        db,
+        `INSERT INTO master_products (brand_id, category_id, created_by_shop_id, name, slug, description, default_image_url, popularity_score, sort_index)
+         VALUES (?, ?, NULL, ?, ?, ?, ?, 0, 0)`,
+        [brandId, categoryId, name, slug, description, defaultImageUrl]
+      );
+      const row = await dbm.get(
+        db,
+        `SELECT mp.*, b.slug AS brand_slug, b.name AS brand_name,
+                c.slug AS category_slug, c.name AS category_name,
+                0 AS listing_count
+         FROM master_products mp
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         WHERE mp.id = ?`,
+        [ins.lastID]
+      );
+      res.json({ product: mapAdminProductRow(row) });
+    })
+  );
+
+  app.patch(
+    "/paint/api/admin/products/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const body = req.body || {};
+      const patches = [];
+      const params = [];
+      if (body.name !== undefined) {
+        patches.push("name = ?");
+        params.push(String(body.name).trim());
+      }
+      if (body.description !== undefined) {
+        patches.push("description = ?");
+        params.push(String(body.description).trim());
+      }
+      if (body.defaultImageUrl !== undefined) {
+        patches.push("default_image_url = ?");
+        params.push(String(body.defaultImageUrl).trim());
+      }
+      if (body.brandId !== undefined) {
+        patches.push("brand_id = ?");
+        params.push(Number(body.brandId));
+      }
+      if (body.categoryId !== undefined) {
+        patches.push("category_id = ?");
+        params.push(Number(body.categoryId));
+      }
+      if (body.popularityScore !== undefined) {
+        patches.push("popularity_score = ?");
+        params.push(Number(body.popularityScore) || 0);
+      }
+      if (!patches.length) {
+        res.status(400).json({ error: "No fields" });
+        return;
+      }
+      params.push(id);
+      await dbm.run(db, `UPDATE master_products SET ${patches.join(", ")} WHERE id = ?`, params);
+      const row = await dbm.get(
+        db,
+        `SELECT mp.*, b.slug AS brand_slug, b.name AS brand_name,
+                c.slug AS category_slug, c.name AS category_name,
+                (SELECT COUNT(*) FROM shop_listings sl WHERE sl.master_product_id = mp.id) AS listing_count
+         FROM master_products mp
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         WHERE mp.id = ?`,
+        [id]
+      );
+      res.json({ product: mapAdminProductRow(row) });
+    })
+  );
+
+  app.delete(
+    "/paint/api/admin/products/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      await dbm.run(db, "DELETE FROM shop_listings WHERE master_product_id = ?", [id]);
+      await dbm.run(db, "DELETE FROM master_products WHERE id = ?", [id]);
+      res.json({ ok: true });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/shops",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const shops = await dbm.all(
+        db,
+        `SELECT s.id, s.name, s.slug, s.location_text, s.last_catalog_update,
+                (SELECT COUNT(*) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS listing_count,
+                (SELECT COUNT(DISTINCT sl.master_product_id) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS product_count
+         FROM shops s
+         ORDER BY s.name ASC`
+      );
+      res.json({ shops });
+    })
+  );
+
+  app.post(
+    "/paint/api/admin/upload-product-image",
+    uploadProduct.single("photo"),
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      if (!req.file) {
+        res.status(400).json({ error: "photo file required" });
+        return;
+      }
+      const rel = path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/");
+      res.json({ photoUrl: publicUrlForUpload(rel) });
+    })
+  );
+
+  app.post(
+    "/paint/api/admin/import-catalog",
+    uploadCatalogZip.single("archive"),
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      if (!req.file || !req.file.buffer) {
+        res.status(400).json({ error: "ZIP archive required (field: archive)" });
+        return;
+      }
+      const brandId = req.body?.brandId;
+      const brandSlug = req.body?.brandSlug;
+      try {
+        const result = await importCatalogZipToDb(db, req.file.buffer, { brandId, brandSlug });
+        res.json(result);
+      } catch (e) {
+        const status = e.status || 400;
+        res.status(status).json({ error: e.message || "Import failed" });
+      }
+    })
+  );
+
+  app.use(
+    "/paint",
+    express.static(PUBLIC_DIR, {
+      setHeaders(res, filePath) {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+          res.setHeader("Pragma", "no-cache");
+        }
+      }
+    })
+  );
 
   app.use((err, _req, res, _next) => {
     const status = err.status || 500;

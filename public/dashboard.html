@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Shop dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -82,6 +84,12 @@
       padding: 0.5rem 0.65rem;
       font-size: 0.875rem;
       font-weight: 600;
+    }
+    .pm-dash-price-quick-edit input::placeholder,
+    #productDialog .upd-cap-price::placeholder,
+    #productDialog #pdPrice::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
     }
     /* Unified add-product picker theme (brand → category → product) */
     .pm-dash-picker-dialog {
@@ -323,6 +331,24 @@
       background: #ecfdf5;
       border-color: #0d9488;
       transform: translateY(-1px);
+    }
+    .pm-dash-picker-search {
+      width: 100%;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(13, 148, 136, 0.28);
+      background: #fff;
+      padding: 0.625rem 0.875rem;
+      font-size: 0.875rem;
+      color: #0f172a;
+      margin-bottom: 0.5rem;
+    }
+    .pm-dash-picker-search::placeholder {
+      color: #94a3b8;
+    }
+    .pm-dash-picker-search:focus {
+      outline: none;
+      border-color: #0d9488;
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
     }
     .pm-dash-picker-extra {
       padding: 0 1.25rem 0.5rem;
@@ -1204,6 +1230,7 @@
       <div class="min-w-0 flex-1 truncate">
           <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-300 truncate" data-pm-t="dash_hdr_logged">Logged in shop</p>
           <p id="shopTitle" class="text-sm sm:text-lg font-semibold text-white truncate">Loading…</p>
+          <p id="dashUiBuild" class="text-[10px] text-teal-200/90 truncate" hidden>UI</p>
         </div>
         <nav class="pm-header-nav flex flex-nowrap items-center gap-1 sm:gap-2 shrink-0 min-w-0">
           <button type="button" class="pm-geo-compact-btn md:hidden shrink-0" aria-label="Country, city &amp; language">
@@ -1238,23 +1265,16 @@
         <button id="dashUpdateProductBtn" type="button" class="pm-dash-product-action-btn pm-dash-product-action-btn--update" data-pm-t="dash_update_product">Update product</button>
       </div>
     </div>
-    <section id="dashRecentSection" class="hidden rounded-2xl border border-teal-200/80 bg-teal-50/40 p-4 sm:p-5 shadow-sm space-y-3">
-      <div>
-        <h2 class="text-sm font-bold text-slate-900" data-pm-t="dash_recent_title">Added in the last 3 hours</h2>
-        <p class="text-xs text-slate-600 mt-0.5" data-pm-t="dash_recent_hint">Review what you added — tap a card to edit prices.</p>
-      </div>
-      <div id="dashRecentList" class="pm-dash-catalog-grid pm-dash-catalog-grid--dense p-2 sm:p-3 min-h-[3rem]"></div>
-    </section>
     <section id="dashCatalogSection" class="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm space-y-3">
       <div class="flex flex-wrap gap-3 items-end justify-between">
         <div class="min-w-0 flex-1">
-          <label for="dashCatalogFilter" class="sr-only" data-pm-t="dash_catalog_filter_label">Filter products</label>
+          <label for="dashCatalogFilter" class="block text-xs font-semibold text-slate-600 mb-1" data-pm-t="dash_catalog_filter_label">Search your listed products</label>
           <input
             id="dashCatalogFilter"
             type="search"
             class="w-full max-w-md rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500"
             data-pm-ph="dash_filter_ph"
-            placeholder="Filter products…"
+            placeholder="Search products…"
             autocomplete="off"
           />
         </div>
@@ -1274,7 +1294,7 @@
         <div class="pm-dash-picker-header__text">
           <h2 class="pm-dash-picker-title" data-pm-t="dash_profile_dialog_title">Shop profile</h2>
         </div>
-        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
       <div id="dashProfilePanel" class="pm-dash-picker-body p-4 sm:p-5 space-y-4">
       <div class="flex flex-wrap gap-6 items-start justify-between">
@@ -1332,7 +1352,7 @@
       </div>
       </div>
       <footer class="pm-dash-picker-footer">
-        <button type="submit" value="cancel" class="pm-dash-picker-nav-btn" data-pm-t="dash_cancel">Cancel</button>
+        <button type="button" class="pm-dash-picker-nav-btn" data-dialog-close data-pm-t="dash_cancel">Cancel</button>
       </footer>
     </form>
   </dialog>
@@ -1344,7 +1364,7 @@
           <p class="pm-dash-picker-step" data-pm-t="dash_picker_step_brand">Step 1 · Brand</p>
           <h2 class="pm-dash-picker-title" data-pm-t="dash_brand_dialog_title">Choose brand</h2>
         </div>
-        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
       <div class="pm-dash-picker-intro">
         <p class="pm-dash-picker-hint" data-pm-t="dash_brand_dialog_hint">Tap a brand to continue. New brands are saved for all shops.</p>
@@ -1369,7 +1389,7 @@
           <p class="pm-dash-picker-step" data-pm-t="dash_picker_step_category">Step 2 · Category</p>
           <h2 class="pm-dash-picker-title" data-pm-t="dash_category_dialog_title">Choose category</h2>
         </div>
-        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
       <div class="pm-dash-picker-intro">
         <p class="pm-dash-picker-hint" data-pm-t="dash_category_dialog_hint">Tap a category to continue.</p>
@@ -1394,12 +1414,21 @@
             <button type="button" id="productPickerCategory" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--category"></button>
           </h2>
         </div>
-        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
       <div class="pm-dash-picker-intro">
         <p class="pm-dash-picker-hint" data-pm-t="dash_product_picker_hint">Tap a product to add it to your shop.</p>
       </div>
       <div class="pm-dash-picker-body">
+        <label for="productPickerSearch" class="block text-xs font-semibold text-slate-700 mb-1" data-pm-t="dash_product_picker_search_label">Search products</label>
+        <input
+          type="search"
+          id="productPickerSearch"
+          class="pm-dash-picker-search"
+          autocomplete="off"
+          data-pm-ph="dash_product_picker_search_ph"
+          placeholder="Search products…"
+        />
         <button id="productPickerNewBtn" type="button" class="pm-dash-picker-add-new" data-pm-t="dash_product_picker_new">+ New product</button>
         <div id="productPickerList" class="pm-dash-catalog-grid pm-dash-catalog-grid--dense p-1 sm:p-2"></div>
       </div>
@@ -1418,11 +1447,11 @@
           <p id="productDialogStep" class="pm-dash-picker-step" data-pm-t="dash_picker_step_prices">Step 4 · Prices</p>
           <h2 id="productDialogTitle" class="pm-dash-picker-title" data-pm-t="dash_dialog_add_title">Add product</h2>
         </div>
-        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
       <div class="pm-dash-picker-intro" id="productDialogIntro">
         <p id="productDialogHint" class="pm-dash-picker-hint hidden"></p>
-        <p id="productDialogAddHint" class="pm-dash-picker-hint hidden" data-pm-t="dash_dialog_add_fields_hint">Enter name, capacity and price below.</p>
+        <p id="productDialogAddHint" class="pm-dash-picker-hint hidden" data-pm-t="dash_dialog_add_fields_hint">Capacity and price are required. Colour is optional.</p>
       </div>
       <div class="pm-dash-picker-body pm-dash-picker-scroll" style="max-height:min(58dvh,520px)">
       <input id="pdProductId" type="hidden" value="" />
@@ -1449,7 +1478,8 @@
         <div class="grid sm:grid-cols-2 gap-3">
         <div class="grid gap-2">
           <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_capacity">Capacity</label>
-          <select id="pdCapacity" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+          <select id="pdCapacity" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" required>
+            <option value="" disabled selected data-pm-t-opt="dash_pd_ph_capacity">Select capacity</option>
             <option value="1">1 L</option>
             <option value="3.6">3.6 L</option>
             <option value="18">18 L</option>
@@ -1457,16 +1487,16 @@
         </div>
         <div class="grid gap-2">
           <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_price" data-pm-currency-label>Price</label>
-          <input id="pdPrice" type="number" step="any" inputmode="decimal" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="e.g. 120" />
+          <input id="pdPrice" type="number" step="any" inputmode="decimal" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="Enter price" />
         </div>
         </div>
 
         <div id="pdRalBlock" class="pm-pd-ral-panel grid gap-2">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
-          <label class="text-[11px] font-semibold text-slate-700" data-pm-t="dash_pd_ral">RAL colour</label>
+          <label class="text-[11px] font-semibold text-slate-700" data-pm-t="dash_pd_ral">Colour (optional)</label>
           <p id="pdRalSelected" class="text-[10px] font-semibold text-teal-800 hidden" aria-live="polite"></p>
         </div>
-        <p class="text-[10px] text-slate-500 -mt-1" data-pm-t="dash_pd_ral_hint">Tap a swatch below</p>
+        <p class="text-[10px] text-slate-500 -mt-1" data-pm-t="dash_pd_ral_hint">Optional — tap a swatch below</p>
         <input id="pdRalCode" type="hidden" value="" />
         <div id="pdRalGrid" class="pm-pd-ral-picker-mount" role="listbox" aria-label="Popular RAL colours"></div>
         <div class="pm-pd-ral-add">
@@ -1502,7 +1532,7 @@
       </div>
       </div>
       <footer class="pm-dash-picker-footer">
-        <button type="submit" value="cancel" class="pm-dash-picker-nav-btn" data-pm-t="dash_cancel">Cancel</button>
+        <button type="button" class="pm-dash-picker-nav-btn" data-dialog-close data-pm-t="dash_cancel">Cancel</button>
         <button id="pdSubmit" type="button" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary" data-pm-t="dash_add_btn">Add</button>
       </footer>
     </form>
@@ -1515,7 +1545,7 @@
           <p class="pm-dash-picker-step" data-pm-t="dash_price_quick_step">Quick update</p>
           <h2 class="pm-dash-picker-title" data-pm-t="dash_price_quick_title">Update prices</h2>
         </div>
-        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
       <div class="pm-dash-picker-intro">
         <p class="pm-dash-picker-hint" data-pm-t="dash_price_quick_hint">Tap a line to change its price. Recently updated items appear first.</p>
@@ -1529,7 +1559,7 @@
             <span id="dashPriceQuickCapRal" class="pm-dash-price-quick-cap__ral" aria-hidden="true"></span>
           </div>
           <div class="pm-dash-price-quick-edit__row">
-            <input id="dashPriceQuickInput" type="number" step="any" inputmode="decimal" class="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="e.g. 120" />
+            <input id="dashPriceQuickInput" type="number" step="any" inputmode="decimal" required class="flex-1 min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="Enter price" />
             <input id="dashPriceQuickRalCode" type="hidden" value="" />
             <button type="button" id="dashPriceQuickRalBtn" class="upd-cap-ral" title="RAL colour">
               <span id="dashPriceQuickRalSwatch" class="upd-cap-ral__swatch upd-cap-ral__swatch--empty hidden" aria-hidden="true"></span>
@@ -1553,7 +1583,7 @@
           <p class="pm-dash-picker-step" data-pm-t="dash_ral_picker_step">RAL</p>
           <h2 class="pm-dash-picker-title" data-pm-t="dash_ral_picker_title">Choose colour</h2>
         </div>
-        <button type="submit" value="cancel" class="pm-dash-picker-close" data-pm-t="dash_close">Close</button>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
       <div class="pm-dash-picker-body pm-dash-picker-scroll" style="max-height:min(62dvh,480px)">
         <p class="text-[11px] text-slate-600 mb-2" data-pm-t="dash_pd_ral_hint">Tap a swatch below</p>
@@ -1571,10 +1601,10 @@
   </dialog>
 
   <template id="toastTpl"><div class="fixed bottom-6 right-6 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg"></div></template>
-  <script src="/paint/js/paint-i18n.js"></script>
-  <script src="/paint/js/ral-colors.js"></script>
-  <script src="/paint/js/common.js"></script>
-  <script src="/paint/js/theme.js"></script>
+  <script src="/paint/js/paint-i18n.js?v=20260602c"></script>
+  <script src="/paint/js/ral-colors.js?v=20260602c"></script>
+  <script src="/paint/js/common.js?v=20260602c"></script>
+  <script src="/paint/js/theme.js?v=20260602c"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     function esc(s) {
@@ -1586,6 +1616,17 @@
         "'": "&#039;"
       }[c]));
     }
+
+    function wireDashboardDialogDismiss() {
+      document.querySelectorAll("[data-dialog-close]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const dlg = btn.closest("dialog");
+          if (dlg) dlg.close();
+        });
+      });
+    }
+    wireDashboardDialogDismiss();
 
     let state = null;
     /** @type {"loading"|"shop"|"missing"|"error"} */
@@ -1604,8 +1645,6 @@
     const dashCatalogFilter = document.getElementById("dashCatalogFilter");
     const dashCatalogCount = document.getElementById("dashCatalogCount");
     const dashCatalogEmpty = document.getElementById("dashCatalogEmpty");
-    const dashRecentSection = document.getElementById("dashRecentSection");
-    const dashRecentList = document.getElementById("dashRecentList");
     let dashCatalogFilterQuery = "";
 
     const dashPriceQuickDialog = document.getElementById("dashPriceQuickDialog");
@@ -1685,6 +1724,16 @@
     }
 
     async function bootstrap() {
+      const buildEl = document.getElementById("dashUiBuild");
+      try {
+        const health = await fetch(paintMarketApiFullUrl("/health")).then((r) => r.json());
+        if (buildEl && health?.uiBuild) {
+          buildEl.hidden = false;
+          buildEl.textContent = `UI ${health.uiBuild}`;
+        }
+      } catch {
+        /* ignore */
+      }
       const me = await PaintApi.me();
       if (!me.user) {
         window.location.href = "/paint/login.html";
@@ -1740,47 +1789,6 @@
       state = await PaintApi.shopCatalog();
       syncDashProfilePanel();
       renderShopCatalogList();
-      renderRecentEntriesList();
-    }
-
-    function buildRecentListingRows(entries) {
-      const rows = [];
-      for (const e of entries || []) {
-        for (const L of e.listings || []) {
-          rows.push({
-            productId: e.productId,
-            productName: e.productName || "",
-            brandName: e.brandName || "",
-            imageUrl: e.imageUrl || "",
-            capacityLtr: L.capacityLtr,
-            priceAmount: L.priceAmount,
-            currency: L.currency,
-            ralCode: L.ralCode || "",
-            ral_hex: L.ralHex
-          });
-        }
-      }
-      return rows;
-    }
-
-    async function renderRecentEntriesList() {
-      if (!dashRecentSection || !dashRecentList) return;
-      try {
-        const data = await PaintApi.shopRecentEntries();
-        const rows = buildRecentListingRows(data.entries || []);
-        if (!rows.length) {
-          dashRecentSection.classList.add("hidden");
-          dashRecentList.innerHTML = "";
-          return;
-        }
-        dashRecentSection.classList.remove("hidden");
-        renderCatalogCardList(dashRecentList, rows, (row) => {
-          openCatalogPriceEdit(row);
-          dashRecentSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        });
-      } catch {
-        dashRecentSection.classList.add("hidden");
-      }
     }
 
     const LAST_ADD_CONTEXT_TTL_MS = 10 * 60 * 1000;
@@ -1839,7 +1847,7 @@
     }
 
 
-    /** Every active shop listing (no time limit — includes items added in the last 3 hours). */
+    /** Every active shop listing with a price (one card row per capacity). */
     function primaryListingForProduct(productId) {
       const pid = Number(productId);
       if (!Number.isFinite(pid)) return null;
@@ -2094,7 +2102,6 @@
       state = await PaintApi.shopCatalog();
       syncDashProfilePanel();
       renderShopCatalogList();
-      renderRecentEntriesList();
     }
 
     async function persistListingsBatch(payloads) {
@@ -2122,6 +2129,7 @@
     const productPickerBrand = document.getElementById("productPickerBrand");
     const productPickerCategory = document.getElementById("productPickerCategory");
     const productPickerNewBtn = document.getElementById("productPickerNewBtn");
+    const productPickerSearch = document.getElementById("productPickerSearch");
     let catalogPicks = [];
 
     const productDialog = document.getElementById("productDialog");
@@ -2302,16 +2310,32 @@
       openProductPickerDialog(brand, category);
     }
 
+    function filteredCatalogPicks() {
+      const q = String(productPickerSearch?.value || "")
+        .trim()
+        .toLowerCase();
+      if (!q) return catalogPicks;
+      return catalogPicks.filter((p) => {
+        const name = String(p.name || "").toLowerCase();
+        const desc = String(p.description || "").toLowerCase();
+        return name.includes(q) || desc.includes(q);
+      });
+    }
+
     function renderProductPickerList() {
       if (!productPickerList) return;
       productPickerList.innerHTML = "";
-      if (!catalogPicks.length) {
-        productPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(paintMarketT("dash_product_picker_empty"))}</p>`;
+      const picks = filteredCatalogPicks();
+      if (!picks.length) {
+        const msg = catalogPicks.length
+          ? paintMarketT("dash_product_picker_no_match")
+          : paintMarketT("dash_product_picker_empty");
+        productPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(msg)}</p>`;
         return;
       }
       const brand = pendingAddBrand;
       const category = pendingAddCategory;
-      for (const p of catalogPicks) {
+      for (const p of picks) {
         const row = enrichCatalogRowFromListing({
           productId: p.id,
           productName: p.name || "",
@@ -2445,6 +2469,7 @@
       pendingAddCategory = category;
       syncProductPickerHeaderLabels();
       catalogPicks = [];
+      if (productPickerSearch) productPickerSearch.value = "";
       if (productPickerList) {
         productPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(paintMarketT("dash_loading"))}</p>`;
       }
@@ -2577,6 +2602,9 @@
     if (productPickerNewBtn) {
       productPickerNewBtn.addEventListener("click", () => openNewProductFromPicker());
     }
+    if (productPickerSearch) {
+      productPickerSearch.addEventListener("input", () => renderProductPickerList());
+    }
     if (pdCategorySelect) {
       pdCategorySelect.addEventListener("change", () => {
         pdCategoryId.value = pdCategorySelect.value;
@@ -2596,6 +2624,12 @@
       return state?.listingKey?.[`${productId}:${cap}`] || null;
     }
 
+    function applyDashPricePlaceholder(inputEl) {
+      if (!inputEl) return;
+      inputEl.setAttribute("data-pm-ph", "dash_pd_ph_price");
+      inputEl.placeholder = paintMarketT("dash_pd_ph_price");
+    }
+
     function buildUpdateListingRows() {
       if (!pdUpdateListingRows) return;
       pdUpdateListingRows.innerHTML = "";
@@ -2610,7 +2644,7 @@
             <span class="upd-cap-label-text">${label}</span>
             <span class="upd-cap-label__ral" aria-hidden="true"></span>
           </label>
-          <input type="number" step="any" inputmode="decimal" class="upd-cap-price flex-1 min-w-[4rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm" placeholder="" disabled />
+          <input type="number" step="any" inputmode="decimal" class="upd-cap-price flex-1 min-w-[4rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900" placeholder="Enter price" disabled />
           <input type="hidden" class="upd-cap-ral-code" value="" />
           <button type="button" class="upd-cap-ral" disabled title="RAL colour">
             <span class="upd-cap-ral__swatch upd-cap-ral__swatch--empty hidden" aria-hidden="true"></span>
@@ -2682,15 +2716,6 @@
           priceEl?.focus();
           return false;
         }
-        const ralPick = String(ralCodeInput?.value ?? "").trim();
-        if (
-          !ralPick ||
-          (typeof paintMarketIsValidRalCode === "function" && !paintMarketIsValidRalCode(ralPick, shopCustomColors()))
-        ) {
-          toast(paintMarketTf("dash_toast_capacity_ral_required", { capacity: capacityLabel(cap) }));
-          row.querySelector(".upd-cap-ral")?.focus();
-          return false;
-        }
       }
       return true;
     }
@@ -2711,7 +2736,7 @@
           available: chk.checked,
           priceAmount: chk.checked ? Number(raw) : null,
           customPhotoUrl: null,
-          ralCode: chk.checked ? String(ralCodeInput?.value ?? "").trim() : null
+          ralCode: chk.checked ? String(ralCodeInput?.value ?? "").trim() || null : null
         });
       }
       return payloads;
@@ -3034,8 +3059,9 @@
       syncProductDialogHeaderLabels();
       pdName.value = "";
       pdDesc.value = "";
-      pdCapacity.value = "1";
+      pdCapacity.value = "";
       pdPrice.value = "";
+      applyDashPricePlaceholder(pdPrice);
       pdPhoto.value = "";
       pdName.disabled = false;
       pdDesc.disabled = false;
@@ -3043,10 +3069,7 @@
       syncProductDialogPhotoPreview("");
       productDialog.showModal();
       scheduleFitPickerContextHeader();
-      requestAnimationFrame(() => {
-        ensurePdRalGrid();
-        pdRalBlock?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
+      requestAnimationFrame(() => pdName?.focus());
     }
 
     function showDashPriceQuickList() {
@@ -3115,14 +3138,6 @@
           return;
         }
         const ralPick = String(dashPriceQuickRalCode?.value ?? "").trim();
-        if (
-          !ralPick ||
-          (typeof paintMarketIsValidRalCode === "function" && !paintMarketIsValidRalCode(ralPick, shopCustomColors()))
-        ) {
-          toast(paintMarketT("dash_toast_ral_required"));
-          dashPriceQuickRalBtn?.focus();
-          return;
-        }
         dashPriceQuickSave.disabled = true;
         try {
           await PaintApi.putListing({
@@ -3131,7 +3146,7 @@
             available: true,
             priceAmount: amount,
             customPhotoUrl: null,
-            ralCode: ralPick
+            ralCode: ralPick || null
           });
           await refreshDashState();
           toast(paintMarketT("dash_toast_prices_saved"));
@@ -3241,17 +3256,8 @@
           return;
         }
         if (!rawPrice || !Number.isFinite(priceAmount) || priceAmount <= 0) {
-          toast(paintMarketTf("dash_toast_capacity_price_required", { capacity: capacityLabel(capacity) }));
+          toast(paintMarketT("dash_toast_price_bad"));
           pdPrice.focus();
-          return;
-        }
-        const ralPick = String(pdRalCode?.value || "").trim();
-        if (
-          !ralPick ||
-          (typeof paintMarketIsValidRalCode === "function" && !paintMarketIsValidRalCode(ralPick, shopCustomColors()))
-        ) {
-          toast(paintMarketT("dash_toast_ral_required"));
-          pdRalGrid?.scrollIntoView({ behavior: "smooth", block: "nearest" });
           return;
         }
       }
@@ -3290,7 +3296,7 @@
           available: true,
           priceAmount: Number(pdPrice.value || 0),
           customPhotoUrl: null,
-          ralCode: String(pdRalCode?.value || "").trim()
+          ralCode: String(pdRalCode?.value || "").trim() || null
         });
         const brand = (state?.brands || []).find((b) => b.id === brandId);
         const category = (state?.categories || []).find((c) => c.id === categoryId);
@@ -3380,6 +3386,9 @@
         fillCategorySelect(Number(pdCategorySelect?.value || pdCategoryId?.value));
         if (productDialog.dataset.mode === "add") syncProductDialogHeaderLabels();
         else syncAddProductHint();
+        pdUpdateListingRows?.querySelectorAll(".upd-cap-price").forEach(applyDashPricePlaceholder);
+        applyDashPricePlaceholder(pdPrice);
+        applyDashPricePlaceholder(dashPriceQuickInput);
       }
       if (productPickerDialog?.open) syncProductPickerHeaderLabels();
       else if (productDialog?.open && productDialog.dataset.mode === "add") syncProductDialogHeaderLabels();

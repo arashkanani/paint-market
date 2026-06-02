@@ -218,9 +218,6 @@ const PaintApi = {
     });
     return this.request(`/shop/catalog-picks?${qs}`);
   },
-  shopRecentEntries() {
-    return this.request("/shop/recent-entries");
-  },
   trackProduct(productId) {
     return this.request("/public/track/product", { method: "POST", body: { productId } });
   },
@@ -280,6 +277,67 @@ const PaintApi = {
     if (meta?.title != null) fd.append("title", meta.title);
     if (meta?.durationSeconds != null) fd.append("durationSeconds", String(meta.durationSeconds));
     return this.request("/admin/upload-ad", { method: "POST", body: fd });
+  },
+  adminStats() {
+    return this.request("/admin/stats");
+  },
+  adminCategories() {
+    return this.request("/admin/categories");
+  },
+  adminCreateCategory(body) {
+    return this.request("/admin/categories", { method: "POST", body });
+  },
+  adminPatchCategory(id, body) {
+    return this.request(`/admin/categories/${id}`, { method: "PATCH", body });
+  },
+  adminDeleteCategory(id) {
+    return this.request(`/admin/categories/${id}`, { method: "DELETE" });
+  },
+  adminCreateBrand(body) {
+    return this.request("/admin/brands", { method: "POST", body });
+  },
+  adminPatchBrand(id, body) {
+    return this.request(`/admin/brands/${id}`, { method: "PATCH", body });
+  },
+  adminDeleteBrand(id) {
+    return this.request(`/admin/brands/${id}`, { method: "DELETE" });
+  },
+  adminProducts(opts = {}) {
+    const qs = new URLSearchParams();
+    const brandId = Number(opts.brandId);
+    const categoryId = Number(opts.categoryId);
+    if (Number.isFinite(brandId) && brandId > 0) qs.set("brandId", String(brandId));
+    if (Number.isFinite(categoryId) && categoryId > 0) qs.set("categoryId", String(categoryId));
+    if (opts.q) qs.set("q", String(opts.q).trim());
+    if (opts.referenceOnly === false) qs.set("referenceOnly", "0");
+    if (opts.page) qs.set("page", String(opts.page));
+    if (opts.limit) qs.set("limit", String(opts.limit));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/admin/products${suffix}`);
+  },
+  adminCreateProduct(body) {
+    return this.request("/admin/products", { method: "POST", body });
+  },
+  adminPatchProduct(id, body) {
+    return this.request(`/admin/products/${id}`, { method: "PATCH", body });
+  },
+  adminDeleteProduct(id) {
+    return this.request(`/admin/products/${id}`, { method: "DELETE" });
+  },
+  adminShops() {
+    return this.request("/admin/shops");
+  },
+  adminUploadProductImage(file) {
+    const fd = new FormData();
+    fd.append("photo", file);
+    return this.request("/admin/upload-product-image", { method: "POST", body: fd });
+  },
+  adminImportCatalog(file, meta = {}) {
+    const fd = new FormData();
+    fd.append("archive", file);
+    if (meta.brandId) fd.append("brandId", String(meta.brandId));
+    if (meta.brandSlug) fd.append("brandSlug", meta.brandSlug);
+    return this.request("/admin/import-catalog", { method: "POST", body: fd });
   }
 };
 
