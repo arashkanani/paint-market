@@ -222,6 +222,42 @@ function paintMarketBuildRalPickerHtml(esc, customColors, labels) {
   return parts.join("");
 }
 
+/** Add-product sheet: list rows (swatch + label + chevron), same style as brand/capacity pickers. */
+function paintMarketRalRowHtml(c, esc) {
+  const escFn = typeof esc === "function" ? esc : (s) => String(s ?? "");
+  const codeAttr = escFn(c.code);
+  const lang = typeof paintMarketLangGet === "function" ? paintMarketLangGet() : undefined;
+  const displayName = paintMarketRalDisplayName(c, lang);
+  const label = c.custom ? escFn(displayName) : `RAL ${escFn(c.code)} · ${escFn(displayName)}`;
+  const title = c.custom ? escFn(displayName) : `RAL ${escFn(c.code)} · ${escFn(displayName)}`;
+  return `<button type="button" class="pm-dash-add-sheet__row pm-dash-add-sheet__row--ral" data-ral="${codeAttr}" role="option" aria-pressed="false" title="${title}">
+    <span class="pm-dash-add-sheet__row-logo"><span class="pm-dash-add-sheet__row-swatch" style="background:${escFn(c.hex)}"></span></span>
+    <span class="pm-dash-add-sheet__row-body"><span class="pm-dash-add-sheet__row-name">${label}</span></span>
+    <span class="pm-dash-add-sheet__row-chevron" aria-hidden="true">›</span>
+  </button>`;
+}
+
+function paintMarketBuildRalSheetPickerHtml(esc, customColors, labels) {
+  const escFn = typeof esc === "function" ? esc : (s) => String(s ?? "");
+  const L = labels || {};
+  const custom = paintMarketMapCustomRows(customColors);
+  const parts = [];
+
+  const appendSection = (title, items) => {
+    if (!items.length) return;
+    parts.push(`<p class="pm-dash-add-sheet__ral-section">${escFn(title)}</p>`);
+    parts.push(
+      `<div class="pm-dash-add-sheet__ral-group">${items.map((c) => paintMarketRalRowHtml(c, escFn)).join("")}</div>`
+    );
+  };
+
+  appendSection(L.primary || "Popular", PAINT_MARKET_RAL_PRIMARY);
+  appendSection(L.more || "More paints", PAINT_MARKET_RAL_MORE);
+  appendSection(L.custom || "Your colours", custom);
+
+  return parts.join("");
+}
+
 const api = {
   PAINT_MARKET_RAL_PRIMARY,
   PAINT_MARKET_RAL_MORE,
@@ -241,7 +277,9 @@ const api = {
   paintMarketCapCornerHtml,
   paintMarketListingPhotoOverlaysHtml,
   paintMarketRalChipHtml,
-  paintMarketBuildRalPickerHtml
+  paintMarketBuildRalPickerHtml,
+  paintMarketRalRowHtml,
+  paintMarketBuildRalSheetPickerHtml
 };
 
 if (typeof module !== "undefined" && module.exports) {

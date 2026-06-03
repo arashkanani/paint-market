@@ -211,11 +211,12 @@ const PaintApi = {
   createBrand(body) {
     return this.request("/shop/brands", { method: "POST", body });
   },
-  shopCatalogPicks(brandId, categoryId) {
-    const qs = new URLSearchParams({
-      brandId: String(brandId),
-      categoryId: String(categoryId)
-    });
+  shopCatalogPicks(brandId, categoryId, opts = {}) {
+    const qs = new URLSearchParams({ brandId: String(brandId), referenceOnly: "1" });
+    if (categoryId != null && categoryId !== "") {
+      qs.set("categoryId", String(categoryId));
+    }
+    if (opts.referenceOnly === false) qs.set("referenceOnly", "0");
     return this.request(`/shop/catalog-picks?${qs}`);
   },
   trackProduct(productId) {
@@ -574,6 +575,14 @@ function paintMarketIsPlaceholderImageUrl(url) {
   return !u || u.includes("placehold.co/");
 }
 
+function paintMarketNormalizeUploadUrl(url) {
+  const u = String(url || "").trim();
+  if (!u || /^https?:\/\//i.test(u) || u.startsWith("data:")) return u;
+  if (u.startsWith("/paint/uploads/")) return u;
+  if (u.startsWith("/uploads/")) return `/paint${u}`;
+  return u;
+}
+
 function paintMarketProductPlaceholderDataUri(label) {
   const text = String(label || "•").slice(0, 2).toUpperCase();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f7f7f7" width="200" height="200"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="48" font-weight="700">${text.replace(/[<>&"]/g, "")}</text></svg>`;
@@ -583,11 +592,11 @@ function paintMarketProductPlaceholderDataUri(label) {
 function paintMarketProductImageUrl(product) {
   const p = product || {};
   const name = p.name || p.product_name || p.productName || "";
-  const listing = String(p.listing_image_url || p.custom_photo_url || "").trim();
+  const listing = paintMarketNormalizeUploadUrl(p.listing_image_url || p.custom_photo_url || "");
   if (listing) return listing;
-  const imageUrl = String(p.image_url || p.imageUrl || "").trim();
+  const imageUrl = paintMarketNormalizeUploadUrl(p.image_url || p.imageUrl || "");
   if (imageUrl && !paintMarketIsPlaceholderImageUrl(imageUrl)) return imageUrl;
-  const fallback = String(p.default_image_url || "").trim();
+  const fallback = paintMarketNormalizeUploadUrl(p.default_image_url || "");
   if (fallback && !paintMarketIsPlaceholderImageUrl(fallback)) return fallback;
   return paintMarketProductPlaceholderDataUri(name);
 }
@@ -887,6 +896,15 @@ function paintMarketCategoryIconImgHtml(slug, className) {
 /** Inner HTML for picker header brand/category buttons (label is plain text). */
 function paintMarketContextHitInnerHtml(label, opts) {
   const o = opts || {};
+  if (o.brandSlug) {
+    const name = String(label || "").trim();
+    const slug = String(o.brandSlug || "").trim().toLowerCase();
+    const icon =
+      typeof paintMarketBrandIconHtml === "function"
+        ? paintMarketBrandIconHtml({ slug, name })
+        : "";
+    return `<span class="pm-context-hit__inner pm-context-hit__inner--brand">${icon}<span class="pm-context-hit__label">${paintMarketEscapeHtml(name)}</span></span>`;
+  }
   const icon = o.categorySlug
     ? paintMarketCategoryIconImgHtml(o.categorySlug, o.iconClass || "pm-context-hit__icon")
     : "";
@@ -1714,6 +1732,7 @@ window.paintMarketCategoryIconImgHtml = paintMarketCategoryIconImgHtml;
 window.paintMarketContextHitInnerHtml = paintMarketContextHitInnerHtml;
 window.paintMarketEscapeHtml = paintMarketEscapeHtml;
 window.paintMarketProductImageUrl = paintMarketProductImageUrl;
+window.paintMarketNormalizeUploadUrl = paintMarketNormalizeUploadUrl;
 window.paintMarketFavoritesGet = paintMarketFavoritesGet;
 window.paintMarketFavoriteIs = paintMarketFavoriteIs;
 window.paintMarketFavoriteToggle = paintMarketFavoriteToggle;

@@ -7,8 +7,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Shop dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@700;800;900&family=Nunito:wght@800;900&family=Playfair+Display:wght@700;800&family=Archivo+Black&family=Varela+Round:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css?v=20260603a" />
+  <link rel="stylesheet" href="/paint/css/dash-add-flow.css?v=20260603e" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body {
@@ -162,6 +166,91 @@
       color: #64748b;
       line-height: 1.4;
     }
+    .pm-dash-add-progress {
+      margin: 0 1.25rem 0.5rem;
+      padding: 0.5rem 0.35rem 0.35rem;
+      border-radius: 0.75rem;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(13, 148, 136, 0.18);
+    }
+    .pm-dash-add-progress__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.35rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      justify-content: center;
+    }
+    .pm-dash-add-progress__item {
+      flex: 1 1 auto;
+      min-width: 3.1rem;
+      max-width: 5.5rem;
+      text-align: center;
+      font-size: 0.58rem;
+      font-weight: 700;
+      line-height: 1.15;
+      padding: 0.28rem 0.2rem;
+      border-radius: 0.45rem;
+      color: #64748b;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .pm-dash-add-progress__item.is-current {
+      color: #0f766e;
+      background: #ecfdf5;
+      border-color: #99f6e4;
+      box-shadow: 0 0 0 1px rgba(13, 148, 136, 0.2);
+    }
+    .pm-dash-add-progress__item.is-done {
+      color: #0d9488;
+      background: #f0fdfa;
+      border-color: #ccfbf1;
+    }
+    .pm-dash-picker-fuzzy-heading {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #b45309;
+      margin: 0.35rem 0 0.25rem;
+      padding: 0.2rem 0.15rem;
+      grid-column: 1 / -1;
+    }
+    .pm-dash-fuzzy-tag {
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: #b45309;
+      margin-inline-start: 0.2rem;
+    }
+    .pm-add-wiz-cap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    .pm-add-wiz-cap-btn {
+      padding: 0.85rem 0.5rem;
+      border-radius: 0.75rem;
+      border: 2px solid #e2e8f0;
+      background: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #0f172a;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.12s;
+    }
+    .pm-add-wiz-cap-btn:hover {
+      border-color: #5eead4;
+      background: #f0fdfa;
+    }
+    .pm-add-wiz-cap-btn.is-selected {
+      border-color: #3b82f6;
+      background: #fff;
+      color: #0f172a;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.18);
+    }
+    .add-wiz-panel.hidden {
+      display: none !important;
+    }
     .pm-dash-picker-context {
       display: inline-flex;
       align-items: center;
@@ -314,23 +403,6 @@
       font-size: 0.6875rem;
       color: #64748b;
       margin-top: 0.15rem;
-    }
-    .pm-dash-picker-add-new {
-      width: 100%;
-      border-radius: 0.875rem;
-      border: 2px dashed rgba(13, 148, 136, 0.45);
-      background: linear-gradient(180deg, rgba(240, 253, 250, 0.95), #ffffff);
-      padding: 0.875rem 1rem;
-      font-size: 0.875rem;
-      font-weight: 700;
-      color: #0f766e;
-      transition: background 0.15s, border-color 0.15s, transform 0.15s;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    }
-    .pm-dash-picker-add-new:hover {
-      background: #ecfdf5;
-      border-color: #0d9488;
-      transform: translateY(-1px);
     }
     .pm-dash-picker-search {
       width: 100%;
@@ -1357,27 +1429,48 @@
     </form>
   </dialog>
 
-  <dialog id="brandDialog" class="pm-dash-picker-dialog">
-    <form method="dialog" class="pm-dash-picker-form">
-      <header class="pm-dash-picker-header">
-        <div class="pm-dash-picker-header__text">
-          <p class="pm-dash-picker-step" data-pm-t="dash_picker_step_brand">Step 1 · Brand</p>
-          <h2 class="pm-dash-picker-title" data-pm-t="dash_brand_dialog_title">Choose brand</h2>
+  <dialog id="brandDialog" class="pm-dash-picker-dialog pm-dash-add-sheet">
+    <form method="dialog" class="pm-dash-picker-form pm-dash-add-sheet__form">
+      <header class="pm-dash-add-sheet__toolbar">
+        <button type="button" class="pm-dash-add-sheet__back" data-dialog-close aria-label="Close">‹</button>
+        <div class="pm-dash-add-sheet__toolbar-actions">
+          <button type="button" class="pm-dash-add-sheet__close" data-dialog-close aria-label="Close">×</button>
         </div>
-        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
-      <div class="pm-dash-picker-intro">
-        <p class="pm-dash-picker-hint" data-pm-t="dash_brand_dialog_hint">Tap a brand to continue. New brands are saved for all shops.</p>
-      </div>
-      <div class="pm-dash-picker-body">
-        <div id="brandPickerList" class="pm-dash-picker-scroll pm-dash-picker-grid" role="listbox" aria-label="Brands"></div>
-      </div>
-      <div class="pm-dash-picker-extra space-y-2 pt-3">
-        <label for="brandNewName" data-pm-t="dash_brand_new_label">New brand name</label>
-        <div class="flex gap-2">
-          <input id="brandNewName" type="text" class="flex-1 px-3 py-2" data-pm-ph="dash_brand_new_ph" placeholder="e.g. Dulux" autocomplete="off" />
-          <button id="brandAddBtn" type="button" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary shrink-0" data-pm-t="dash_brand_add_btn">Add brand</button>
+      <div class="pm-dash-add-sheet__content">
+        <h2 class="pm-dash-add-sheet__title" data-pm-t="dash_add_brand_title">What is the paint brand?</h2>
+        <p class="pm-dash-add-sheet__lead">
+          <span class="pm-dash-add-sheet__lead-icon" aria-hidden="true">✓</span>
+          <span data-pm-t="dash_brand_dialog_hint">Choose the brand of paint you want to add to your shop.</span>
+        </p>
+        <div class="pm-dash-add-sheet__search-wrap">
+          <input
+            type="search"
+            id="brandPickerSearch"
+            class="pm-dash-add-sheet__search"
+            autocomplete="off"
+            data-pm-ph="dash_brand_search_ph"
+            placeholder="Search for paint brand…"
+          />
         </div>
+        <div class="pm-dash-add-sheet__progress" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1">
+          <div class="pm-dash-add-sheet__progress-fill" data-add-progress-fill></div>
+        </div>
+        <section class="pm-dash-add-sheet__section" id="brandPickerTopSection">
+          <h3 class="pm-dash-add-sheet__section-title" data-pm-t="dash_add_top">Top</h3>
+          <div id="brandPickerTop" class="pm-dash-add-sheet__chips"></div>
+        </section>
+        <section class="pm-dash-add-sheet__section pm-dash-add-sheet__section--grow">
+          <h3 class="pm-dash-add-sheet__section-title" data-pm-t="dash_add_brand_list">Paint brands</h3>
+          <div id="brandPickerList" class="pm-dash-add-sheet__list" role="listbox" aria-label="Brands"></div>
+        </section>
+        <details class="pm-dash-add-sheet__more">
+          <summary data-pm-t="dash_brand_new_label">New brand name</summary>
+          <div class="pm-dash-add-sheet__more-body">
+            <input id="brandNewName" type="text" data-pm-ph="dash_brand_new_ph" placeholder="e.g. Dulux" autocomplete="off" />
+            <button id="brandAddBtn" type="button" data-pm-t="dash_brand_add_btn">Add brand</button>
+          </div>
+        </details>
       </div>
     </form>
   </dialog>
@@ -1391,8 +1484,17 @@
         </div>
         <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
+      <nav class="pm-dash-add-progress" aria-label="Add product progress">
+        <ol class="pm-dash-add-progress__list">
+          <li class="pm-dash-add-progress__item" data-add-step="1"><span data-pm-t="dash_flow_step_brand">Brand</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="2"><span data-pm-t="dash_flow_step_product">Product</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="3"><span data-pm-t="dash_flow_step_capacity">Capacity</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="4"><span data-pm-t="dash_flow_step_price">Price</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="5"><span data-pm-t="dash_flow_step_color">Colour</span></li>
+        </ol>
+      </nav>
       <div class="pm-dash-picker-intro">
-        <p class="pm-dash-picker-hint" data-pm-t="dash_category_dialog_hint">Tap a category to continue.</p>
+        <p class="pm-dash-picker-hint" data-pm-t="dash_category_dialog_hint">Pick a product type, then browse or search the catalog.</p>
         <p id="categoryDialogBrandLabel" class="pm-dash-picker-context"></p>
       </div>
       <div class="pm-dash-picker-body">
@@ -1404,60 +1506,140 @@
     </form>
   </dialog>
 
-  <dialog id="productPickerDialog" class="pm-dash-picker-dialog">
-    <form method="dialog" class="pm-dash-picker-form">
-      <header class="pm-dash-picker-header">
-        <div class="pm-dash-picker-header__text">
-          <h2 class="pm-dash-picker-context-row">
-            <button type="button" id="productPickerBrand" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--brand"></button>
-            <span id="productPickerContextSep" class="pm-dash-picker-context-sep" aria-hidden="true">·</span>
-            <button type="button" id="productPickerCategory" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--category"></button>
-          </h2>
+  <dialog id="productPickerDialog" class="pm-dash-picker-dialog pm-dash-add-sheet">
+    <form method="dialog" class="pm-dash-picker-form pm-dash-add-sheet__form">
+      <header class="pm-dash-add-sheet__toolbar">
+        <button type="button" id="productPickerBack" class="pm-dash-add-sheet__back" aria-label="Back">‹</button>
+        <div class="pm-dash-add-sheet__toolbar-actions">
+          <button type="button" class="pm-dash-add-sheet__close" data-dialog-close aria-label="Close">×</button>
         </div>
-        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
       </header>
-      <div class="pm-dash-picker-intro">
-        <p class="pm-dash-picker-hint" data-pm-t="dash_product_picker_hint">Tap a product to add it to your shop.</p>
+      <div class="pm-dash-add-sheet__content">
+        <h2 class="pm-dash-add-sheet__title" data-pm-t="dash_add_product_title">Which product?</h2>
+        <p class="pm-dash-add-sheet__lead">
+          <span class="pm-dash-add-sheet__lead-icon" aria-hidden="true">✓</span>
+          <span id="productPickerLead" data-pm-t="dash_product_picker_hint">Browse the list or search by name.</span>
+        </p>
+        <div class="pm-dash-add-sheet__search-wrap">
+          <input
+            type="search"
+            id="productPickerSearch"
+            class="pm-dash-add-sheet__search"
+            autocomplete="off"
+            data-pm-ph="dash_product_picker_search_ph"
+            placeholder="Search products…"
+          />
+        </div>
+        <div class="pm-dash-add-sheet__progress" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="2">
+          <div class="pm-dash-add-sheet__progress-fill" data-add-progress-fill></div>
+        </div>
+        <section class="pm-dash-add-sheet__section pm-dash-add-sheet__section--grow">
+          <h3 class="pm-dash-add-sheet__section-title">
+            <span data-pm-t="dash_add_product_list">Products</span>
+            <span id="productPickerCount" class="font-normal text-slate-400" aria-live="polite"></span>
+          </h3>
+          <div id="productPickerList" class="pm-dash-add-sheet__list" role="listbox"></div>
+        </section>
       </div>
-      <div class="pm-dash-picker-body">
-        <label for="productPickerSearch" class="block text-xs font-semibold text-slate-700 mb-1" data-pm-t="dash_product_picker_search_label">Search products</label>
-        <input
-          type="search"
-          id="productPickerSearch"
-          class="pm-dash-picker-search"
-          autocomplete="off"
-          data-pm-ph="dash_product_picker_search_ph"
-          placeholder="Search products…"
-        />
-        <button id="productPickerNewBtn" type="button" class="pm-dash-picker-add-new" data-pm-t="dash_product_picker_new">+ New product</button>
-        <div id="productPickerList" class="pm-dash-catalog-grid pm-dash-catalog-grid--dense p-1 sm:p-2"></div>
-      </div>
+      <button type="button" id="productPickerBrand" class="hidden" hidden></button>
+      <button type="button" id="productPickerCategory" class="hidden" hidden></button>
     </form>
   </dialog>
 
   <dialog id="productDialog" class="pm-dash-picker-dialog pm-dash-picker-dialog--form">
     <form method="dialog" class="pm-dash-picker-form">
-      <header class="pm-dash-picker-header">
-        <div class="pm-dash-picker-header__text">
-          <h2 id="productDialogContextRow" class="pm-dash-picker-context-row hidden">
-            <button type="button" id="productDialogBrand" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--brand"></button>
-            <span class="pm-dash-picker-context-sep" aria-hidden="true">·</span>
-            <button type="button" id="productDialogCategory" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--category"></button>
-          </h2>
-          <p id="productDialogStep" class="pm-dash-picker-step" data-pm-t="dash_picker_step_prices">Step 4 · Prices</p>
-          <h2 id="productDialogTitle" class="pm-dash-picker-title" data-pm-t="dash_dialog_add_title">Add product</h2>
-        </div>
-        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
-      </header>
-      <div class="pm-dash-picker-intro" id="productDialogIntro">
-        <p id="productDialogHint" class="pm-dash-picker-hint hidden"></p>
-        <p id="productDialogAddHint" class="pm-dash-picker-hint hidden" data-pm-t="dash_dialog_add_fields_hint">Capacity and price are required. Colour is optional.</p>
-      </div>
-      <div class="pm-dash-picker-body pm-dash-picker-scroll" style="max-height:min(58dvh,520px)">
       <input id="pdProductId" type="hidden" value="" />
       <input id="pdCurrentPhotoUrl" type="hidden" value="" />
       <input id="pdBrandId" type="hidden" />
       <input id="pdCategoryId" type="hidden" />
+      <select id="pdCapacity" class="sr-only" required aria-hidden="true" tabindex="-1">
+        <option value="" disabled selected data-pm-t-opt="dash_pd_ph_capacity">Select capacity</option>
+        <option value="1">1 L</option>
+        <option value="3.6">3.6 L</option>
+        <option value="18">18 L</option>
+      </select>
+      <input id="pdRalCode" type="hidden" value="" />
+
+      <div id="addWizSheet" class="hidden pm-dash-add-sheet__form">
+        <header class="pm-dash-add-sheet__toolbar">
+          <button type="button" id="pdWizardBack" class="pm-dash-add-sheet__back" aria-label="Back">‹</button>
+          <div class="pm-dash-add-sheet__toolbar-actions">
+            <button type="button" class="pm-dash-add-sheet__close" data-dialog-close aria-label="Close">×</button>
+          </div>
+        </header>
+        <div class="pm-dash-add-sheet__content">
+          <h2 id="addWizTitle" class="pm-dash-add-sheet__title" data-pm-t="dash_add_cap_title">What pack size?</h2>
+          <p class="pm-dash-add-sheet__lead">
+            <span class="pm-dash-add-sheet__lead-icon" aria-hidden="true">✓</span>
+            <span id="addWizLead" data-pm-t="dash_wiz_cap_hint">Choose the pack size you sell for this product.</span>
+          </p>
+          <div class="pm-dash-add-sheet__progress" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3">
+            <div class="pm-dash-add-sheet__progress-fill" data-add-progress-fill></div>
+          </div>
+          <div id="addWizCapWrap" class="add-wiz-panel pm-dash-add-sheet__section pm-dash-add-sheet__section--grow">
+            <h3 class="pm-dash-add-sheet__section-title" data-pm-t="dash_add_cap_list">Pack size</h3>
+            <div id="addWizCapGrid" class="pm-dash-add-sheet__list" role="radiogroup" aria-label="Capacity"></div>
+          </div>
+          <div id="addWizPriceWrap" class="add-wiz-panel hidden pm-dash-add-sheet__section pm-dash-add-sheet__section--grow">
+            <h3 class="pm-dash-add-sheet__section-title" data-pm-t="dash_pd_price">Price</h3>
+            <input
+              id="pdPrice"
+              type="number"
+              step="any"
+              inputmode="decimal"
+              required
+              class="pm-dash-add-sheet__search pm-dash-add-sheet__input-field"
+              data-pm-ph="dash_pd_ph_price"
+              placeholder="Enter price"
+            />
+          </div>
+          <div id="addWizColorWrap" class="add-wiz-panel hidden pm-dash-add-sheet__section pm-dash-add-sheet__section--grow pm-dash-add-sheet__section--color">
+            <h3 class="pm-dash-add-sheet__section-title" data-pm-t="dash_add_color_list">Colours</h3>
+            <p id="pdRalSelected" class="pm-dash-add-sheet__ral-picked hidden" aria-live="polite"></p>
+            <div id="pdRalGrid" class="pm-dash-add-sheet__ral-mount" role="listbox" aria-label="Popular RAL colours"></div>
+            <details class="pm-dash-add-sheet__more">
+              <summary data-pm-t="dash_ral_add_title">Add your own colour</summary>
+              <div class="pm-dash-add-sheet__more-body pm-dash-add-sheet__more-body--ral">
+                <input id="pdRalCustomName" type="text" maxlength="48" data-pm-ph="dash_ral_custom_name_ph" placeholder="Colour name" />
+                <input id="pdRalCustomHex" type="color" value="#2271b3" aria-label="Colour" />
+                <button type="button" id="pdRalCustomAddBtn" data-pm-t="dash_ral_add_btn">Add</button>
+              </div>
+            </details>
+            <button type="button" id="addWizSkipColor" class="pm-dash-add-sheet__skip" data-pm-t="dash_wiz_skip_color">Skip colour</button>
+          </div>
+        </div>
+        <footer class="pm-dash-add-sheet__footer">
+          <button id="pdSubmit" type="button" class="pm-dash-add-sheet__cta" data-pm-t="dash_wiz_next">Next</button>
+        </footer>
+      </div>
+
+      <div id="productDialogLegacy">
+      <header class="pm-dash-picker-header">
+        <div class="pm-dash-picker-header__text">
+          <h2 id="productDialogContextRow" class="pm-dash-picker-context-row hidden">
+            <button type="button" id="productDialogBrand" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--brand"></button>
+            <span id="productDialogContextSep" class="pm-dash-picker-context-sep hidden" aria-hidden="true">·</span>
+            <button type="button" id="productDialogCategory" class="pm-dash-picker-context-hit pm-dash-picker-context-hit--category hidden" hidden></button>
+          </h2>
+          <p id="productDialogStep" class="pm-dash-picker-step" data-pm-t="dash_picker_step_capacity">Step 3 of 5 · Capacity</p>
+          <h2 id="productDialogTitle" class="pm-dash-picker-title" data-pm-t="dash_dialog_add_title">Add product</h2>
+        </div>
+        <button type="button" class="pm-dash-picker-close" data-dialog-close data-pm-t="dash_close">Close</button>
+      </header>
+      <nav id="productDialogProgress" class="pm-dash-add-progress hidden" aria-label="Add product progress">
+        <ol class="pm-dash-add-progress__list">
+          <li class="pm-dash-add-progress__item" data-add-step="1"><span data-pm-t="dash_flow_step_brand">Brand</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="2"><span data-pm-t="dash_flow_step_product">Product</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="3"><span data-pm-t="dash_flow_step_capacity">Capacity</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="4"><span data-pm-t="dash_flow_step_price">Price</span></li>
+          <li class="pm-dash-add-progress__item" data-add-step="5"><span data-pm-t="dash_flow_step_color">Colour</span></li>
+        </ol>
+      </nav>
+      <div class="pm-dash-picker-intro" id="productDialogIntro">
+        <p id="productDialogHint" class="pm-dash-picker-hint hidden"></p>
+        <p id="productDialogAddHint" class="pm-dash-picker-hint hidden" data-pm-t="dash_dialog_add_fields_hint">Follow the steps: capacity, then price, then optional colour.</p>
+      </div>
+      <div class="pm-dash-picker-body pm-dash-picker-scroll" style="max-height:min(58dvh,520px)">
 
       <div id="pdCategoryRow" class="grid gap-2 hidden">
         <label class="text-[11px] font-semibold text-slate-600" for="pdCategorySelect" data-pm-t="dash_pd_category">Category</label>
@@ -1474,41 +1656,7 @@
         <textarea id="pdDesc" rows="3" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_desc" placeholder="Short description"></textarea>
       </div>
 
-      <div id="pdAddFields" class="hidden flex flex-col gap-3">
-        <div class="grid sm:grid-cols-2 gap-3">
-        <div class="grid gap-2">
-          <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_capacity">Capacity</label>
-          <select id="pdCapacity" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" required>
-            <option value="" disabled selected data-pm-t-opt="dash_pd_ph_capacity">Select capacity</option>
-            <option value="1">1 L</option>
-            <option value="3.6">3.6 L</option>
-            <option value="18">18 L</option>
-          </select>
-        </div>
-        <div class="grid gap-2">
-          <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_price" data-pm-currency-label>Price</label>
-          <input id="pdPrice" type="number" step="any" inputmode="decimal" required class="rounded-lg border border-slate-200 px-3 py-2 text-sm" data-pm-ph="dash_pd_ph_price" placeholder="Enter price" />
-        </div>
-        </div>
-
-        <div id="pdRalBlock" class="pm-pd-ral-panel grid gap-2">
-        <div class="flex flex-wrap items-baseline justify-between gap-2">
-          <label class="text-[11px] font-semibold text-slate-700" data-pm-t="dash_pd_ral">Colour (optional)</label>
-          <p id="pdRalSelected" class="text-[10px] font-semibold text-teal-800 hidden" aria-live="polite"></p>
-        </div>
-        <p class="text-[10px] text-slate-500 -mt-1" data-pm-t="dash_pd_ral_hint">Optional — tap a swatch below</p>
-        <input id="pdRalCode" type="hidden" value="" />
-        <div id="pdRalGrid" class="pm-pd-ral-picker-mount" role="listbox" aria-label="Popular RAL colours"></div>
-        <div class="pm-pd-ral-add">
-          <p class="text-[11px] font-semibold text-slate-700" data-pm-t="dash_ral_add_title">Add your own colour</p>
-          <div class="pm-pd-ral-add__row">
-            <input id="pdRalCustomName" type="text" maxlength="48" data-pm-ph="dash_ral_custom_name_ph" placeholder="Colour name" />
-            <input id="pdRalCustomHex" type="color" value="#2271b3" aria-label="Colour" />
-            <button type="button" id="pdRalCustomAddBtn" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary shrink-0 text-xs" data-pm-t="dash_ral_add_btn">Add</button>
-          </div>
-        </div>
-        </div>
-      </div>
+      <div id="pdAddFields" class="hidden"></div>
 
       <div id="pdPhotoBlock" class="grid gap-2">
         <label class="text-[11px] font-semibold text-slate-600" data-pm-t="dash_pd_photo">Photo (optional)</label>
@@ -1531,10 +1679,11 @@
         <div class="space-y-2" id="pdUpdateListingRows"></div>
       </div>
       </div>
-      <footer class="pm-dash-picker-footer">
+      <footer id="productDialogLegacyFooter" class="pm-dash-picker-footer">
         <button type="button" class="pm-dash-picker-nav-btn" data-dialog-close data-pm-t="dash_cancel">Cancel</button>
-        <button id="pdSubmit" type="button" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary" data-pm-t="dash_add_btn">Add</button>
+        <button id="pdSubmitLegacy" type="button" class="pm-dash-picker-nav-btn pm-dash-picker-nav-btn--primary" data-pm-t="dash_add_btn">Add</button>
       </footer>
+      </div>
     </form>
   </dialog>
 
@@ -1602,7 +1751,7 @@
 
   <template id="toastTpl"><div class="fixed bottom-6 right-6 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg"></div></template>
   <script src="/paint/js/paint-i18n.js?v=20260602c"></script>
-  <script src="/paint/js/ral-colors.js?v=20260602c"></script>
+  <script src="/paint/js/ral-colors.js?v=20260603c"></script>
   <script src="/paint/js/common.js?v=20260602c"></script>
   <script src="/paint/js/theme.js?v=20260602c"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -1953,9 +2102,18 @@
       btn.className = "pm-shop-card pm-dash-catalog-card group flex flex-col min-w-0 w-full";
       const overlayHtml = catalogCardOverlayHtml(row, opts);
       if (opts.pickerMode) btn.classList.add("pm-dash-catalog-card--picker");
-      const imgUrl = esc(
+      const rawImg =
         row.imageUrl ||
-          `https://placehold.co/500x300/f1f5f9/64748b?text=${encodeURIComponent(String(row.productName || "•").slice(0, 2))}`
+        row.default_image_url ||
+        row.listing_image_url ||
+        row.custom_photo_url ||
+        "";
+      const imgUrl = esc(
+        typeof paintMarketNormalizeUploadUrl === "function"
+          ? paintMarketNormalizeUploadUrl(rawImg) ||
+              `https://placehold.co/500x300/f1f5f9/64748b?text=${encodeURIComponent(String(row.productName || "•").slice(0, 2))}`
+          : rawImg ||
+              `https://placehold.co/500x300/f1f5f9/64748b?text=${encodeURIComponent(String(row.productName || "•").slice(0, 2))}`
       );
       btn.innerHTML = `
         <div class="pm-shop-card__logo pm-dash-catalog-card__media">
@@ -1966,7 +2124,7 @@
         </div>
         <div class="pm-shop-card__body">
           <div class="pm-shop-card__row pm-shop-card__row--solo pm-dash-catalog-card__row">
-            <span class="pm-shop-card__name pm-dash-catalog-card__name">${esc(row.productName)}</span>
+            <span class="pm-shop-card__name pm-dash-catalog-card__name">${esc(row.productName)}${opts.fuzzyMatch ? '<span class="pm-dash-fuzzy-tag" title="Similar match">~</span>' : ""}</span>
           </div>
         </div>`;
       btn.addEventListener("click", () => onClick(row));
@@ -2025,8 +2183,9 @@
       saveLastAddContext(brand, category);
       await refreshDashState();
       productDialog.close();
+      productPickerDialog.close();
+      categoryDialog.close();
       toast(paintMarketT(toastKey));
-      openProductPickerDialog(brand, category);
     }
 
     function toast(msg) {
@@ -2111,7 +2270,11 @@
     }
 
     const brandDialog = document.getElementById("brandDialog");
+    const RECENT_BRANDS_K = "paint_market_recent_brands";
+    const brandPickerSearch = document.getElementById("brandPickerSearch");
+    const brandPickerTop = document.getElementById("brandPickerTop");
     const brandPickerList = document.getElementById("brandPickerList");
+    const brandPickerTopSection = document.getElementById("brandPickerTopSection");
     const brandNewName = document.getElementById("brandNewName");
     const brandAddBtn = document.getElementById("brandAddBtn");
     let pendingAddBrand = null;
@@ -2128,8 +2291,8 @@
     const productPickerList = document.getElementById("productPickerList");
     const productPickerBrand = document.getElementById("productPickerBrand");
     const productPickerCategory = document.getElementById("productPickerCategory");
-    const productPickerNewBtn = document.getElementById("productPickerNewBtn");
     const productPickerSearch = document.getElementById("productPickerSearch");
+    const productPickerCount = document.getElementById("productPickerCount");
     let catalogPicks = [];
 
     const productDialog = document.getElementById("productDialog");
@@ -2137,7 +2300,15 @@
     const productDialogBrand = document.getElementById("productDialogBrand");
     const productDialogCategory = document.getElementById("productDialogCategory");
     const productDialogStep = document.getElementById("productDialogStep");
+    const productDialogProgress = document.getElementById("productDialogProgress");
     const productDialogTitle = document.getElementById("productDialogTitle");
+    const pdWizardBack = document.getElementById("pdWizardBack");
+    const addWizCapWrap = document.getElementById("addWizCapWrap");
+    const addWizCapGrid = document.getElementById("addWizCapGrid");
+    const addWizPriceWrap = document.getElementById("addWizPriceWrap");
+    const addWizColorWrap = document.getElementById("addWizColorWrap");
+    let addWizardStep = 3;
+    let pendingAddCatalogProduct = null;
     const pdHint = document.getElementById("productDialogHint");
     const productDialogAddHint = document.getElementById("productDialogAddHint");
     const pdProductId = document.getElementById("pdProductId");
@@ -2159,6 +2330,12 @@
     const pdPhotoPreviewWrap = document.getElementById("pdPhotoPreviewWrap");
     const pdPhotoPreview = document.getElementById("pdPhotoPreview");
     const pdSubmit = document.getElementById("pdSubmit");
+    const pdSubmitLegacy = document.getElementById("pdSubmitLegacy");
+    const addWizSheet = document.getElementById("addWizSheet");
+    const productDialogLegacy = document.getElementById("productDialogLegacy");
+    const addWizTitle = document.getElementById("addWizTitle");
+    const addWizLead = document.getElementById("addWizLead");
+    const addWizSkipColor = document.getElementById("addWizSkipColor");
     const pdPickWrap = document.getElementById("pdPickWrap");
     const pdPickProduct = document.getElementById("pdPickProduct");
     const pdUpdateListings = document.getElementById("pdUpdateListings");
@@ -2173,24 +2350,181 @@
       [18, "18 L"]
     ];
 
+    function isAddWizardActive() {
+      return productDialog?.dataset.addWizard === "1";
+    }
+
+    function updateAddFlowProgress(currentStep) {
+      const step = Number(currentStep) || 1;
+      for (const nav of document.querySelectorAll(".pm-dash-add-progress")) {
+        nav.querySelectorAll("[data-add-step]").forEach((item) => {
+          const s = Number(item.getAttribute("data-add-step"));
+          item.classList.toggle("is-current", s === step);
+          item.classList.toggle("is-done", s < step);
+        });
+      }
+      const fillPct = (step / 5) * 100;
+      document.querySelectorAll("[data-add-progress-fill]").forEach((el) => {
+        el.style.width = `${fillPct}%`;
+      });
+      document.querySelectorAll(".pm-dash-add-sheet__progress[role='progressbar']").forEach((bar) => {
+        bar.setAttribute("aria-valuenow", String(step));
+      });
+    }
+
+    function levenshtein(a, b) {
+      const x = String(a || "");
+      const y = String(b || "");
+      if (x === y) return 0;
+      if (!x.length) return y.length;
+      if (!y.length) return x.length;
+      const rows = Array.from({ length: x.length + 1 }, (_, i) => [i]);
+      for (let j = 1; j <= y.length; j++) rows[0][j] = j;
+      for (let i = 1; i <= x.length; i++) {
+        for (let j = 1; j <= y.length; j++) {
+          const cost = x[i - 1] === y[j - 1] ? 0 : 1;
+          rows[i][j] = Math.min(rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + cost);
+        }
+      }
+      return rows[x.length][y.length];
+    }
+
+    function catalogPickSearchHaystack(p) {
+      const cat = p.category_name || p.category_slug || "";
+      return [p.name, p.description, cat].filter(Boolean).join(" ");
+    }
+
+    function catalogPickSimilarity(haystack, query) {
+      const h = String(haystack || "").toLowerCase();
+      const q = String(query || "").toLowerCase().trim();
+      if (!q) return 1;
+      if (h.includes(q)) return 1;
+      const tokens = h.split(/\s+/).filter((t) => t.length > 1);
+      let best = 0;
+      for (const t of tokens) {
+        if (t.includes(q) || q.includes(t)) best = Math.max(best, 0.88);
+        const dist = levenshtein(t, q);
+        const sim = 1 - dist / Math.max(t.length, q.length, 1);
+        best = Math.max(best, sim);
+      }
+      const distAll = levenshtein(h, q);
+      best = Math.max(best, 1 - distAll / Math.max(h.length, q.length, 1));
+      return best;
+    }
+
+    const CATALOG_FUZZY_MIN_SCORE = 0.52;
+
+    function partitionCatalogPicksBySearch(picks, queryRaw) {
+      const query = String(queryRaw || "").trim();
+      if (!query) return { exact: picks, fuzzy: [] };
+      const exact = [];
+      const fuzzy = [];
+      for (const p of picks) {
+        const hay = catalogPickSearchHaystack(p);
+        const sim = catalogPickSimilarity(hay, query);
+        const isExact = hay.toLowerCase().includes(query.toLowerCase());
+        if (isExact) exact.push(p);
+        else if (sim >= CATALOG_FUZZY_MIN_SCORE) fuzzy.push({ p, sim });
+      }
+      fuzzy.sort((a, b) => b.sim - a.sim);
+      return { exact, fuzzy: fuzzy.map((x) => x.p) };
+    }
+
+    function buildAddWizCapGrid() {
+      if (!addWizCapGrid || !pdCapacity) return;
+      addWizCapGrid.innerHTML = "";
+      for (const [cap, label] of DASH_CAPACITIES) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pm-dash-add-sheet__row";
+        btn.setAttribute("data-cap", String(cap));
+        btn.setAttribute("role", "radio");
+        btn.setAttribute("aria-checked", "false");
+        btn.innerHTML = `
+          <span class="pm-dash-add-sheet__row-body"><span class="pm-dash-add-sheet__row-name">${esc(label)}</span></span>
+          <span class="pm-dash-add-sheet__row-chevron" aria-hidden="true">›</span>`;
+        btn.addEventListener("click", () => {
+          pdCapacity.value = String(cap);
+          addWizCapGrid.querySelectorAll(".pm-dash-add-sheet__row").forEach((el) => {
+            const on = el.getAttribute("data-cap") === String(cap);
+            el.classList.toggle("is-selected", on);
+            el.setAttribute("aria-checked", on ? "true" : "false");
+          });
+        });
+        addWizCapGrid.appendChild(btn);
+      }
+    }
+
+    function syncAddWizCapGridSelection() {
+      if (!addWizCapGrid || !pdCapacity) return;
+      const v = pdCapacity.value;
+      addWizCapGrid.querySelectorAll(".pm-dash-add-sheet__row").forEach((el) => {
+        const on = el.getAttribute("data-cap") === v;
+        el.classList.toggle("is-selected", on);
+        el.setAttribute("aria-checked", on ? "true" : "false");
+      });
+    }
+
+    function showAddWizardStep(step) {
+      addWizardStep = step;
+      updateAddFlowProgress(step);
+      const titleKeys = {
+        3: "dash_add_cap_title",
+        4: "dash_add_price_title",
+        5: "dash_add_color_title"
+      };
+      const hintKeys = {
+        3: "dash_wiz_cap_hint",
+        4: "dash_wiz_price_hint",
+        5: "dash_wiz_color_hint"
+      };
+      if (addWizTitle) addWizTitle.textContent = paintMarketT(titleKeys[step] || titleKeys[3]);
+      if (addWizLead) addWizLead.textContent = paintMarketT(hintKeys[step] || hintKeys[3]);
+      if (productDialogStep) productDialogStep.textContent = paintMarketT(`dash_picker_step_${step === 3 ? "capacity" : step === 4 ? "price" : "color"}`);
+      addWizCapWrap?.classList.toggle("hidden", step !== 3);
+      addWizPriceWrap?.classList.toggle("hidden", step !== 4);
+      addWizColorWrap?.classList.toggle("hidden", step !== 5);
+      if (addWizSkipColor) addWizSkipColor.classList.toggle("hidden", step !== 5);
+      if (pdSubmit) {
+        pdSubmit.textContent =
+          step === 5 ? paintMarketT("dash_save_product") : paintMarketT("dash_wiz_next");
+      }
+      if (step === 3) {
+        syncAddWizCapGridSelection();
+        addWizCapGrid?.querySelector(".pm-dash-add-sheet__row")?.focus();
+      } else if (step === 4) {
+        applyDashPricePlaceholder(pdPrice);
+        setTimeout(() => pdPrice?.focus(), 40);
+      } else if (step === 5) {
+        ensurePdRalGrid();
+      }
+    }
+
     function setProductDialogMode(mode) {
       productDialog.dataset.mode = mode;
       const isAdd = mode === "add";
       const isUpdate = mode === "update";
       const isList = mode === "list";
+      const wizard = isAddWizardActive();
+      productDialog?.classList.toggle("pm-dash-add-sheet", wizard);
+      document.body.classList.toggle("pm-dash-add-wiz-open", wizard);
+      if (addWizSheet) addWizSheet.classList.toggle("hidden", !wizard);
+      if (productDialogLegacy) productDialogLegacy.classList.toggle("hidden", wizard);
       if (pdPickWrap) pdPickWrap.classList.toggle("hidden", !isUpdate);
-      if (pdUpdateListings) pdUpdateListings.classList.toggle("hidden", !(isUpdate || isList));
-      if (pdAddFields) pdAddFields.classList.toggle("hidden", !isAdd);
-      if (pdNameBlock) pdNameBlock.classList.toggle("hidden", isList);
-      if (pdDescBlock) pdDescBlock.classList.toggle("hidden", isList);
-      if (pdPhotoBlock) pdPhotoBlock.classList.toggle("hidden", isList);
+      if (pdUpdateListings) {
+        pdUpdateListings.classList.toggle("hidden", !(isUpdate || (isList && !wizard)));
+      }
       if (pdCategoryRow) pdCategoryRow.classList.add("hidden");
       if (pdMetaFields) pdMetaFields.classList.toggle("hidden", isUpdate && !pdProductId.value);
-      if (productDialogContextRow) productDialogContextRow.classList.toggle("hidden", !isAdd);
-      if (productDialogStep) productDialogStep.classList.toggle("hidden", isAdd);
-      if (productDialogTitle) productDialogTitle.classList.toggle("hidden", isAdd);
-      if (pdHint) pdHint.classList.toggle("hidden", isAdd);
-      if (productDialogAddHint) productDialogAddHint.classList.toggle("hidden", !isAdd);
+      if (productDialogContextRow) productDialogContextRow.classList.toggle("hidden", !isAdd && !wizard);
+      if (productDialogStep) productDialogStep.classList.toggle("hidden", (isAdd && !wizard) || isUpdate || wizard);
+      if (productDialogTitle) productDialogTitle.classList.toggle("hidden", wizard);
+      if (pdHint) pdHint.classList.toggle("hidden", (isAdd && !wizard) || isUpdate || wizard);
+      if (productDialogAddHint) productDialogAddHint.classList.toggle("hidden", true);
+      if (productDialogProgress) productDialogProgress.classList.toggle("hidden", true);
+      if (pdNameBlock) pdNameBlock.classList.toggle("hidden", isList || wizard);
+      if (pdDescBlock) pdDescBlock.classList.toggle("hidden", isList || wizard);
+      if (pdPhotoBlock) pdPhotoBlock.classList.toggle("hidden", isList || wizard);
     }
 
     function sortedBrands() {
@@ -2217,17 +2551,22 @@
       if (pdCategoryId) pdCategoryId.value = pdCategorySelect.value;
     }
 
+    function categoryForCatalogProduct(product) {
+      if (!product) return null;
+      const cid = Number(product.category_id);
+      if (!Number.isFinite(cid)) return pendingAddCategory;
+      return (state?.categories || []).find((c) => c.id === cid) || null;
+    }
+
     function selectBrandAndContinue(brand) {
       if (!brand) {
         toast(paintMarketT("dash_toast_brand_required"));
         return;
       }
-      if (!sortedCategories().length) {
-        toast(paintMarketT("dash_toast_category_required"));
-        return;
-      }
+      rememberRecentBrand(brand.slug);
       brandDialog.close();
-      openCategoryPickerDialog(brand);
+      pendingAddCategory = null;
+      openProductPickerDialog(brand);
     }
 
     function pickerGridCols(count) {
@@ -2236,34 +2575,131 @@
       return 4;
     }
 
-    function renderBrandPickerList() {
-      if (!brandPickerList) return;
-      const brands = sortedBrands();
-      brandPickerList.innerHTML = "";
-      if (!brands.length) {
-        brandPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(paintMarketT("dash_brand_empty"))}</p>`;
+    function rememberRecentBrand(slug) {
+      try {
+        const k = String(slug || "").trim().toLowerCase();
+        if (!k) return;
+        let arr = JSON.parse(localStorage.getItem(RECENT_BRANDS_K) || "[]");
+        if (!Array.isArray(arr)) arr = [];
+        arr = [k, ...arr.filter((s) => s !== k)].slice(0, 6);
+        localStorage.setItem(RECENT_BRANDS_K, JSON.stringify(arr));
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function topBrandsForPicker(all) {
+      const out = [];
+      const seen = new Set();
+      try {
+        const recent = JSON.parse(localStorage.getItem(RECENT_BRANDS_K) || "[]");
+        if (Array.isArray(recent)) {
+          for (const slug of recent) {
+            const b = all.find((x) => String(x.slug || "").toLowerCase() === slug);
+            if (b && !seen.has(b.id)) {
+              out.push(b);
+              seen.add(b.id);
+            }
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      for (const b of all) {
+        if (out.length >= 5) break;
+        if (!seen.has(b.id)) {
+          out.push(b);
+          seen.add(b.id);
+        }
+      }
+      return out;
+    }
+
+    function createDashBrandRow(brand, onPick) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pm-dash-add-sheet__row";
+      btn.setAttribute("role", "option");
+      const iconHtml =
+        typeof paintMarketBrandIconHtml === "function" ? paintMarketBrandIconHtml(brand) : "";
+      btn.innerHTML = `
+        <span class="pm-dash-add-sheet__row-logo">${iconHtml}</span>
+        <span class="pm-dash-add-sheet__row-body"><span class="pm-dash-add-sheet__row-name">${esc(brand.name || "")}</span></span>
+        <span class="pm-dash-add-sheet__row-chevron" aria-hidden="true">›</span>`;
+      btn.addEventListener("click", () => {
+        rememberRecentBrand(brand.slug);
+        onPick(brand);
+      });
+      return btn;
+    }
+
+    function renderBrandPickerTop(all) {
+      if (!brandPickerTop) return;
+      brandPickerTop.innerHTML = "";
+      const top = topBrandsForPicker(all);
+      if (!top.length) {
+        brandPickerTopSection?.classList.add("hidden");
         return;
       }
-      const cols = pickerGridCols(brands.length);
-      brandPickerList.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+      brandPickerTopSection?.classList.remove("hidden");
+      let recent = [];
+      try {
+        recent = JSON.parse(localStorage.getItem(RECENT_BRANDS_K) || "[]");
+      } catch {
+        /* ignore */
+      }
+      const recentSet = new Set(
+        Array.isArray(recent) ? recent.map((s) => String(s).toLowerCase()) : []
+      );
+      for (const b of top) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "pm-dash-add-sheet__chip";
+        chip.textContent = b.name || "";
+        chip.addEventListener("click", () => {
+          rememberRecentBrand(b.slug);
+          selectBrandAndContinue(b);
+        });
+        brandPickerTop.appendChild(chip);
+      }
+    }
+
+    function renderBrandPickerList() {
+      if (!brandPickerList) return;
+      const all = sortedBrands();
+      const q = String(brandPickerSearch?.value || "").trim().toLowerCase();
+      const brands = q
+        ? all.filter((b) => {
+            const name = String(b.name || "").toLowerCase();
+            const slug = String(b.slug || "").toLowerCase();
+            return name.includes(q) || slug.includes(q);
+          })
+        : all;
+      renderBrandPickerTop(all);
+      brandPickerList.innerHTML = "";
+      if (!brands.length) {
+        brandPickerList.innerHTML = `<p class="pm-dash-add-sheet__empty">${esc(
+          all.length ? paintMarketT("dash_product_picker_no_match") : paintMarketT("dash_brand_empty")
+        )}</p>`;
+        return;
+      }
       for (const b of brands) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pm-dash-picker-card pm-dash-picker-card--brand";
-        btn.setAttribute("data-brand-id", String(b.id));
-        const grad = window.PaintTheme?.brandBarGradient?.(b.slug || "") || "linear-gradient(135deg,#0f766e,#115e59)";
-        btn.innerHTML = `<span>${esc(b.name)}</span>`;
-        btn.style.background = grad;
-        btn.addEventListener("click", () => selectBrandAndContinue(b));
-        brandPickerList.appendChild(btn);
+        brandPickerList.appendChild(createDashBrandRow(b, selectBrandAndContinue));
+      }
+      if (typeof paintMarketScheduleFitBrandMarks === "function") {
+        paintMarketScheduleFitBrandMarks(brandPickerList);
       }
     }
 
     function openBrandPickerDialog() {
       if (!state?.brands) return;
       const brands = sortedBrands();
-      if (!brands.length && !state.categories?.length) return;
+      if (!brands.length) return;
       if (brandNewName) brandNewName.value = "";
+      if (brandPickerSearch) brandPickerSearch.value = "";
+      pendingAddCatalogProduct = null;
+      productDialog.dataset.addWizard = "";
+      updateAddFlowProgress(1);
       renderBrandPickerList();
       brandDialog.showModal();
     }
@@ -2307,69 +2743,113 @@
         openAddProductDialog(brand, category);
         return;
       }
-      openProductPickerDialog(brand, category);
+      pendingAddCategory = category;
+      openProductPickerDialog(brand);
     }
 
-    function filteredCatalogPicks() {
-      const q = String(productPickerSearch?.value || "")
-        .trim()
-        .toLowerCase();
-      if (!q) return catalogPicks;
-      return catalogPicks.filter((p) => {
-        const name = String(p.name || "").toLowerCase();
-        const desc = String(p.description || "").toLowerCase();
-        return name.includes(q) || desc.includes(q);
-      });
+    function dashProductImageUrl(p) {
+      const raw = p.listing_image_url || p.default_image_url || "";
+      if (typeof paintMarketNormalizeUploadUrl === "function") {
+        return paintMarketNormalizeUploadUrl(raw) || "";
+      }
+      return String(raw || "").trim();
+    }
+
+    function createDashProductRow(p, onPick, fuzzyMatch) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pm-dash-add-sheet__row";
+      btn.setAttribute("role", "option");
+      const imgUrl = dashProductImageUrl(p);
+      const thumb = imgUrl
+        ? `<img class="pm-dash-add-sheet__row-thumb" src="${esc(imgUrl)}" alt="" loading="lazy" />`
+        : `<span class="pm-dash-add-sheet__row-thumb pm-dash-add-sheet__row-thumb--empty">${esc(String(p.name || "?").slice(0, 2))}</span>`;
+      const cat = categoryForCatalogProduct(p);
+      const meta = cat ? paintMarketCategoryLabel(cat.slug, cat.name) : "";
+      btn.innerHTML = `
+        <span class="pm-dash-add-sheet__row-logo">${thumb}</span>
+        <span class="pm-dash-add-sheet__row-body">
+          <span class="pm-dash-add-sheet__row-name">${esc(p.name || "")}${fuzzyMatch ? '<span class="pm-dash-fuzzy-tag">~</span>' : ""}</span>
+          ${meta ? `<span class="pm-dash-add-sheet__row-meta">${esc(meta)}</span>` : ""}
+        </span>
+        <span class="pm-dash-add-sheet__row-chevron" aria-hidden="true">›</span>`;
+      btn.addEventListener("click", () => onPick(p));
+      return btn;
     }
 
     function renderProductPickerList() {
       if (!productPickerList) return;
       productPickerList.innerHTML = "";
-      const picks = filteredCatalogPicks();
+      const q = String(productPickerSearch?.value || "").trim();
+      const { exact, fuzzy } = partitionCatalogPicksBySearch(catalogPicks, q);
+      const picks = exact.length ? exact : fuzzy;
+      syncProductPickerCount(catalogPicks.length, q ? picks.length : null);
       if (!picks.length) {
         const msg = catalogPicks.length
           ? paintMarketT("dash_product_picker_no_match")
           : paintMarketT("dash_product_picker_empty");
-        productPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(msg)}</p>`;
+        productPickerList.innerHTML = `<p class="pm-dash-add-sheet__empty">${esc(msg)}</p>`;
         return;
       }
-      const brand = pendingAddBrand;
-      const category = pendingAddCategory;
-      for (const p of picks) {
-        const row = enrichCatalogRowFromListing({
-          productId: p.id,
-          productName: p.name || "",
-          brandName: brand?.name || "",
-          brandSlug: brand?.slug || "",
-          categorySlug: category?.slug || "",
-          imageUrl: p.listing_image_url || p.default_image_url || "",
-          capacityLtr: p.capacity_ltr,
-          priceAmount: p.price_amount,
-          currency: p.currency,
-          ralCode: p.ral_code || "",
-          ral_hex: p.ral_hex
-        });
-        productPickerList.appendChild(
-          createCatalogProductCard(row, () => selectCatalogProduct(p), { pickerMode: true })
-        );
+      for (const p of exact) {
+        productPickerList.appendChild(createDashProductRow(p, selectCatalogProduct, false));
+      }
+      if (fuzzy.length && q) {
+        const heading = document.createElement("p");
+        heading.className = "pm-dash-add-sheet__fuzzy-title";
+        heading.textContent = paintMarketT("dash_product_picker_fuzzy_heading");
+        productPickerList.appendChild(heading);
+        for (const p of fuzzy) {
+          if (!exact.some((e) => e.id === p.id)) {
+            productPickerList.appendChild(createDashProductRow(p, selectCatalogProduct, true));
+          }
+        }
       }
     }
 
-    function catalogPicksFromState(brandId, categoryId) {
+    function isReferenceCatalogProduct(p) {
+      if (!p) return false;
+      if (p.isReference === true) return true;
+      if (Number(p.editable) === 1) return false;
+      const sid = p.created_by_shop_id ?? p.createdByShopId;
+      return sid == null || sid === "";
+    }
+
+    function syncProductPickerCount(total, shown) {
+      if (!productPickerCount) return;
+      if (!total) {
+        productPickerCount.textContent = "";
+        return;
+      }
+      if (shown != null && shown < total) {
+        productPickerCount.textContent = ` (${shown}/${total})`;
+      } else {
+        productPickerCount.textContent = ` (${total})`;
+      }
+    }
+
+    function catalogPicksFromState(brandId) {
       return (state?.products || [])
-        .filter(
-          (p) => Number(p.brand_id) === Number(brandId) && Number(p.category_id) === Number(categoryId)
-        )
-        .map((p) => ({
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          description: p.description,
-          default_image_url: p.default_image_url,
-          popularity_score: Number(p.popularity_score || 0),
-          shop_count: 0,
-          view_total: 0
-        }))
+        .filter((p) => {
+          if (!isReferenceCatalogProduct(p)) return false;
+          return Number(p.brand_id) === Number(brandId);
+        })
+        .map((p) => {
+          const cat = (state?.categories || []).find((c) => c.id === p.category_id);
+          return {
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            description: p.description,
+            default_image_url: p.default_image_url,
+            category_id: p.category_id,
+            category_slug: cat?.slug || "",
+            category_name: cat?.name || "",
+            popularity_score: Number(p.popularity_score || 0),
+            shop_count: 0,
+            view_total: 0
+          };
+        })
         .sort((a, b) => {
           const sa = Number(a.popularity_score || 0);
           const sb = Number(b.popularity_score || 0);
@@ -2378,13 +2858,16 @@
         });
     }
 
-    async function fetchCatalogPicks(brandId, categoryId) {
+    async function fetchCatalogPicks(brandId) {
+      const id = Number(brandId);
+      if (!Number.isFinite(id) || id <= 0) return [];
       try {
-        const data = await PaintApi.shopCatalogPicks(brandId, categoryId);
+        const data = await PaintApi.shopCatalogPicks(id);
         return data.products || [];
       } catch (e) {
-        if ((e.status === 404 || e.status === 0) && state?.products?.length) {
-          return catalogPicksFromState(brandId, categoryId);
+        if (state?.products?.length) {
+          const fromState = catalogPicksFromState(id);
+          if (fromState.length) return fromState;
         }
         throw e;
       }
@@ -2409,9 +2892,7 @@
       const narrow = window.matchMedia("(max-width: 639px)").matches;
       const maxPx = narrow ? 10 : 12;
       fitContextHeaderButton(productPickerBrand, maxPx);
-      fitContextHeaderButton(productPickerCategory, maxPx);
       fitContextHeaderButton(productDialogBrand, maxPx);
-      fitContextHeaderButton(productDialogCategory, maxPx);
     }
 
     function scheduleFitPickerContextHeader() {
@@ -2428,7 +2909,9 @@
         pendingAddCategory ||
         (state?.categories || []).find((c) => c.id === Number(pdCategoryId?.value));
       if (productDialogBrand) {
-        productDialogBrand.innerHTML = paintMarketContextHitInnerHtml(brand?.name || "");
+        const slug = brand?.slug || "";
+        productDialogBrand.dataset.brandSlug = slug;
+        productDialogBrand.innerHTML = paintMarketContextHitInnerHtml(brand?.name || "", { brandSlug: slug });
         productDialogBrand.title = paintMarketT("dash_picker_tap_brand");
       }
       if (productDialogCategory) {
@@ -2443,17 +2926,11 @@
 
     function syncProductPickerHeaderLabels() {
       const brand = pendingAddBrand;
-      const category = pendingAddCategory;
       if (productPickerBrand) {
-        productPickerBrand.innerHTML = paintMarketContextHitInnerHtml(brand?.name || "");
+        const slug = brand?.slug || "";
+        productPickerBrand.dataset.brandSlug = slug;
+        productPickerBrand.innerHTML = paintMarketContextHitInnerHtml(brand?.name || "", { brandSlug: slug });
         productPickerBrand.title = paintMarketT("dash_picker_tap_brand");
-      }
-      if (productPickerCategory) {
-        productPickerCategory.innerHTML = paintMarketContextHitInnerHtml(
-          category ? paintMarketCategoryLabel(category.slug, category.name) : "",
-          { categorySlug: category?.slug }
-        );
-        productPickerCategory.title = paintMarketT("dash_picker_tap_category");
       }
       scheduleFitPickerContextHeader();
     }
@@ -2463,20 +2940,34 @@
       window.addEventListener("resize", scheduleFitPickerContextHeader);
     }
 
-    async function openProductPickerDialog(brand, category) {
-      if (!brand || !category) return;
+    async function openProductPickerDialog(brand) {
+      if (!brand) return;
+      const brandId = Number(brand.id);
+      if (!Number.isFinite(brandId) || brandId <= 0) return;
       pendingAddBrand = brand;
-      pendingAddCategory = category;
+      pendingAddCategory = null;
+      updateAddFlowProgress(2);
+      rememberRecentBrand(brand.slug);
+      const productPickerLead = document.getElementById("productPickerLead");
+      if (productPickerLead) {
+        productPickerLead.textContent = paintMarketTf("dash_product_picker_lead_brand", {
+          brand: brand.name || ""
+        });
+      }
       syncProductPickerHeaderLabels();
       catalogPicks = [];
       if (productPickerSearch) productPickerSearch.value = "";
+      if (productPickerCount) productPickerCount.textContent = "";
       if (productPickerList) {
-        productPickerList.innerHTML = `<p class="pm-dash-picker-empty">${esc(paintMarketT("dash_loading"))}</p>`;
+        productPickerList.innerHTML = `<p class="pm-dash-add-sheet__empty">${esc(paintMarketT("dash_loading"))}</p>`;
       }
       productPickerDialog.showModal();
       scheduleFitPickerContextHeader();
       try {
-        catalogPicks = await fetchCatalogPicks(brand.id, category.id);
+        catalogPicks = await fetchCatalogPicks(brandId);
+        if (!catalogPicks.length) {
+          toast(paintMarketT("dash_product_picker_empty"));
+        }
         renderProductPickerList();
       } catch (e) {
         showErr(paintMarketT("dash_err_picks_prefix"), e);
@@ -2486,32 +2977,32 @@
 
     function selectCatalogProduct(product) {
       const brand = pendingAddBrand;
-      const category = pendingAddCategory;
-      if (!brand || !category || !product) return;
+      if (!brand || !product) return;
+      const category = categoryForCatalogProduct(product);
+      if (!category) {
+        toast(paintMarketT("dash_toast_category_required"));
+        return;
+      }
+      pendingAddCategory = category;
       productPickerDialog.close();
       openListProductDialog(brand, category, product);
     }
 
-    function openNewProductFromPicker() {
-      const brand = pendingAddBrand;
-      const category = pendingAddCategory;
-      if (!brand || !category) return;
-      addFlowReturnTo = "newProduct";
-      productPickerDialog.close();
-      openAddProductDialog(brand, category);
-    }
-
     function openListProductDialog(brand, category, product) {
-      setProductDialogMode("list");
+      pendingAddCatalogProduct = product;
+      productDialog.dataset.addWizard = "1";
       pdProductId.value = String(product.id);
       pdBrandId.value = String(brand.id);
       pdCategoryId.value = String(category.id);
-      productDialogTitle.textContent = paintMarketT("dash_dialog_list_title");
-      pdSubmit.textContent = paintMarketT("dash_list_save_btn");
-      pdHint.textContent = product.name || "";
-      buildUpdateListingRows();
-      fillUpdateListingRows(product.id);
+      productDialogTitle.textContent = product.name || paintMarketT("dash_dialog_add_title");
+      pdCapacity.value = "";
+      pdPrice.value = "";
+      setPdRalSelection("");
+      applyDashPricePlaceholder(pdPrice);
+      setProductDialogMode("list");
+      showAddWizardStep(3);
       productDialog.showModal();
+      scheduleFitPickerContextHeader();
     }
 
     function renderCategoryPickerList() {
@@ -2543,6 +3034,7 @@
     function openCategoryPickerDialog(brand) {
       if (!brand || !state?.categories?.length) return;
       pendingAddBrand = brand;
+      updateAddFlowProgress(2);
       if (categoryDialogBrandLabel) {
         categoryDialogBrandLabel.textContent = paintMarketTf("dash_category_brand_label", { brand: brand.name });
       }
@@ -2550,6 +3042,16 @@
       categoryDialog.showModal();
     }
 
+    if (brandPickerSearch) {
+      brandPickerSearch.addEventListener("input", () => renderBrandPickerList());
+    }
+    const productPickerBack = document.getElementById("productPickerBack");
+    if (productPickerBack) {
+      productPickerBack.addEventListener("click", () => {
+        productPickerDialog.close();
+        openBrandPickerDialog();
+      });
+    }
     if (brandAddBtn) {
       brandAddBtn.addEventListener("click", () => submitNewBrand());
     }
@@ -2574,33 +3076,12 @@
         openBrandPickerDialog();
       });
     }
-    if (productPickerCategory) {
-      productPickerCategory.addEventListener("click", () => {
-        addFlowReturnTo = "picker";
-        productPickerDialog.close();
-        if (pendingAddBrand) openCategoryPickerDialog(pendingAddBrand);
-        else openBrandPickerDialog();
-      });
-    }
     if (productDialogBrand) {
       productDialogBrand.addEventListener("click", () => {
-        addFlowReturnTo = "newProduct";
+        addFlowReturnTo = isAddWizardActive() ? "picker" : "newProduct";
         productDialog.close();
         openBrandPickerDialog();
       });
-    }
-    if (productDialogCategory) {
-      productDialogCategory.addEventListener("click", () => {
-        addFlowReturnTo = "newProduct";
-        productDialog.close();
-        const brand =
-          pendingAddBrand || (state?.brands || []).find((b) => b.id === Number(pdBrandId?.value));
-        if (brand) openCategoryPickerDialog(brand);
-        else openBrandPickerDialog();
-      });
-    }
-    if (productPickerNewBtn) {
-      productPickerNewBtn.addEventListener("click", () => openNewProductFromPicker());
     }
     if (productPickerSearch) {
       productPickerSearch.addEventListener("input", () => renderProductPickerList());
@@ -2850,8 +3331,12 @@
       if (!container) return;
       if (force) delete container.dataset.built;
       if (container.dataset.built === "1" && container.children.length > 0) return;
-      if (typeof paintMarketBuildRalPickerHtml === "function") {
-        container.innerHTML = paintMarketBuildRalPickerHtml(esc, shopCustomColors(), ralPickerLabels());
+      const custom = shopCustomColors();
+      const labels = ralPickerLabels();
+      if (container === pdRalGrid && typeof paintMarketBuildRalSheetPickerHtml === "function") {
+        container.innerHTML = paintMarketBuildRalSheetPickerHtml(esc, custom, labels);
+      } else if (typeof paintMarketBuildRalPickerHtml === "function") {
+        container.innerHTML = paintMarketBuildRalPickerHtml(esc, custom, labels);
       }
       container.dataset.built = "1";
     }
@@ -3043,6 +3528,31 @@
     }
     ensurePdRalGrid();
     buildRalGridInto(ralPickerGrid, true);
+    buildAddWizCapGrid();
+
+    if (productDialog) {
+      productDialog.addEventListener("close", () => {
+        productDialog.dataset.addWizard = "";
+        pendingAddCatalogProduct = null;
+        productDialog.classList.remove("pm-dash-add-sheet");
+        document.body.classList.remove("pm-dash-add-wiz-open");
+        if (addWizSheet) addWizSheet.classList.add("hidden");
+        if (productDialogLegacy) productDialogLegacy.classList.remove("hidden");
+      });
+    }
+
+    if (pdWizardBack) {
+      pdWizardBack.addEventListener("click", () => {
+        if (!isAddWizardActive()) return;
+        if (addWizardStep <= 3) {
+          productDialog.close();
+          const brand = pendingAddBrand;
+          if (brand) openProductPickerDialog(brand);
+          return;
+        }
+        showAddWizardStep(addWizardStep - 1);
+      });
+    }
 
     function openAddProductDialog(brand, category) {
       pendingAddBrand = brand;
@@ -3052,7 +3562,7 @@
       setPdRalSelection("");
       pdProductId.value = "";
       productDialogTitle.textContent = paintMarketT("dash_dialog_add_title");
-      pdSubmit.textContent = paintMarketT("dash_add_btn");
+      if (pdSubmitLegacy) pdSubmitLegacy.textContent = paintMarketT("dash_add_btn");
       pdBrandId.value = String(brand.id);
       pdCategoryId.value = String(category.id);
       fillCategorySelect(category?.id);
@@ -3167,8 +3677,90 @@
       pdPickProduct.addEventListener("change", () => loadPickedProductIntoForm());
     }
 
-    pdSubmit.addEventListener("click", async () => {
+    async function submitWizardListing() {
+      const productId = Number(pdProductId.value);
+      const brand = pendingAddBrand;
+      const category = pendingAddCategory;
+      const capacity = Number(pdCapacity.value);
+      const rawPrice = String(pdPrice.value ?? "").trim();
+      const priceAmount = Number(rawPrice);
+      if (!Number.isFinite(productId) || productId <= 0) {
+        toast(paintMarketT("dash_toast_pick_product"));
+        return;
+      }
+      if (!brand || !category) {
+        toast(paintMarketT("dash_toast_brand_required"));
+        return;
+      }
+      if (!Number.isFinite(capacity) || ![1, 3.6, 18].includes(capacity)) {
+        toast(paintMarketT("dash_toast_capacity_bad"));
+        showAddWizardStep(3);
+        return;
+      }
+      if (!rawPrice || !Number.isFinite(priceAmount) || priceAmount <= 0) {
+        toast(paintMarketT("dash_toast_price_bad"));
+        showAddWizardStep(4);
+        pdPrice?.focus();
+        return;
+      }
+      if (pdSubmit) pdSubmit.disabled = true;
+      try {
+        await persistListingsBatch([
+          {
+            masterProductId: productId,
+            capacityLtr: capacity,
+            available: true,
+            priceAmount,
+            customPhotoUrl: null,
+            ralCode: String(pdRalCode?.value || "").trim() || null
+          }
+        ]);
+        productDialog.dataset.addWizard = "";
+        await afterProductEntrySaved(brand, category, "dash_toast_listing_saved");
+      } catch (e) {
+        showErr(paintMarketT("dash_toast_product_update_fail"), e);
+      } finally {
+        if (pdSubmit) pdSubmit.disabled = false;
+      }
+    }
+
+    async function handlePdSubmitClick() {
       const mode = productDialog.dataset.mode || "add";
+      if (mode === "list" && isAddWizardActive()) {
+        const productId = Number(pdProductId.value);
+        if (!Number.isFinite(productId) || productId <= 0) {
+          toast(paintMarketT("dash_toast_pick_product"));
+          return;
+        }
+        const brand = pendingAddBrand;
+        const category = pendingAddCategory;
+        if (!brand || !category) {
+          toast(paintMarketT("dash_toast_brand_required"));
+          return;
+        }
+        if (addWizardStep === 3) {
+          const capacity = Number(pdCapacity.value);
+          if (!Number.isFinite(capacity) || ![1, 3.6, 18].includes(capacity)) {
+            toast(paintMarketT("dash_toast_capacity_bad"));
+            return;
+          }
+          showAddWizardStep(4);
+          return;
+        }
+        if (addWizardStep === 4) {
+          const rawPrice = String(pdPrice.value ?? "").trim();
+          const priceAmount = Number(rawPrice);
+          if (!rawPrice || !Number.isFinite(priceAmount) || priceAmount <= 0) {
+            toast(paintMarketT("dash_toast_price_bad"));
+            pdPrice?.focus();
+            return;
+          }
+          showAddWizardStep(5);
+          return;
+        }
+        await submitWizardListing();
+        return;
+      }
       if (mode === "list") {
         const productId = Number(pdProductId.value);
         if (!Number.isFinite(productId) || productId <= 0) {
@@ -3182,14 +3774,14 @@
           toast(paintMarketT("dash_toast_brand_required"));
           return;
         }
-        pdSubmit.disabled = true;
+        if (pdSubmitLegacy) pdSubmitLegacy.disabled = true;
         try {
           await persistListingsBatch(collectUpdateListingPayloads(productId));
           await afterProductEntrySaved(brand, category, "dash_toast_listing_saved");
         } catch (e) {
           showErr(paintMarketT("dash_toast_product_update_fail"), e);
         } finally {
-          pdSubmit.disabled = false;
+          if (pdSubmitLegacy) pdSubmitLegacy.disabled = false;
         }
         return;
       }
@@ -3207,7 +3799,7 @@
           return;
         }
         if (!validateCheckedCapacityPrices()) return;
-        pdSubmit.disabled = true;
+        if (pdSubmitLegacy) pdSubmitLegacy.disabled = true;
         try {
           let photoUrl = pdCurrentPhotoUrl.value.trim();
           const f = pdPhoto.files?.[0];
@@ -3228,7 +3820,7 @@
         } catch (e) {
           showErr(paintMarketT("dash_toast_product_update_fail"), e);
         } finally {
-          pdSubmit.disabled = false;
+          if (pdSubmitLegacy) pdSubmitLegacy.disabled = false;
         }
         return;
       }
@@ -3261,7 +3853,7 @@
           return;
         }
       }
-      pdSubmit.disabled = true;
+      if (pdSubmitLegacy) pdSubmitLegacy.disabled = true;
       try {
         let photoUrl = pdCurrentPhotoUrl.value.trim();
         const f = pdPhoto.files?.[0];
@@ -3310,9 +3902,19 @@
       } catch (e) {
         showErr(isEdit ? paintMarketT("dash_toast_product_update_fail") : paintMarketT("dash_err_add_prefix"), e);
       } finally {
-        pdSubmit.disabled = false;
+        if (pdSubmitLegacy) pdSubmitLegacy.disabled = false;
       }
-    });
+    }
+
+    pdSubmit?.addEventListener("click", handlePdSubmitClick);
+    pdSubmitLegacy?.addEventListener("click", handlePdSubmitClick);
+
+    if (addWizSkipColor) {
+      addWizSkipColor.addEventListener("click", () => {
+        setPdRalSelection("");
+        submitWizardListing();
+      });
+    }
 
     function dashIsReturningShop(st) {
       if (!st) return false;
@@ -3338,17 +3940,12 @@
 
     function openQuickAddProduct() {
       if (!state) return;
-      if (!state.categories?.length) return;
+      if (!state.brands?.length) return;
       addFlowReturnTo = "picker";
-      const isFirstAdd = !dashIsReturningShop(state);
-      const last = isFirstAdd ? null : getLastAddContext();
-      if (last?.brandId != null && last?.categoryId != null) {
-        const { brand, category } = resolveBrandCategory(last.brandId, last.categoryId);
-        if (brand && category) {
-          openProductPickerDialog(brand, category);
-          return;
-        }
-      }
+      pendingAddBrand = null;
+      pendingAddCategory = null;
+      pendingAddCatalogProduct = null;
+      productDialog.dataset.addWizard = "";
       openBrandPickerDialog();
     }
 
@@ -3381,18 +3978,26 @@
       renderShopCatalogList();
       syncCoordsLabel();
       if (dashPriceQuickDialog?.open) renderDashPriceQuickList();
-      if (categoryDialog?.open) renderCategoryPickerList();
+      if (brandDialog?.open) updateAddFlowProgress(1);
+      if (categoryDialog?.open) {
+        updateAddFlowProgress(2);
+        renderCategoryPickerList();
+      }
+      if (productPickerDialog?.open) {
+        updateAddFlowProgress(2);
+        syncProductPickerHeaderLabels();
+        renderProductPickerList();
+      }
       if (productDialog?.open) {
         fillCategorySelect(Number(pdCategorySelect?.value || pdCategoryId?.value));
-        if (productDialog.dataset.mode === "add") syncProductDialogHeaderLabels();
+        if (isAddWizardActive()) showAddWizardStep(addWizardStep);
+        else if (productDialog.dataset.mode === "add") syncProductDialogHeaderLabels();
         else syncAddProductHint();
         pdUpdateListingRows?.querySelectorAll(".upd-cap-price").forEach(applyDashPricePlaceholder);
         applyDashPricePlaceholder(pdPrice);
         applyDashPricePlaceholder(dashPriceQuickInput);
       }
-      if (productPickerDialog?.open) syncProductPickerHeaderLabels();
-      else if (productDialog?.open && productDialog.dataset.mode === "add") syncProductDialogHeaderLabels();
-      else scheduleFitPickerContextHeader();
+      if (!productPickerDialog?.open && !productDialog?.open) scheduleFitPickerContextHeader();
     });
 
     refreshDashboardTitleForLang();

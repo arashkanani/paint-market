@@ -1,0 +1,592 @@
+/* Add-product flow — mobile list sheet (brand / product pickers) */
+
+.pm-dash-picker-dialog.pm-dash-add-sheet {
+  max-width: min(100vw, 26rem);
+  border-radius: 1.125rem 1.125rem 0 0;
+  background: #fff;
+  box-shadow: 0 -4px 32px rgba(15, 23, 42, 0.12);
+}
+
+.pm-dash-add-sheet__form {
+  display: flex;
+  flex-direction: column;
+  max-height: min(94dvh, 720px);
+  background: #fff;
+}
+
+.pm-dash-add-sheet__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem 0.35rem;
+  flex-shrink: 0;
+}
+
+.pm-dash-add-sheet__back,
+.pm-dash-add-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #0f172a;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pm-dash-add-sheet__back:hover,
+.pm-dash-add-sheet__close:hover {
+  background: #f1f5f9;
+}
+
+.pm-dash-add-sheet__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.pm-dash-add-sheet__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem 1rem;
+  overflow: hidden;
+  background: #fff;
+}
+
+.pm-dash-add-sheet__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.pm-dash-add-sheet__lead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.pm-dash-add-sheet__lead-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.1rem;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 800;
+}
+
+.pm-dash-add-sheet__search-wrap {
+  margin-bottom: 0.85rem;
+  flex-shrink: 0;
+}
+
+.pm-dash-add-sheet__search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='8' cy='8' r='5'/%3E%3Cpath d='m13 13 3 3'/%3E%3C/svg%3E") 0.85rem center no-repeat;
+  font-size: 0.9375rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pm-dash-add-sheet__search::placeholder {
+  color: #94a3b8;
+}
+
+.pm-dash-add-sheet__search:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.pm-dash-add-sheet__progress {
+  height: 4px;
+  margin-bottom: 1rem;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pm-dash-add-sheet__progress-fill {
+  height: 100%;
+  width: 20%;
+  border-radius: inherit;
+  background: #3b82f6;
+  transition: width 0.25s ease;
+}
+
+.pm-dash-add-sheet__section {
+  flex-shrink: 0;
+  margin-bottom: 0.75rem;
+}
+
+.pm-dash-add-sheet__section--grow {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.pm-dash-add-sheet__section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pm-dash-add-sheet__chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.pm-dash-add-sheet__chips::-webkit-scrollbar {
+  display: none;
+}
+
+.pm-dash-add-sheet__chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.pm-dash-add-sheet__chip:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.pm-dash-add-sheet__chip .pm-brand-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  border-radius: 0.2rem;
+}
+
+.pm-dash-add-sheet__chip .pm-brand-icon__mark {
+  font-size: 0.35rem !important;
+}
+
+.pm-dash-add-sheet__chip-icon {
+  font-size: 0.875rem;
+  opacity: 0.55;
+}
+
+.pm-dash-add-sheet__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.1rem 0 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pm-dash-add-sheet__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pm-dash-add-sheet__row:hover {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+}
+
+.pm-dash-add-sheet__row:active {
+  transform: scale(0.99);
+}
+
+.pm-dash-add-sheet__row-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.pm-dash-add-sheet__row-logo .pm-brand-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.35rem;
+}
+
+.pm-dash-add-sheet__row-logo .pm-brand-icon__mark {
+  font-size: 0.55rem !important;
+}
+
+.pm-dash-add-sheet__row-thumb {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.35rem;
+  object-fit: contain;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+}
+
+.pm-dash-add-sheet__row-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.pm-dash-add-sheet__row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-dash-add-sheet__row-name {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-dash-add-sheet__row-meta {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-dash-add-sheet__row-chevron {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: #cbd5e1;
+  line-height: 1;
+}
+
+.pm-dash-add-sheet__fuzzy-title {
+  margin: 0.35rem 0 0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.pm-dash-add-sheet__empty {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.pm-dash-add-sheet__more {
+  flex-shrink: 0;
+  margin-top: 0.65rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.65rem;
+}
+
+.pm-dash-add-sheet__more summary {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pm-dash-add-sheet__more summary::-webkit-details-marker {
+  display: none;
+}
+
+.pm-dash-add-sheet__more-body {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.pm-dash-add-sheet__more-body input {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.pm-dash-add-sheet__more-body button {
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pm-dash-add-sheet__input-field {
+  background-image: none;
+  padding-left: 1rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pm-dash-add-sheet__row.is-selected {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.18);
+}
+
+.pm-dash-add-sheet__row-logo--cap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.35rem;
+  background: #f1f5f9;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pm-dash-add-sheet__section--color {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pm-dash-add-sheet__ral-mount {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.1rem 0 0.35rem;
+}
+
+.pm-dash-add-sheet__ral-section {
+  margin: 0.65rem 0 0.4rem;
+  padding: 0 0.1rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pm-dash-add-sheet__ral-section:first-child {
+  margin-top: 0;
+}
+
+.pm-dash-add-sheet__ral-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pm-dash-add-sheet__row--ral {
+  text-align: left;
+}
+
+.pm-dash-add-sheet__row-swatch {
+  display: block;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.pm-dash-add-sheet__ral-picked {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.pm-dash-add-sheet__more-body--ral input[type="color"] {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.15rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+/* Wizard colour step: no teal chip grid */
+#addWizSheet #pdRalGrid .pm-pd-ral-chip,
+#addWizSheet #pdRalGrid .pm-pd-ral-grid,
+#addWizSheet #pdRalGrid .pm-pd-ral-section-label {
+  display: none !important;
+}
+
+.pm-dash-add-sheet__skip {
+  margin-top: 0.65rem;
+  width: 100%;
+  padding: 0.55rem;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.pm-dash-add-sheet__footer {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.pm-dash-add-sheet__cta {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 9999px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.pm-dash-add-sheet__cta:hover {
+  background: #2563eb;
+}
+
+.pm-dash-add-sheet__cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+body.pm-dash-add-wiz-open #dashCatalogSection {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Add wizard — full white sheet; hide dashboard/catalog behind */
+#productDialog.pm-dash-add-sheet {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  max-width: 100vw;
+  width: 100%;
+  max-height: 100dvh;
+  height: 100dvh;
+  background: #fff;
+  box-shadow: none;
+}
+
+#productDialog.pm-dash-add-sheet::backdrop {
+  background: #fff;
+  backdrop-filter: none;
+}
+
+#productDialog.pm-dash-add-sheet .pm-dash-picker-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  background: #fff;
+}
+
+#productDialog.pm-dash-add-sheet #productDialogLegacy,
+#productDialog.pm-dash-add-sheet #productDialogLegacyFooter {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#addWizSheet.pm-dash-add-sheet__form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: min(100vw, 26rem);
+  margin: 0 auto;
+  max-height: 100dvh;
+  background: #fff;
+}
+
+#productDialogLegacy.hidden {
+  display: none !important;
+}
+
+#addWizSheet.hidden {
+  display: none !important;
+}
+
+#addWizSheet .add-wiz-panel.hidden {
+  display: none !important;
+}
+
+/* Hide legacy teal header / pill progress inside sheet dialogs */
+.pm-dash-add-sheet .pm-dash-picker-header,
+.pm-dash-add-sheet .pm-dash-add-progress,
+.pm-dash-add-sheet .pm-dash-picker-intro,
+.pm-dash-add-sheet .pm-dash-picker-footer,
+.pm-dash-add-sheet .pm-dash-picker-extra {
+  display: none !important;
+}
+
+#productPickerDialog.pm-dash-add-sheet .pm-dash-picker-context-row {
+  display: none;
+}

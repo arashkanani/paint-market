@@ -90,7 +90,8 @@
       faceHeightSidebar = 68,
       applySelectionOnRender = true,
       fitBrandMarks,
-      applyI18n
+      applyI18n,
+      syncSelectOnSettle = true
     } = cfg;
 
     const itemsFn = getItems || getBrands;
@@ -126,12 +127,12 @@
       if (!b) return;
       if (b.all) {
         filterActive = false;
-        selectFn("");
+        if (syncSelectOnSettle) selectFn("");
       } else {
         filterActive = true;
-        selectFn(String(b.slug || "").trim().toLowerCase());
+        if (syncSelectOnSettle) selectFn(String(b.slug || "").trim().toLowerCase());
       }
-      onRenderProducts();
+      if (syncSelectOnSettle) onRenderProducts();
     }
 
     function countSlug(slug) {

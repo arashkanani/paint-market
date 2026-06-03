@@ -11,6 +11,7 @@ const {
   extractImageFromZip
 } = require("./catalog-import");
 const ralColors = require("./public/js/ral-colors");
+const { compressImageFile } = require("./lib/image-compress");
 
 async function loadShopCustomColors(db, shopId) {
   return dbm.all(
@@ -227,7 +228,16 @@ async function importCatalogZipToDb(db, buffer, opts = {}) {
         const fname = `import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
         const abs = path.join(uploadDirProduct, fname);
         if (extractImageFromZip(parsed.zip, zipPath, abs)) {
-          imageUrl = publicUrlForUpload(path.join("products", fname).replace(/\\/g, "/"));
+          try {
+            const compressed = await compressImageFile(abs);
+            const rel = path
+              .relative(uploadDirProduct, compressed.newPath)
+              .split(path.sep)
+              .join("/");
+            imageUrl = publicUrlForUpload(path.join("products", rel));
+          } catch {
+            imageUrl = publicUrlForUpload(path.join("products", fname).replace(/\\/g, "/"));
+          }
         }
       }
     }
@@ -1364,7 +1374,16 @@ async function main() {
         res.status(400).json({ error: "photo file required" });
         return;
       }
-      const rel = path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/");
+      let rel = path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/");
+      try {
+        const compressed = await compressImageFile(req.file.path);
+        rel = path
+          .relative(path.join(ROOT, "uploads"), compressed.newPath)
+          .split(path.sep)
+          .join("/");
+      } catch {
+        /* keep original */
+      }
       const url = publicUrlForUpload(rel);
       res.json({ photoUrl: url });
     })
@@ -1490,27 +1509,53 @@ async function main() {
     asyncHandler(async (req, res) => {
       const u = await requireRole(db, req, "shop");
       const brandId = Number(req.query.brandId);
-      const categoryId = Number(req.query.categoryId);
-      if (!Number.isFinite(brandId) || !Number.isFinite(categoryId)) {
-        res.status(400).json({ error: "brandId and categoryId are required" });
+      const categoryIdRaw = req.query.categoryId;
+      const categoryId =
+        categoryIdRaw != null && String(categoryIdRaw).trim() !== ""
+          ? Number(categoryIdRaw)
+          : null;
+      if (!Number.isFinite(brandId)) {
+        res.status(400).json({ error: "brandId is required" });
         return;
       }
+      if (categoryId != null && !Number.isFinite(categoryId)) {
+        res.status(400).json({ error: "categoryId must be a number when provided" });
+        return;
+      }
+      const referenceOnly = req.query.referenceOnly !== "0";
+      const params = [brandId];
+      let categorySql = "";
+      if (Number.isFinite(categoryId)) {
+        categorySql = " AND mp.category_id = ?";
+        params.push(categoryId);
+      }
+      const ownerSql = referenceOnly
+        ? " AND mp.created_by_shop_id IS NULL"
+        : " AND (mp.created_by_shop_id IS NULL OR mp.created_by_shop_id = ?)";
+      if (!referenceOnly) params.push(u.shop_id);
       const products = await dbm.all(
         db,
         `SELECT mp.id, mp.name, mp.slug, mp.description, mp.default_image_url, mp.popularity_score,
-                COUNT(DISTINCT CASE
-                  WHEN sl.available = 1 AND sl.price_amount IS NOT NULL THEN sl.shop_id
-                END) AS shop_count,
-                COALESCE(SUM(sl.view_count), 0) AS view_total
+                mp.category_id,
+                c.slug AS category_slug,
+                c.name AS category_name,
+                (
+                  SELECT COUNT(DISTINCT sl.shop_id)
+                  FROM shop_listings sl
+                  WHERE sl.master_product_id = mp.id
+                    AND sl.available = 1
+                    AND sl.price_amount IS NOT NULL
+                ) AS shop_count,
+                (
+                  SELECT COALESCE(SUM(sl2.view_count), 0)
+                  FROM shop_listings sl2
+                  WHERE sl2.master_product_id = mp.id
+                ) AS view_total
          FROM master_products mp
-         LEFT JOIN shop_listings sl ON sl.master_product_id = mp.id
-         WHERE mp.brand_id = ? AND mp.category_id = ?
-           AND (mp.created_by_shop_id IS NULL OR mp.created_by_shop_id = ?)
-         GROUP BY mp.id
-         ORDER BY shop_count DESC,
-                  (mp.popularity_score + COALESCE(SUM(sl.view_count), 0)) DESC,
-                  mp.name ASC`,
-        [brandId, categoryId, u.shop_id]
+         JOIN catalog_categories c ON c.id = mp.category_id
+         WHERE mp.brand_id = ?${categorySql}${ownerSql}
+         ORDER BY mp.name ASC COLLATE NOCASE`,
+        params
       );
       await enrichShopCatalogPicks(db, u.shop_id, products);
       res.json({ products });

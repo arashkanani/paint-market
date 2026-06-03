@@ -5,7 +5,8 @@
   "description": "Paint market showroom — Express API + static UI",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "compress-images": "node scripts/compress-brand-images.js"
   },
   "engines": {
     "node": ">=18"
@@ -15,6 +16,7 @@
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.5",
     "sqlite3": "^5.1.7"
   }
 }

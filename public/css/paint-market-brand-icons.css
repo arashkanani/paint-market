@@ -220,3 +220,103 @@
   color: #e31e24;
   font-weight: 800;
 }
+
+/* Dashboard add-flow context chip — brand logo font & colors */
+.pm-dash-picker-header .pm-dash-picker-context-hit--brand {
+  background-image: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+
+.pm-dash-picker-context-hit--brand .pm-context-hit__inner--brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pm-dash-picker-context-hit--brand .pm-brand-icon {
+  flex-shrink: 0;
+  width: 1.4em;
+  height: 1.4em;
+  min-width: 1.4em;
+  border-radius: 0.2rem;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="national"] {
+  color: #00408a;
+}
+.pm-dash-picker-context-hit--brand[data-brand-slug="national"] .pm-context-hit__label {
+  font-family: Montserrat, "DM Sans", system-ui, sans-serif;
+  font-weight: 900;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="jotun"] {
+  color: #002d72;
+}
+.pm-dash-picker-context-hit--brand[data-brand-slug="jotun"] .pm-context-hit__label {
+  font-family: "Archivo Black", Montserrat, system-ui, sans-serif;
+  font-weight: 400;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="asian"] {
+  color: #e22120;
+}
+.pm-dash-picker-context-hit--brand[data-brand-slug="asian"] .pm-context-hit__label {
+  font-family: Nunito, "DM Sans", system-ui, sans-serif;
+  font-weight: 800;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="arabpaint"] .pm-context-hit__label {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 800;
+  color: #1e3a42;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="sigma"] {
+  color: #001f7e;
+}
+.pm-dash-picker-context-hit--brand[data-brand-slug="sigma"] .pm-context-hit__label {
+  font-family: Montserrat, "DM Sans", system-ui, sans-serif;
+  font-weight: 900;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="hempel"] {
+  color: #003087;
+}
+.pm-dash-picker-context-hit--brand[data-brand-slug="hempel"] .pm-context-hit__label {
+  font-family: Montserrat, system-ui, sans-serif;
+  font-weight: 800;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="wellcoat"] .pm-context-hit__label {
+  font-family: "Varela Round", Nunito, system-ui, sans-serif;
+  font-weight: 700;
+  color: #1a5ca8;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="fap"] {
+  color: #73b62b;
+}
+.pm-dash-picker-context-hit--brand[data-brand-slug="fap"] .pm-context-hit__label {
+  font-family: Nunito, "Varela Round", system-ui, sans-serif;
+  font-weight: 900;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="ritver"] .pm-context-hit__label {
+  font-family: Montserrat, Georgia, serif;
+  font-weight: 900;
+  color: #e30613;
+}
+
+.pm-dash-picker-context-hit--brand[data-brand-slug="glc_paint"] {
+  color: #e31e24;
+}
+.pm-dash-picker-context-hit--brand[data-brand-slug="glc_paint"] .pm-context-hit__label {
+  font-family: Montserrat, "Archivo Black", system-ui, sans-serif;
+  font-weight: 900;
+}
