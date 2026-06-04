@@ -11,8 +11,15 @@
     hdr_geo_done: "Done",
     hdr_geo_compact: "Country, city & language",
 
-    index_metaTitle: "Paint Showroom Hub",
-    index_nav_brand: "Paint Showroom Hub",
+    index_metaTitle: "PAINTIK",
+    index_nav_brand: "PAINTIK",
+    index_popular_title: "Popular products",
+    index_categories_more: "More →",
+    index_nav_home: "Home",
+    index_nav_browse: "Browse",
+    index_nav_add: "Add",
+    index_nav_shops: "Shops",
+    index_nav_account: "Account",
     index_nav_dashboard: "Shop dashboard",
     index_nav_register: "Register shop",
     index_nav_login: "Login",
@@ -20,7 +27,7 @@
     index_phase_title: "Shop onboarding phase",
     index_phase_body:
       "Only paint shops can register and use the dashboard. Customer browsing unlocks when an admin enables public access.",
-    index_hero_badge: "Virtual showroom marketplace",
+    index_hero_badge: "Paint shop finder",
     index_hero_h1: "Find paints by shop, brand, and pack size.",
     index_hero_p:
       "Fast discovery experience inspired by modern marketplaces. No checkout; only verified shop information, images, capacities, and latest prices.",
@@ -369,7 +376,7 @@
     dash_toast_listing_save_fail: "Save failed",
     dash_err_add_prefix: "Add failed",
 
-    admin_metaTitle: "Admin • Paint showroom",
+    admin_metaTitle: "Admin • PAINTIK",
     admin_platform: "Platform admin",
     admin_heading: "Go-to-market controls",
     admin_home: "Home",
@@ -502,8 +509,15 @@
     hdr_geo_done: "تم",
     hdr_geo_compact: "الدولة والمدينة واللغة",
 
-    index_metaTitle: "مركز صالات الطلاء",
-    index_nav_brand: "مركز صالات الطلاء",
+    index_metaTitle: "PAINTIK",
+    index_nav_brand: "PAINTIK",
+    index_popular_title: "منتجات شائعة",
+    index_categories_more: "المزيد ←",
+    index_nav_home: "الرئيسية",
+    index_nav_browse: "تصفح",
+    index_nav_add: "إضافة",
+    index_nav_shops: "المتاجر",
+    index_nav_account: "حسابي",
     index_nav_dashboard: "لوحة المتجر",
     index_nav_register: "تسجيل متجر",
     index_nav_login: "تسجيل الدخول",
@@ -511,7 +525,7 @@
     index_phase_title: "مرحلة إدماج المتاجر",
     index_phase_body:
       "يمكن لمتاجر الطلاء فقط التسجيل واستخدام لوحة التحكم. يُفعّل تصفّح العملاء عندما يفعّل المشرف الوصول العام.",
-    index_hero_badge: "سوق افتراضي للصالات",
+    index_hero_badge: "ابحث عن متاجر الطلاء",
     index_hero_h1: "اعثر على الطلاء حسب المتجر والعلامة وحجم العبوة.",
     index_hero_p:
       "تجربة سريعة مستوحاة من الأسواق الحديثة. بلا دفع إلكتروني؛ معلومات متجر موثقة وصور وسعات وأسعار حديثة فقط.",
@@ -860,7 +874,7 @@
     dash_toast_listing_save_fail: "فشل الحفظ",
     dash_err_add_prefix: "فشل الإضافة",
 
-    admin_metaTitle: "الإدارة • صالة الطلاء",
+    admin_metaTitle: "الإدارة • PAINTIK",
     admin_platform: "إدارة المنصة",
     admin_heading: "أدوات الإطلاق",
     admin_home: "الرئيسية",

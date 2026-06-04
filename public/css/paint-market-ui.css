@@ -820,6 +820,34 @@ body[data-pm-index-view="products"] .pm-index-product-grid {
   background: #ccfbf1;
 }
 
+/* PAINTIK brand logo (shared across pages) */
+.pm-brand-logo-link {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.pm-brand-logo-link__img {
+  display: block;
+  width: auto;
+  height: 3.5rem;
+  max-width: min(16rem, 62vw);
+  object-fit: contain;
+}
+
+.pm-brand-logo-link__img--lg {
+  height: 4.75rem;
+  max-width: min(20rem, 92vw);
+}
+
+.pm-brand-logo-link--center {
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 0.35rem;
+}
+
 /* Shop theme — green → blue (matches geo settings) */
 :root {
   --pm-shops-bg: color-mix(in srgb, #e2e8f0 90%, #64748b);
