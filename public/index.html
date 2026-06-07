@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
-  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260604s" />
+  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260531g" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body { font-family: "DM Sans", system-ui, sans-serif; }
@@ -52,8 +52,13 @@
           <div id="suggestPanel" class="absolute z-50 left-0 right-0 mt-1.5 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl hidden max-h-80 overflow-auto"></div>
         </div>
       </div>
+      <nav class="pm-pfinder-header__nav" aria-label="Quick links">
+        <a href="/paint/browse.html" data-pm-t="index_nav_browse">Browse</a>
+        <a href="/paint/register.html" data-pm-t="index_nav_register">Register shop</a>
+        <a href="/paint/login.html" class="pm-pfinder-header__nav-login" data-pm-t="index_nav_login">Login</a>
+      </nav>
     </div>
-    <div class="pm-geo-bar-desktop hidden md:flex flex-wrap items-center gap-x-4 gap-y-2 max-w-6xl mx-auto px-4 pb-2">
+    <div class="pm-geo-bar-desktop pm-pfinder-geo-bar hidden md:flex flex-wrap items-center gap-x-4 gap-y-2">
       <label class="pm-country-field flex items-center gap-2 shrink-0">
         <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
         <span class="pm-select-with-flag pm-select-with-flag--header">
@@ -72,9 +77,10 @@
     </div>
   </header>
 
-  <main class="pm-index-main max-w-6xl mx-auto px-4 pt-0">
+  <main class="pm-index-main w-full max-w-none mx-0 px-0 pt-0">
     <div id="indexPageScroll" class="pm-index-page-scroll">
-    <section id="phaseBanner" class="mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 p-4 mb-1 text-sm text-amber-950 hidden shrink-0" data-error-api="">
+    <div class="pm-pfinder-home__content">
+      <section id="phaseBanner" class="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-4 mb-1 text-sm text-amber-950 hidden shrink-0" data-error-api="">
       <p id="phaseBannerTitle" class="font-semibold mb-1" data-pm-t="index_phase_title">Shop onboarding phase</p>
       <p id="phaseBannerBody" class="text-amber-900/90" data-pm-t="index_phase_body">Only paint shops can register and use the dashboard. Customer browsing unlocks when an admin enables public access.</p>
     </section>
@@ -87,10 +93,8 @@
       <div id="indexPopularStrip" class="pm-pfinder-popular__track" role="list"></div>
     </section>
 
-    <section id="homeAdSection" class="pm-index-ad-pin mt-0 shrink-0 overflow-hidden" aria-label="Advertisements">
-      <div
-        class="relative w-full aspect-[21/9] min-h-[9.5rem] sm:min-h-[11rem] max-h-[clamp(11rem,32vw,18rem)] bg-slate-800 overflow-hidden flex flex-col justify-center text-slate-300 text-sm"
-      >
+    <section id="homeAdSection" class="pm-index-ad-pin pm-pfinder-ad shrink-0 overflow-hidden" aria-label="Advertisements">
+      <div class="pm-pfinder-ad__frame relative w-full bg-slate-800 overflow-hidden">
         <div
           id="adCarouselStrip"
           class="ad-carousel-strip flex flex-1 min-h-0 w-full h-full snap-x snap-mandatory overflow-x-auto scroll-smooth"
@@ -135,18 +139,18 @@
       <div id="indexCategoryBar" class="pm-index-category-bar__track" role="tablist"></div>
     </section>
 
-      <section id="indexMapSection" class="pm-index-map-section hidden" aria-label="Products on map">
+      <section id="indexMapSection" class="pm-index-map-section pm-pfinder-map-panel hidden shrink-0" aria-label="Products on map">
         <p id="indexMapStatus" class="pm-index-map-section__status hidden"></p>
         <div id="indexMapCanvas" class="pm-index-map-canvas"></div>
       </section>
 
-      <section id="shopsSection" class="pm-shops-section mt-3 space-y-4 hidden">
+      <section id="shopsSection" class="pm-shops-section pm-pfinder-shops hidden shrink-0">
         <p id="shopsSectionTitle" class="pm-shops-section__title-bar" role="heading" aria-level="2"></p>
         <div id="shopGrid" class="grid"></div>
         <button type="button" id="indexShopsShowAll" class="pm-index-panel-show-all hidden" data-pm-t="index_panel_show_all">Show all</button>
       </section>
 
-      <section id="indexShopsMapSection" class="pm-index-shops-map-section mt-3 hidden" aria-label="Shops on map">
+      <section id="indexShopsMapSection" class="pm-index-shops-map-section pm-pfinder-map-panel hidden shrink-0" aria-label="Shops on map">
         <p id="indexShopsMapTitle" class="pm-shops-section__title-bar" role="heading" aria-level="2" data-pm-t="index_shops_map_title">Shops on map</p>
         <p id="indexShopsMapStatus" class="pm-index-shops-map-section__status hidden"></p>
         <div id="indexShopsMapCanvas" class="pm-index-shops-map-canvas"></div>
@@ -170,7 +174,8 @@
         </div>
       </section>
 
-      <footer class="mt-6 pb-4 mx-3 text-xs text-slate-500 text-center" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
+      <footer class="mt-6 pb-4 text-xs text-slate-500 text-center" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
+    </div>
     </div>
   </main>
 
