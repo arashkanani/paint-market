@@ -395,7 +395,7 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
 .pm-map-price-chip {
   width: 100%;
   box-sizing: border-box;
-  padding: 1px 0;
+  padding: 1px 2px;
   border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
@@ -452,6 +452,96 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
 .leaflet-marker-icon.pm-map-price-marker {
   background: transparent;
   border: none;
+}
+
+/* Compact min–max range marker (zoomed-out map) */
+.pm-map-price-stack--range {
+  gap: 0;
+}
+
+.pm-map-price-range {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.pm-map-price-range__edge {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 2px 2px 3px;
+  color: #fafaf9;
+  text-align: center;
+  line-height: 1;
+}
+
+.pm-map-price-range__edge--min {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.pm-map-price-range__edge--max {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.pm-map-price-range__tag {
+  display: block;
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.88;
+  margin-bottom: 1px;
+}
+
+.pm-map-price-range__edge .pm-map-price-amt {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+}
+
+.pm-map-price-range__edge .pm-map-price-num {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.pm-map-price-range__edge .pm-map-price-cur {
+  font-size: 5px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.pm-map-price-range__bridge {
+  flex: 0 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.pm-map-price-range__bridge span {
+  display: block;
+  width: 1px;
+  height: 70%;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.pm-map-price-range__count {
+  display: block;
+  margin-top: 1px;
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: #475569;
+  text-shadow: none;
+  white-space: nowrap;
 }
 
 .pm-browse-capacity-bar {

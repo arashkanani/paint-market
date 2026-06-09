@@ -252,10 +252,13 @@ body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] {
   font-size: 0.7rem;
 }
 
-.pm-pfinder-search #suggestPanel {
-  border-radius: 1rem;
-  margin-top: 0.35rem;
-  top: 100%;
+.pm-pfinder-search__input--open-page {
+  cursor: pointer;
+  caret-color: transparent;
+}
+
+.pm-pfinder-search__input--open-page:focus {
+  cursor: pointer;
 }
 
 /* Popular products — stories-style row */

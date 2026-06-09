@@ -61,6 +61,56 @@ function paintMarketBrowsePageUrl(opts = {}) {
   return `/paint/browse.html${suffix}`;
 }
 
+function paintMarketSearchResultsUrl(opts = {}) {
+  const qs = new URLSearchParams();
+  const q = opts.q != null ? String(opts.q).trim() : "";
+  if (q) qs.set("q", q);
+  const catId = Number(opts.categoryId);
+  const brandId = Number(opts.brandId);
+  if (Number.isFinite(catId) && catId > 0) qs.set("categoryId", String(catId));
+  if (Number.isFinite(brandId) && brandId > 0) qs.set("brandId", String(brandId));
+  const cap =
+    typeof PaintApi !== "undefined" ? PaintApi.normalizeCapacityLtr(opts.capacityLtr) : null;
+  if (cap != null) qs.set("capacityLtr", String(cap));
+  const sort = opts.sort != null ? String(opts.sort).trim() : "";
+  if (sort && sort !== "popularity") qs.set("sort", sort);
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return `/paint/search-results.html${suffix}`;
+}
+
+const PM_RECENT_SEARCH_KEY = "paint-market-recent-searches";
+const PM_RECENT_SEARCH_MAX = 12;
+
+function paintMarketRecentSearchesGet() {
+  try {
+    const raw = localStorage.getItem(PM_RECENT_SEARCH_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((s) => typeof s === "string" && String(s).trim()) : [];
+  } catch {
+    return [];
+  }
+}
+
+function paintMarketRecentSearchAdd(term) {
+  const q = String(term || "").trim();
+  if (!q) return;
+  const prev = paintMarketRecentSearchesGet().filter((s) => s.toLowerCase() !== q.toLowerCase());
+  prev.unshift(q);
+  try {
+    localStorage.setItem(PM_RECENT_SEARCH_KEY, JSON.stringify(prev.slice(0, PM_RECENT_SEARCH_MAX)));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function paintMarketRecentSearchesClear() {
+  try {
+    localStorage.removeItem(PM_RECENT_SEARCH_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 const PaintApi = {
   async request(path, options = {}) {
     const { body, headers: hdrs = {}, ...rest } = options;
@@ -149,6 +199,8 @@ const PaintApi = {
     if (q) qs.set("q", q);
     const cap = PaintApi.normalizeCapacityLtr(opts.capacityLtr);
     if (cap != null) qs.set("capacityLtr", String(cap));
+    const sort = opts.sort != null ? String(opts.sort).trim() : "";
+    if (sort) qs.set("sort", sort);
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return this.request(`/public/browse/products${suffix}`);
   },
@@ -171,6 +223,15 @@ const PaintApi = {
     if (cap != null) qs.set("capacityLtr", String(cap));
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return this.request(`/public/search/suggest${suffix}`);
+  },
+  searchPopular() {
+    return this.request("/public/search/popular");
+  },
+  searchWords(q) {
+    const qs = new URLSearchParams();
+    if (q) qs.set("q", String(q).trim());
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/public/search/words${suffix}`);
   },
   normalizeCapacityLtr(raw) {
     const n = Number(raw);
@@ -1738,6 +1799,11 @@ window.paintMarketFavoriteIs = paintMarketFavoriteIs;
 window.paintMarketFavoriteToggle = paintMarketFavoriteToggle;
 window.paintMarketSortShopsFavoritesFirst = paintMarketSortShopsFavoritesFirst;
 window.paintMarketFavoriteApplyButton = paintMarketFavoriteApplyButton;
+window.paintMarketBrowsePageUrl = paintMarketBrowsePageUrl;
+window.paintMarketSearchResultsUrl = paintMarketSearchResultsUrl;
+window.paintMarketRecentSearchesGet = paintMarketRecentSearchesGet;
+window.paintMarketRecentSearchAdd = paintMarketRecentSearchAdd;
+window.paintMarketRecentSearchesClear = paintMarketRecentSearchesClear;
 
 if (typeof document !== "undefined") {
   if (document.readyState === "loading") {

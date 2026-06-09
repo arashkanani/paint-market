@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search results</title>
+  <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
+  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260531g" />
+  <link rel="stylesheet" href="/paint/css/search-results.css?v=20260609c" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
+</head>
+<body class="pm-sr-page text-slate-900" data-pm-page-title="search_results_metaTitle">
+  <header class="pm-sr-header">
+    <div class="pm-sr-header__search">
+      <a href="/paint/search.html" id="srSearchBack" class="pm-sr-back" aria-label="Back"><span aria-hidden="true">‹</span></a>
+      <div class="pm-sr-field">
+        <input id="srSearchInput" type="search" class="pm-sr-field__input" autocomplete="off" enterkeyhint="search" />
+      </div>
+    </div>
+    <div id="srFilterChips" class="pm-sr-chips hidden" role="list"></div>
+  </header>
+
+  <div class="pm-sr-split">
+    <section class="pm-sr-map-panel" aria-label="Shop prices on map">
+      <p id="srMapStatus" class="pm-sr-map-panel__status" data-pm-t="index_search_map_loading">Loading map…</p>
+      <div id="srMapCanvas" class="pm-sr-map-canvas"></div>
+    </section>
+
+    <div class="pm-sr-products-scroll">
+      <main class="pm-sr-main">
+        <p id="srResultCount" class="pm-sr-count hidden"></p>
+        <p id="srLoading" class="pm-sr-status" data-pm-t="index_category_products_loading">Loading products…</p>
+        <p id="srEmpty" class="pm-sr-status hidden" data-pm-t="index_category_products_empty">No products found.</p>
+        <ul id="srProductGrid" class="pm-sr-grid" role="list"></ul>
+      </main>
+    </div>
+  </div>
+
+  <div class="pm-sr-fab-bar">
+    <button type="button" id="srSortBtn" class="pm-sr-fab-bar__btn">
+      <span class="pm-sr-fab-bar__icon" aria-hidden="true">↕</span>
+      <span data-pm-t="search_results_sort">Sort</span>
+    </button>
+    <button type="button" id="srFilterBtn" class="pm-sr-fab-bar__btn">
+      <span class="pm-sr-fab-bar__icon" aria-hidden="true">☰</span>
+      <span data-pm-t="search_results_filter">Filter</span>
+    </button>
+  </div>
+
+  <!-- Sort sheet -->
+  <div id="srSortSheet" class="pm-sr-sheet" hidden aria-hidden="true">
+    <div class="pm-sr-sheet__backdrop" data-close-sheet></div>
+    <div class="pm-sr-sheet__panel" role="dialog" aria-labelledby="srSortTitle">
+      <button type="button" class="pm-sr-sheet__close" data-close-sheet aria-label="Close">×</button>
+      <h2 id="srSortTitle" class="pm-sr-sheet__title" data-pm-t="search_results_sort">Sort</h2>
+      <ul id="srSortList" class="pm-sr-sheet__list" role="listbox"></ul>
+    </div>
+  </div>
+
+  <!-- Filter hub -->
+  <div id="srFilterSheet" class="pm-sr-sheet pm-sr-sheet--full" hidden aria-hidden="true">
+    <div class="pm-sr-sheet__backdrop" data-close-sheet></div>
+    <div class="pm-sr-sheet__panel pm-sr-sheet__panel--full" role="dialog" aria-labelledby="srFilterTitle">
+      <header class="pm-sr-filter-hub__head">
+        <h2 id="srFilterTitle" class="pm-sr-filter-hub__title" data-pm-t="search_results_filter">Filter</h2>
+        <button type="button" class="pm-sr-filter-hub__cancel" data-close-sheet data-pm-t="search_results_cancel">Cancel</button>
+      </header>
+      <ul class="pm-sr-filter-hub__rows">
+        <li>
+          <button type="button" id="srFilterCategoryRow" class="pm-sr-filter-row">
+            <span class="pm-sr-filter-row__label" data-pm-t="search_results_filter_category">Category</span>
+            <span id="srFilterCategoryValue" class="pm-sr-filter-row__value">—</span>
+            <span class="pm-sr-filter-row__chev" aria-hidden="true">›</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" id="srFilterBrandRow" class="pm-sr-filter-row">
+            <span class="pm-sr-filter-row__label" data-pm-t="search_results_filter_brand">Brand</span>
+            <span id="srFilterBrandValue" class="pm-sr-filter-row__value">—</span>
+            <span class="pm-sr-filter-row__chev" aria-hidden="true">›</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" id="srFilterCapacityRow" class="pm-sr-filter-row">
+            <span class="pm-sr-filter-row__label" data-pm-t="search_results_filter_capacity">Pack size</span>
+            <span id="srFilterCapacityValue" class="pm-sr-filter-row__value">—</span>
+            <span class="pm-sr-filter-row__chev" aria-hidden="true">›</span>
+          </button>
+        </li>
+      </ul>
+      <footer class="pm-sr-filter-hub__foot">
+        <button type="button" id="srFilterReset" class="pm-sr-filter-hub__reset" data-pm-t="search_results_reset">Reset</button>
+        <button type="button" id="srFilterApply" class="pm-sr-filter-hub__apply">
+          <span id="srFilterApplyCount" class="pm-sr-filter-hub__apply-count">0 Items</span>
+          <span data-pm-t="search_results_apply">Apply</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Picker sub-sheets -->
+  <div id="srPickerSheet" class="pm-sr-sheet pm-sr-sheet--full" hidden aria-hidden="true">
+    <div class="pm-sr-sheet__backdrop" data-close-picker></div>
+    <div class="pm-sr-sheet__panel pm-sr-sheet__panel--full" role="dialog">
+      <header class="pm-sr-filter-hub__head">
+        <button type="button" class="pm-sr-filter-hub__cancel" data-close-picker data-pm-t="search_results_cancel">Cancel</button>
+        <h2 id="srPickerTitle" class="pm-sr-filter-hub__title"></h2>
+      </header>
+      <ul id="srPickerList" class="pm-sr-picker-list" role="listbox"></ul>
+    </div>
+  </div>
+
+  <nav class="pm-pfinder-bottom-nav" aria-label="Main navigation">
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">⌂</span>
+      <span data-pm-t="index_nav_home">Home</span>
+    </a>
+    <a href="/paint/browse.html" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">☰</span>
+      <span data-pm-t="index_nav_browse">Browse</span>
+    </a>
+    <div class="pm-pfinder-bottom-nav__fab-wrap">
+      <a href="/paint/register.html" class="pm-pfinder-bottom-nav__fab" title="Register shop" aria-label="Add listing">+</a>
+    </div>
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">🏪</span>
+      <span data-pm-t="index_nav_shops">Shops</span>
+    </a>
+    <a href="/paint/login.html" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">👤</span>
+      <span data-pm-t="index_nav_account">Account</span>
+    </a>
+  </nav>
+
+  <script src="/paint/js/paint-i18n.js"></script>
+  <script src="/paint/js/common.js"></script>
+  <script src="/paint/js/ral-colors.js"></script>
+  <script src="/paint/js/theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/paint/js/search-results-page.js?v=20260609f"></script>
+</body>
+</html>

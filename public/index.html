@@ -38,18 +38,20 @@
           <label class="sr-only" for="searchInput" data-pm-t="index_search_label">Search catalog & shops</label>
           <input
             id="searchInput"
+            readonly
             autocomplete="off"
-            type="text"
-            class="pm-pfinder-search__input"
+            type="search"
+            class="pm-pfinder-search__input pm-pfinder-search__input--open-page"
             data-pm-ph="index_search_ph"
             placeholder="Search products, brands, or area…"
+            aria-haspopup="false"
           />
           <button type="button" class="pm-pfinder-search__geo pm-geo-compact-btn md:hidden" aria-label="Country, city &amp; language">
             <span class="pm-geo-compact-inner">
               <span class="pm-geo-compact-flag" aria-hidden="true"></span>
             </span>
           </button>
-          <div id="suggestPanel" class="absolute z-50 left-0 right-0 mt-1.5 rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl hidden max-h-80 overflow-auto"></div>
+          <div id="suggestPanel" class="hidden" aria-hidden="true"></div>
         </div>
       </div>
       <nav class="pm-pfinder-header__nav" aria-label="Quick links">
@@ -1528,6 +1530,26 @@
 
     const debouncedLoadIndexProducts = debounce(() => loadIndexProducts(), 220);
     const debouncedRefreshIndexMap = debounce(() => refreshIndexMapView(), 280);
+
+    function openSearchPage() {
+      window.location.href = "/paint/search.html";
+    }
+    if (searchInput) {
+      searchInput.addEventListener("click", openSearchPage);
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openSearchPage();
+        }
+      });
+    }
+    if (searchWrap) {
+      searchWrap.addEventListener("click", (e) => {
+        if (e.target.closest(".pm-geo-compact-btn")) return;
+        if (e.target === searchInput) return;
+        openSearchPage();
+      });
+    }
 
     searchInput.addEventListener("input", () => {
       if (indexViewMode === "map") {

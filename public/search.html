@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search</title>
+  <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260531g" />
+  <link rel="stylesheet" href="/paint/css/search-page.css?v=20260609c" />
+  <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
+</head>
+<body class="pm-search-page text-slate-900" data-pm-page-title="search_metaTitle">
+  <header class="pm-search-header">
+    <div class="pm-search-header__bar">
+      <a href="/paint/" class="pm-search-back" aria-label="Back to home"><span aria-hidden="true">‹</span></a>
+      <div class="pm-search-field">
+        <label class="sr-only" for="searchPageInput" data-pm-t="search_input_label">Search</label>
+        <input
+          id="searchPageInput"
+          type="search"
+          enterkeyhint="search"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          class="pm-search-field__input"
+          data-pm-ph="search_input_ph"
+          placeholder="Type a product, brand, category, shop, or area…"
+        />
+        <button type="button" id="searchPageClear" class="pm-search-field__clear" aria-label="Clear search">×</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pm-search-main">
+    <div class="pm-search-idle-panels">
+      <section id="searchRecentPanel" class="pm-search-panel" aria-label="Recent searches">
+        <div class="pm-search-panel__head">
+          <h2 class="pm-search-panel__title" data-pm-t="search_recent_title">Recent searches</h2>
+          <button type="button" id="searchRecentClear" class="pm-search-panel__action" data-pm-t="search_recent_clear">Clear</button>
+        </div>
+        <div id="searchRecentChips" class="pm-search-chips" role="list"></div>
+        <p id="searchRecentEmpty" class="pm-search-empty" data-pm-t="search_recent_empty">Your recent searches will appear here.</p>
+      </section>
+
+      <section id="searchPopularPanel" class="pm-search-panel" aria-label="Popular searches">
+        <div class="pm-search-panel__head">
+          <h2 class="pm-search-panel__title" data-pm-t="search_popular_title">Popular</h2>
+        </div>
+        <div id="searchPopularChips" class="pm-search-chips" role="list"></div>
+        <p id="searchPopularEmpty" class="pm-search-empty hidden" data-pm-t="search_results_empty">No matches in the catalog for this text.</p>
+      </section>
+    </div>
+
+    <section id="searchResultsPanel" class="pm-search-results" aria-live="polite">
+      <ul id="searchResultsList" class="pm-search-results__list" role="list"></ul>
+      <p id="searchResultsStatus" class="pm-search-results__status hidden"></p>
+    </section>
+  </main>
+
+  <nav class="pm-pfinder-bottom-nav" aria-label="Main navigation">
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">⌂</span>
+      <span data-pm-t="index_nav_home">Home</span>
+    </a>
+    <a href="/paint/browse.html" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">☰</span>
+      <span data-pm-t="index_nav_browse">Browse</span>
+    </a>
+    <div class="pm-pfinder-bottom-nav__fab-wrap">
+      <a href="/paint/register.html" class="pm-pfinder-bottom-nav__fab" title="Register shop" aria-label="Add listing">+</a>
+    </div>
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">🏪</span>
+      <span data-pm-t="index_nav_shops">Shops</span>
+    </a>
+    <a href="/paint/login.html" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">👤</span>
+      <span data-pm-t="index_nav_account">Account</span>
+    </a>
+  </nav>
+
+  <script src="/paint/js/paint-i18n.js"></script>
+  <script src="/paint/js/common.js"></script>
+  <script src="/paint/js/search-page.js"></script>
+</body>
+</html>

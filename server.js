@@ -335,6 +335,14 @@ function parseCapacityLtr(raw) {
   return null;
 }
 
+function parseBrowseProductSort(raw) {
+  const s = String(raw || "popularity").trim().toLowerCase();
+  if (s === "price_asc" || s === "price-low") return "price_asc";
+  if (s === "price_desc" || s === "price-high") return "price_desc";
+  if (s === "name") return "name";
+  return "popularity";
+}
+
 function buildCapacityListingFilter(capacityLtr) {
   if (capacityLtr == null) return { sql: "", params: [] };
   return { sql: " AND ABS(sl.capacity_ltr - ?) < 0.001", params: [capacityLtr] };
@@ -887,9 +895,34 @@ async function main() {
       const hasBrand = Number.isFinite(brandId) && brandId > 0;
       const q = String(req.query.q || "").trim();
       const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
+      const sort = parseBrowseProductSort(req.query.sort);
       const listed = buildProductListedExists(capacityLtr);
+      const capListingSql =
+        capacityLtr != null
+          ? ` AND ABS(sl2.capacity_ltr - ?) < 0.001`
+          : "";
+      const capListingParams = capacityLtr != null ? [capacityLtr] : [];
       let sql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, mp.default_image_url,
                         b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name,
+                        c.slug AS category_slug, c.name AS category_name,
+                        (
+                          SELECT MIN(sl2.price_amount)
+                          FROM shop_listings sl2
+                          WHERE sl2.master_product_id = mp.id
+                            AND sl2.available = 1
+                            AND sl2.price_amount IS NOT NULL
+                            ${capListingSql}
+                        ) AS min_price,
+                        (
+                          SELECT sl2.currency
+                          FROM shop_listings sl2
+                          WHERE sl2.master_product_id = mp.id
+                            AND sl2.available = 1
+                            AND sl2.price_amount IS NOT NULL
+                            ${capListingSql}
+                          ORDER BY sl2.updated_at DESC
+                          LIMIT 1
+                        ) AS currency,
                         (
                           SELECT sl.custom_photo_url
                           FROM shop_listings sl
@@ -902,8 +935,9 @@ async function main() {
                         ) AS listing_image_url
                  FROM master_products mp
                  JOIN brands b ON b.id = mp.brand_id
+                 JOIN catalog_categories c ON c.id = mp.category_id
                  WHERE ${listed.sql}`;
-      const params = [...listed.params];
+      const params = [...capListingParams, ...capListingParams, ...listed.params];
       if (hasCategory) {
         sql += ` AND mp.category_id = ?`;
         params.push(categoryId);
@@ -917,14 +951,24 @@ async function main() {
         const like = `%${q}%`;
         params.push(like, like);
       }
-      sql += ` ORDER BY mp.popularity_score DESC, mp.name ASC LIMIT 500`;
+      if (sort === "price_asc") {
+        sql += ` ORDER BY (min_price IS NULL), min_price ASC, mp.popularity_score DESC, mp.name ASC`;
+      } else if (sort === "price_desc") {
+        sql += ` ORDER BY (min_price IS NULL), min_price DESC, mp.popularity_score DESC, mp.name ASC`;
+      } else if (sort === "name") {
+        sql += ` ORDER BY mp.name ASC`;
+      } else {
+        sql += ` ORDER BY mp.popularity_score DESC, mp.name ASC`;
+      }
+      sql += ` LIMIT 500`;
       const rows = await dbm.all(db, sql, params);
       const products = rows.map((p) => {
         const listing = String(p.listing_image_url || "").trim();
         const fallback = String(p.default_image_url || "").trim();
+        normalizeCategoryNameFields(p);
         return { ...p, image_url: listing || fallback };
       });
-      res.json({ products, capacityLtr });
+      res.json({ products, capacityLtr, sort });
     })
   );
 
@@ -1089,6 +1133,149 @@ async function main() {
         capacityLtr != null ? [like, like, like, like, ...capParams, capacityLtr] : [like, like, like, like, ...capParams]
       );
       res.json({ products, shops, capacityLtr });
+    })
+  );
+
+  app.get(
+    "/paint/api/public/search/popular",
+    asyncHandler(async (_req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ terms: [] });
+        return;
+      }
+      const listed = buildProductListedExists(null);
+      const products = await dbm.all(
+        db,
+        `SELECT mp.name AS text, 'product' AS kind, mp.slug AS slug, mp.id AS id,
+                mp.popularity_score AS score
+         FROM master_products mp
+         WHERE ${listed.sql}
+         ORDER BY mp.popularity_score DESC, mp.name ASC
+         LIMIT 10`,
+        listed.params
+      );
+      const brands = await dbm.all(
+        db,
+        `SELECT b.name AS text, 'brand' AS kind, b.slug AS slug, b.id AS id,
+                b.sort_order AS score
+         FROM brands b
+         WHERE EXISTS (
+           SELECT 1 FROM master_products mp
+           JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+           WHERE mp.brand_id = b.id
+         )
+         ORDER BY b.sort_order ASC, b.name ASC
+         LIMIT 8`
+      );
+      const categories = await dbm.all(
+        db,
+        `SELECT c.name AS text, 'category' AS kind, c.slug AS slug, c.id AS id,
+                c.sort_order AS score
+         FROM catalog_categories c
+         WHERE EXISTS (
+           SELECT 1 FROM master_products mp
+           JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+           WHERE mp.category_id = c.id
+         )
+         ORDER BY c.sort_order ASC, c.name ASC
+         LIMIT 8`
+      );
+      res.json({ terms: [...products, ...brands, ...categories] });
+    })
+  );
+
+  app.get(
+    "/paint/api/public/search/words",
+    asyncHandler(async (req, res) => {
+      const customerAccess = await readCustomerAccess(db);
+      if (!customerAccess) {
+        res.json({ terms: [], query: "" });
+        return;
+      }
+      const q = String(req.query.q || "").trim();
+      if (q.length < 1) {
+        res.json({ terms: [], query: "" });
+        return;
+      }
+      const like = `%${q}%`;
+      const listed = buildProductListedExists(null);
+      const products = await dbm.all(
+        db,
+        `SELECT mp.name AS text, 'product' AS kind, mp.slug AS slug, mp.id AS id,
+                mp.popularity_score AS score
+         FROM master_products mp
+         WHERE ${listed.sql}
+           AND mp.name LIKE ? COLLATE NOCASE
+         ORDER BY mp.popularity_score DESC, mp.name ASC
+         LIMIT 24`,
+        [...listed.params, like]
+      );
+      const brands = await dbm.all(
+        db,
+        `SELECT b.name AS text, 'brand' AS kind, b.slug AS slug, b.id AS id,
+                b.sort_order AS score
+         FROM brands b
+         WHERE b.name LIKE ? COLLATE NOCASE
+           AND EXISTS (
+             SELECT 1 FROM master_products mp
+             JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+             WHERE mp.brand_id = b.id
+           )
+         ORDER BY b.sort_order ASC, b.name ASC
+         LIMIT 12`,
+        [like]
+      );
+      const categories = await dbm.all(
+        db,
+        `SELECT c.name AS text, 'category' AS kind, c.slug AS slug, c.id AS id,
+                c.sort_order AS score
+         FROM catalog_categories c
+         WHERE (c.name LIKE ? COLLATE NOCASE OR c.slug LIKE ? COLLATE NOCASE)
+           AND EXISTS (
+             SELECT 1 FROM master_products mp
+             JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+             WHERE mp.category_id = c.id
+           )
+         ORDER BY c.sort_order ASC, c.name ASC
+         LIMIT 12`,
+        [like, like]
+      );
+      categories.forEach(normalizeCategoryNameFields);
+      const shops = await dbm.all(
+        db,
+        `SELECT s.name AS text, 'shop' AS kind, s.slug AS slug, s.id AS id, 0 AS score
+         FROM shops s
+         WHERE s.name LIKE ? COLLATE NOCASE
+            OR s.location_text LIKE ? COLLATE NOCASE
+            OR s.address LIKE ? COLLATE NOCASE
+         ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC
+         LIMIT 12`,
+        [like, like, like]
+      );
+      const places = await dbm.all(
+        db,
+        `SELECT DISTINCT COALESCE(NULLIF(TRIM(s.location_text), ''), NULLIF(TRIM(s.address), '')) AS text,
+                'place' AS kind, s.slug AS slug, s.id AS id, 0 AS score
+         FROM shops s
+         WHERE (s.location_text LIKE ? COLLATE NOCASE OR s.address LIKE ? COLLATE NOCASE)
+           AND COALESCE(NULLIF(TRIM(s.location_text), ''), NULLIF(TRIM(s.address), '')) IS NOT NULL
+         ORDER BY text ASC
+         LIMIT 8`,
+        [like, like]
+      );
+      const seen = new Set();
+      const terms = [];
+      for (const row of [...products, ...brands, ...categories, ...shops, ...places]) {
+        const text = String(row.text || "").trim();
+        if (!text) continue;
+        const key = text.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        terms.push({ ...row, text });
+        if (terms.length >= 48) break;
+      }
+      res.json({ terms, query: q });
     })
   );
 

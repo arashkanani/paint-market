@@ -111,7 +111,8 @@
   }
 
   function hasBrowseFilter() {
-    return !!(browseSelectedCategory?.id || browseSelectedBrand?.id);
+    const params = parseBrowseParams();
+    return !!(browseSelectedCategory?.id || browseSelectedBrand?.id || params.q);
   }
 
   function syncBrowseTitle() {
@@ -941,7 +942,7 @@
 
   async function initBrowsePage() {
     const params = parseBrowseParams();
-    if (!params.categoryId && !params.brandId) {
+    if (!params.categoryId && !params.brandId && !params.q) {
       window.location.replace("/paint/");
       return;
     }
