@@ -388,14 +388,15 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
   flex-direction: column;
   gap: 1px;
   align-items: stretch;
-  width: 100%;
+  width: max-content;
+  max-width: 4.5rem;
   pointer-events: none;
 }
 
 .pm-map-price-chip {
-  width: 100%;
+  width: auto;
   box-sizing: border-box;
-  padding: 1px 2px;
+  padding: 1px 1px;
   border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
@@ -421,7 +422,7 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
   align-items: baseline;
   justify-content: center;
   gap: 1px;
-  width: 100%;
+  width: auto;
   line-height: 1;
 }
 
@@ -452,6 +453,8 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
 .leaflet-marker-icon.pm-map-price-marker {
   background: transparent;
   border: none;
+  width: max-content !important;
+  height: auto !important;
 }
 
 /* Compact min–max range marker (zoomed-out map) */
@@ -460,9 +463,9 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
 }
 
 .pm-map-price-range {
-  display: flex;
+  display: inline-flex;
   align-items: stretch;
-  width: 100%;
+  width: max-content;
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 1px 5px rgba(15, 23, 42, 0.28);
@@ -470,9 +473,9 @@ html[dir="rtl"] .pm-select-with-flag .pm-geo-dialog-select.paint-market-country 
 }
 
 .pm-map-price-range__edge {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   min-width: 0;
-  padding: 2px 2px 3px;
+  padding: 2px 1px 3px;
   color: #fafaf9;
   text-align: center;
   line-height: 1;

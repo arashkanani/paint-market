@@ -853,13 +853,24 @@
     return `<div class="pm-map-price-stack">${chips}</div>`;
   }
 
+  function measureMarkerIconSize(html) {
+    const probe = document.createElement("div");
+    probe.className = "leaflet-marker-icon pm-map-price-marker";
+    probe.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;";
+    probe.innerHTML = html;
+    document.body.appendChild(probe);
+    const w = Math.max(26, Math.ceil(probe.offsetWidth));
+    const h = Math.max(14, Math.ceil(probe.offsetHeight));
+    document.body.removeChild(probe);
+    return [w, h];
+  }
+
   function createPriceMarkerIcon(offers) {
-    const n = Math.max(1, offers.length);
-    const h = n * 26 + 2;
-    const w = 76;
+    const html = buildPriceMarkerHtml(offers);
+    const [w, h] = measureMarkerIconSize(html);
     return L.divIcon({
       className: "pm-map-price-marker",
-      html: buildPriceMarkerHtml(offers),
+      html,
       iconSize: [w, h],
       iconAnchor: [w / 2, h]
     });

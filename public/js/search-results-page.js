@@ -54,7 +54,6 @@
   let srMapMarkerEntries = [];
   let srMapZoomBound = false;
 
-  const MAP_MARKER_W = 54;
   const MAP_CHIP_H = 21;
   const MAP_RANGE_H = 26;
   const MAP_RANGE_META_H = 7;
@@ -185,18 +184,31 @@
 
     const zoom = map.getZoom();
     const nnDist = nearestNeighborDist(map, entry, entries);
+    const stackH = offerCount * MAP_CHIP_H + 1;
+    const alone = entries.length <= 1;
+    const hasNeighbor = entries.length > 1 && Number.isFinite(nnDist);
+    const roomy = alone || (hasNeighbor && nnDist >= Math.max(40, stackH + 8));
 
-    // One extra chip per zoom level from 12 upward (12→1, 13→2, 14→3 …)
-    const zoomCap = Math.min(offerCount, Math.max(0, zoom - 11));
+    // Open map surface — jump to full price list early
+    if (roomy && zoom >= 9) return offerCount;
 
-    // Neighbor spacing: ~18px clearance per additional chip
+    // Zoom unlocks from level 10 (10→1, 11→2, 12→3 …)
+    const zoomCap = Math.min(offerCount, Math.max(1, zoom - 9));
+
+    // Neighbor spacing — lower bar, faster extra chips
     let spaceCap = offerCount;
-    if (entries.length > 1 && Number.isFinite(nnDist)) {
-      if (nnDist < 30) spaceCap = 0;
-      else spaceCap = Math.min(offerCount, 1 + Math.floor((nnDist - 30) / 18));
+    if (hasNeighbor) {
+      if (nnDist < 22) spaceCap = 0;
+      else spaceCap = Math.min(offerCount, 2 + Math.floor((nnDist - 22) / 12));
     }
 
-    return Math.min(zoomCap, spaceCap);
+    let visible = Math.min(zoomCap, spaceCap);
+
+    // Skip intermediate steps when zoomed in with enough clearance
+    if (zoom >= 11 && (alone || nnDist >= stackH + 4)) return offerCount;
+    if (zoom >= 10 && visible >= Math.ceil(offerCount * 0.5)) return offerCount;
+
+    return visible;
   }
 
   function pickProgressiveOffers(offers, visibleCount) {
@@ -226,29 +238,28 @@
     return { type: "chips", offers: unique, showMeta: true };
   }
 
-  function markerIconSize(type, offerCount, hasRangeMeta) {
-    const w = MAP_MARKER_W;
-    if (type === "range") {
-      const h = MAP_RANGE_H + (hasRangeMeta ? MAP_RANGE_META_H : 0);
-      return [w, h];
-    }
-    const n = Math.max(1, offerCount);
-    return [w, n * MAP_CHIP_H + 1];
+  function measureMarkerIconSize(html) {
+    const probe = document.createElement("div");
+    probe.className = "leaflet-marker-icon pm-map-price-marker";
+    probe.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;";
+    probe.innerHTML = html;
+    document.body.appendChild(probe);
+    const w = Math.max(26, Math.ceil(probe.offsetWidth));
+    const h = Math.max(14, Math.ceil(probe.offsetHeight));
+    document.body.removeChild(probe);
+    return [w, h];
   }
 
   function createPriceMarkerIcon(offers, map, entry, entries) {
     const visibleCount = computeVisibleOfferCount(map, entry, entries, offers.length);
     const picked = pickProgressiveOffers(offers, visibleCount);
     let html;
-    let size;
     if (picked.type === "range") {
       html = buildPriceRangeMarkerHtml(picked.offers);
-      size = markerIconSize("range", picked.offers.length, picked.offers.length > 2);
     } else {
       html = buildPriceMarkerHtml(picked.offers, { showMeta: picked.showMeta !== false });
-      size = markerIconSize("chips", picked.offers.length, false);
     }
-    const [w, h] = size;
+    const [w, h] = measureMarkerIconSize(html);
     return L.divIcon({
       className: "pm-map-price-marker",
       html,
