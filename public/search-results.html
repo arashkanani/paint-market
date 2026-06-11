@@ -12,26 +12,21 @@
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
   <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260531g" />
-  <link rel="stylesheet" href="/paint/css/search-results.css?v=20260609c" />
+  <link rel="stylesheet" href="/paint/css/search-results.css?v=20260611b" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
 </head>
 <body class="pm-sr-page text-slate-900" data-pm-page-title="search_results_metaTitle">
-  <header class="pm-sr-header">
-    <div class="pm-sr-header__search">
-      <a href="/paint/search.html" id="srSearchBack" class="pm-sr-back" aria-label="Back"><span aria-hidden="true">‹</span></a>
-      <div class="pm-sr-field">
-        <input id="srSearchInput" type="search" class="pm-sr-field__input" autocomplete="off" enterkeyhint="search" />
+  <div id="srListView" class="pm-sr-list-view">
+    <header class="pm-sr-header">
+      <div class="pm-sr-header__search">
+        <a href="/paint/search.html" id="srSearchBack" class="pm-sr-back" aria-label="Back"><span aria-hidden="true">‹</span></a>
+        <div class="pm-sr-field">
+          <input id="srSearchInput" type="search" class="pm-sr-field__input" autocomplete="off" enterkeyhint="search" />
+        </div>
       </div>
-    </div>
-    <div id="srFilterChips" class="pm-sr-chips hidden" role="list"></div>
-  </header>
-
-  <div class="pm-sr-split">
-    <section class="pm-sr-map-panel" aria-label="Shop prices on map">
-      <p id="srMapStatus" class="pm-sr-map-panel__status" data-pm-t="index_search_map_loading">Loading map…</p>
-      <div id="srMapCanvas" class="pm-sr-map-canvas"></div>
-    </section>
+      <div id="srFilterChips" class="pm-sr-chips hidden" role="list"></div>
+    </header>
 
     <div class="pm-sr-products-scroll">
       <main class="pm-sr-main">
@@ -41,17 +36,72 @@
         <ul id="srProductGrid" class="pm-sr-grid" role="list"></ul>
       </main>
     </div>
+
+    <div class="pm-sr-fab-bar" id="srListFabBar">
+      <button type="button" id="srSortBtn" class="pm-sr-fab-bar__btn">
+        <span class="pm-sr-fab-bar__icon" aria-hidden="true">↕</span>
+        <span data-pm-t="search_results_sort">Sort</span>
+      </button>
+      <button type="button" id="srFilterBtn" class="pm-sr-fab-bar__btn">
+        <span class="pm-sr-fab-bar__icon" aria-hidden="true">☰</span>
+        <span data-pm-t="search_results_filter">Filter</span>
+      </button>
+      <button type="button" id="srMapBtn" class="pm-sr-fab-bar__btn">
+        <span class="pm-sr-fab-bar__icon" aria-hidden="true">⌖</span>
+        <span data-pm-t="search_results_map">Map</span>
+      </button>
+    </div>
+
+    <nav class="pm-pfinder-bottom-nav" aria-label="Main navigation">
+      <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+        <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">⌂</span>
+        <span data-pm-t="index_nav_home">Home</span>
+      </a>
+      <a href="/paint/browse.html" class="pm-pfinder-bottom-nav__item">
+        <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">☰</span>
+        <span data-pm-t="index_nav_browse">Browse</span>
+      </a>
+      <div class="pm-pfinder-bottom-nav__fab-wrap">
+        <a href="/paint/register.html" class="pm-pfinder-bottom-nav__fab" title="Register shop" aria-label="Add listing">+</a>
+      </div>
+      <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+        <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">🏪</span>
+        <span data-pm-t="index_nav_shops">Shops</span>
+      </a>
+      <a href="/paint/login.html" class="pm-pfinder-bottom-nav__item">
+        <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">👤</span>
+        <span data-pm-t="index_nav_account">Account</span>
+      </a>
+    </nav>
   </div>
 
-  <div class="pm-sr-fab-bar">
-    <button type="button" id="srSortBtn" class="pm-sr-fab-bar__btn">
-      <span class="pm-sr-fab-bar__icon" aria-hidden="true">↕</span>
-      <span data-pm-t="search_results_sort">Sort</span>
-    </button>
-    <button type="button" id="srFilterBtn" class="pm-sr-fab-bar__btn">
-      <span class="pm-sr-fab-bar__icon" aria-hidden="true">☰</span>
-      <span data-pm-t="search_results_filter">Filter</span>
-    </button>
+  <div id="srMapScreen" class="pm-sr-map-screen hidden" hidden aria-hidden="true">
+    <div id="srMapCanvas" class="pm-sr-map-screen__canvas" aria-hidden="true"></div>
+    <div class="pm-sr-map-overlay">
+      <div class="pm-sr-map-search-card">
+        <button type="button" id="srMapCloseBtn" class="pm-sr-map-search-card__back" aria-label="Back to list">
+          <span aria-hidden="true">‹</span>
+        </button>
+        <button type="button" id="srMapSearchTap" class="pm-sr-map-search-card__query">
+          <span id="srMapSearchLabel" class="pm-sr-map-search-card__label"></span>
+        </button>
+        <span class="pm-sr-map-search-card__divider" aria-hidden="true"></span>
+        <button type="button" id="srMapSortBtn" class="pm-sr-map-search-card__sort">
+          <span class="pm-sr-map-search-card__sort-icon" aria-hidden="true">↕</span>
+          <span data-pm-t="search_results_sort">Sort</span>
+        </button>
+      </div>
+      <div class="pm-sr-map-toolbar">
+        <button type="button" id="srMapFilterBtn" class="pm-sr-map-filter-pill">
+          <span class="pm-sr-map-filter-pill__icon" aria-hidden="true">☰</span>
+          <span data-pm-t="search_results_filter">Filter</span>
+          <span id="srMapFilterBadge" class="pm-sr-map-filter-pill__badge hidden"></span>
+          <span class="pm-sr-map-filter-pill__chev" aria-hidden="true">›</span>
+        </button>
+        <div id="srMapFilterChips" class="pm-sr-map-toolbar__chips hidden" role="list"></div>
+      </div>
+      <p id="srMapStatus" class="pm-sr-map-status hidden" data-pm-t="index_search_map_loading">Loading map…</p>
+    </div>
   </div>
 
   <!-- Sort sheet -->
@@ -117,33 +167,11 @@
     </div>
   </div>
 
-  <nav class="pm-pfinder-bottom-nav" aria-label="Main navigation">
-    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
-      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">⌂</span>
-      <span data-pm-t="index_nav_home">Home</span>
-    </a>
-    <a href="/paint/browse.html" class="pm-pfinder-bottom-nav__item">
-      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">☰</span>
-      <span data-pm-t="index_nav_browse">Browse</span>
-    </a>
-    <div class="pm-pfinder-bottom-nav__fab-wrap">
-      <a href="/paint/register.html" class="pm-pfinder-bottom-nav__fab" title="Register shop" aria-label="Add listing">+</a>
-    </div>
-    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
-      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">🏪</span>
-      <span data-pm-t="index_nav_shops">Shops</span>
-    </a>
-    <a href="/paint/login.html" class="pm-pfinder-bottom-nav__item">
-      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">👤</span>
-      <span data-pm-t="index_nav_account">Account</span>
-    </a>
-  </nav>
-
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>
   <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="/paint/js/search-results-page.js?v=20260609h"></script>
+  <script src="/paint/js/search-results-page.js?v=20260611c"></script>
 </body>
 </html>

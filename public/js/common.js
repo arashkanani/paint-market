@@ -74,6 +74,8 @@ function paintMarketSearchResultsUrl(opts = {}) {
   if (cap != null) qs.set("capacityLtr", String(cap));
   const sort = opts.sort != null ? String(opts.sort).trim() : "";
   if (sort && sort !== "popularity") qs.set("sort", sort);
+  const view = opts.view != null ? String(opts.view).trim() : "";
+  if (view === "map") qs.set("view", "map");
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
   return `/paint/search-results.html${suffix}`;
 }

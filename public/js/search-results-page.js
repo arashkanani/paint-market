@@ -4,11 +4,21 @@
   const esc =
     typeof paintMarketEscapeHtml === "function" ? paintMarketEscapeHtml : (s) => String(s ?? "");
   const MAP_DEFAULT_CENTER = [25.2048, 55.2708];
+  const listView = document.getElementById("srListView");
   const searchBack = document.getElementById("srSearchBack");
   const searchInput = document.getElementById("srSearchInput");
   const filterChips = document.getElementById("srFilterChips");
+  const mapBtn = document.getElementById("srMapBtn");
+  const mapScreen = document.getElementById("srMapScreen");
+  const mapCloseBtn = document.getElementById("srMapCloseBtn");
+  const mapSearchTap = document.getElementById("srMapSearchTap");
+  const mapSearchLabel = document.getElementById("srMapSearchLabel");
+  const mapFilterBadge = document.getElementById("srMapFilterBadge");
+  const mapFilterChips = document.getElementById("srMapFilterChips");
   const mapStatus = document.getElementById("srMapStatus");
   const mapCanvas = document.getElementById("srMapCanvas");
+  const mapSortBtn = document.getElementById("srMapSortBtn");
+  const mapFilterBtn = document.getElementById("srMapFilterBtn");
   const resultCount = document.getElementById("srResultCount");
   const loadingEl = document.getElementById("srLoading");
   const emptyEl = document.getElementById("srEmpty");
@@ -63,8 +73,11 @@
     categoryId: null,
     brandId: null,
     capacityLtr: null,
-    sort: "popularity"
+    sort: "popularity",
+    view: "list"
   };
+
+  let mapViewOpen = false;
 
   const draft = {
     categoryId: null,
@@ -403,7 +416,7 @@
 
   async function refreshResults() {
     await loadProducts();
-    await loadResultsMap();
+    if (mapViewOpen) await loadResultsMap();
   }
 
   function parseParams() {
@@ -411,12 +424,14 @@
     const categoryId = Number(qs.get("categoryId"));
     const brandId = Number(qs.get("brandId"));
     const sort = String(qs.get("sort") || "popularity").trim();
+    const view = String(qs.get("view") || "").trim();
     return {
       q: String(qs.get("q") || "").trim(),
       categoryId: Number.isFinite(categoryId) && categoryId > 0 ? categoryId : null,
       brandId: Number.isFinite(brandId) && brandId > 0 ? brandId : null,
       capacityLtr: PaintApi.normalizeCapacityLtr(qs.get("capacityLtr")),
-      sort: SORT_OPTIONS.some((o) => o.id === sort) ? sort : "popularity"
+      sort: SORT_OPTIONS.some((o) => o.id === sort) ? sort : "popularity",
+      view: view === "map" ? "map" : "list"
     };
   }
 
@@ -426,6 +441,7 @@
     state.brandId = params.brandId;
     state.capacityLtr = params.capacityLtr;
     state.sort = params.sort;
+    state.view = params.view;
   }
 
   function syncUrl(replace) {
@@ -434,10 +450,55 @@
       categoryId: state.categoryId,
       brandId: state.brandId,
       capacityLtr: state.capacityLtr,
-      sort: state.sort
+      sort: state.sort,
+      view: mapViewOpen ? "map" : ""
     });
     if (replace) window.history.replaceState(null, "", url);
     else window.location.assign(url);
+  }
+
+  function syncMapFilterBadge() {
+    let n = 0;
+    if (state.categoryId) n++;
+    if (state.brandId) n++;
+    if (state.capacityLtr != null) n++;
+    if (mapFilterBadge) {
+      mapFilterBadge.textContent = String(n);
+      mapFilterBadge.classList.toggle("hidden", n === 0);
+    }
+  }
+
+  function syncSearchInputs() {
+    if (searchInput) searchInput.value = state.q;
+    if (mapSearchLabel) mapSearchLabel.textContent = state.q;
+    syncMapFilterBadge();
+  }
+
+  function setMapViewOpen(open) {
+    mapViewOpen = !!open;
+    state.view = mapViewOpen ? "map" : "list";
+    if (mapScreen) {
+      mapScreen.classList.toggle("hidden", !mapViewOpen);
+      mapScreen.hidden = !mapViewOpen;
+      mapScreen.setAttribute("aria-hidden", mapViewOpen ? "false" : "true");
+    }
+    if (listView) listView.classList.toggle("hidden", mapViewOpen);
+    document.body.classList.toggle("pm-sr-page--map", mapViewOpen);
+    syncUrl(true);
+    if (mapViewOpen) {
+      syncSearchInputs();
+      loadResultsMap().then(() => {
+        if (srMap) setTimeout(() => srMap.invalidateSize(), 120);
+      });
+    }
+  }
+
+  function openMapView() {
+    setMapViewOpen(true);
+  }
+
+  function closeMapView() {
+    setMapViewOpen(false);
   }
 
   function findCategory(id) {
@@ -460,8 +521,7 @@
     searchBack.href = `/paint/search.html${qs}`;
   }
 
-  function renderFilterChips() {
-    if (!filterChips) return;
+  function buildFilterChipsHtml() {
     const chips = [];
     if (state.categoryId) {
       const cat = findCategory(state.categoryId);
@@ -479,13 +539,28 @@
     if (state.capacityLtr != null) {
       chips.push({ key: "capacity", label: capacityLabel(state.capacityLtr) });
     }
-    filterChips.innerHTML = chips
-      .map(
-        (c) =>
-          `<button type="button" class="pm-sr-chip" data-chip="${esc(c.key)}" role="listitem">${esc(c.label)}<span class="pm-sr-chip__x" aria-hidden="true">×</span></button>`
-      )
-      .join("");
-    filterChips.classList.toggle("hidden", chips.length === 0);
+    return {
+      html: chips
+        .map(
+          (c) =>
+            `<button type="button" class="pm-sr-chip" data-chip="${esc(c.key)}" role="listitem">${esc(c.label)}<span class="pm-sr-chip__x" aria-hidden="true">×</span></button>`
+        )
+        .join(""),
+      count: chips.length
+    };
+  }
+
+  function renderFilterChips() {
+    const { html, count } = buildFilterChipsHtml();
+    if (filterChips) {
+      filterChips.innerHTML = html;
+      filterChips.classList.toggle("hidden", count === 0);
+    }
+    if (mapFilterChips) {
+      mapFilterChips.innerHTML = html;
+      mapFilterChips.classList.toggle("hidden", count === 0);
+    }
+    syncMapFilterBadge();
   }
 
   function syncFilterHubLabels() {
@@ -546,8 +621,10 @@
     if (emptyEl) emptyEl.classList.toggle("hidden", items.length > 0);
     for (const p of items) {
       const li = document.createElement("li");
-      li.className = "pm-sr-card";
+      li.className = "pm-sr-card pm-sr-card--clickable";
       li.setAttribute("role", "listitem");
+      li.dataset.productId = String(p.id);
+      if (p.shop_slug) li.dataset.shopSlug = String(p.shop_slug);
       const imgUrl =
         typeof paintMarketProductImageUrl === "function"
           ? paintMarketProductImageUrl(p)
@@ -696,7 +773,7 @@
       return;
     }
     applyParamsToState(params);
-    if (searchInput) searchInput.value = state.q;
+    syncSearchInputs();
     syncSearchBackHref();
 
     try {
@@ -716,25 +793,36 @@
     await loadBrands(state.categoryId);
     renderFilterChips();
     renderSortSheet();
-    await refreshResults();
+    await loadProducts();
 
     if (typeof paintMarketApplyDomI18n === "function") paintMarketApplyDomI18n(document);
     window.addEventListener("resize", () => {
-      if (srMap) setTimeout(() => srMap.invalidateSize(), 80);
+      if (srMap && mapViewOpen) setTimeout(() => srMap.invalidateSize(), 80);
     });
+
+    if (state.view === "map") openMapView();
   }
 
-  sortBtn?.addEventListener("click", () => {
+  function openSortSheet() {
     renderSortSheet();
     openSheet(sortSheet);
-  });
+  }
 
-  filterBtn?.addEventListener("click", async () => {
+  async function openFilterSheet() {
     copyStateToDraft();
     await loadBrands(draft.categoryId);
     syncFilterHubLabels();
     openSheet(filterSheet);
-  });
+  }
+
+  sortBtn?.addEventListener("click", openSortSheet);
+  mapSortBtn?.addEventListener("click", openSortSheet);
+
+  filterBtn?.addEventListener("click", openFilterSheet);
+  mapFilterBtn?.addEventListener("click", openFilterSheet);
+
+  mapBtn?.addEventListener("click", openMapView);
+  mapCloseBtn?.addEventListener("click", closeMapView);
 
   sortList?.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-sort]");
@@ -802,7 +890,7 @@
     el.addEventListener("click", () => closeSheet(pickerSheet));
   });
 
-  filterChips?.addEventListener("click", async (e) => {
+  async function onFilterChipClick(e) {
     const chip = e.target.closest("[data-chip]");
     if (!chip) return;
     const key = chip.getAttribute("data-chip");
@@ -812,20 +900,63 @@
     syncUrl(true);
     renderFilterChips();
     await refreshResults();
-  });
+  }
+
+  filterChips?.addEventListener("click", onFilterChipClick);
+  mapFilterChips?.addEventListener("click", onFilterChipClick);
 
   searchInput?.addEventListener("click", () => {
     const qs = state.q ? `?q=${encodeURIComponent(state.q)}` : "";
     window.location.href = `/paint/search.html${qs}`;
   });
 
+  mapSearchTap?.addEventListener("click", () => {
+    const qs = state.q ? `?q=${encodeURIComponent(state.q)}` : "";
+    window.location.href = `/paint/search.html${qs}`;
+  });
+
+  async function onSearchEnter(inputEl) {
+    const q = inputEl.value.trim();
+    if (!q) return;
+    state.q = q;
+    syncSearchInputs();
+    syncSearchBackHref();
+    if (mapViewOpen) {
+      syncUrl(true);
+      await refreshResults();
+    } else {
+      syncUrl(false);
+    }
+  }
+
   searchInput?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      const q = searchInput.value.trim();
-      if (!q) return;
-      state.q = q;
-      syncUrl(false);
+      onSearchEnter(searchInput);
+    }
+  });
+
+  window.addEventListener("popstate", () => {
+    const params = parseParams();
+    applyParamsToState(params);
+    syncSearchInputs();
+    renderFilterChips();
+    if (params.view === "map" && !mapViewOpen) {
+      setMapViewOpen(true);
+      refreshResults();
+    } else if (params.view !== "map" && mapViewOpen) {
+      setMapViewOpen(false);
+    }
+  });
+
+  productGrid?.addEventListener("click", (e) => {
+    const card = e.target.closest(".pm-sr-card");
+    if (!card) return;
+    const slug = card.dataset.shopSlug;
+    const pid = Number(card.dataset.productId);
+    if (Number.isFinite(pid) && pid > 0) PaintApi.trackProduct(pid).catch(() => {});
+    if (slug) {
+      window.location.href = `/paint/shop.html?slug=${encodeURIComponent(slug)}`;
     }
   });
 

@@ -335,6 +335,256 @@ function parseCapacityLtr(raw) {
   return null;
 }
 
+function parseCapacityFromToken(token) {
+  const raw = String(token || "").trim().toLowerCase();
+  if (!raw) return null;
+  const stripped = raw.replace(/\s*(l|ltr|litre|liters|litres|liter|لتر)\s*$/i, "").trim();
+  return parseCapacityLtr(stripped);
+}
+
+function tokenizeSearchQuery(q) {
+  return String(q || "")
+    .trim()
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+const PM_SEARCH_AREA_ALIASES = [
+  ["bosher", ["bosher", "bowsher", "busher", "بوشر"]],
+  ["khuwair", ["khuwair", "khouwair", "khouair", "al khuwair", "الخوير"]],
+  ["ghobra", ["ghobra", "alghobra", "al ghobra", "الغبرة"]],
+  ["seeb", ["seeb", "as seeb", "السيب"]],
+  ["mutrah", ["mutrah", "matrah", "مطرح"]],
+  ["ruwi", ["ruwi", "الروي"]],
+  ["sohar", ["sohar", "صحار"]],
+  ["salalah", ["salalah", "صلالة"]]
+];
+
+function expandLocationLikePatterns(token) {
+  const t = String(token || "").trim().toLowerCase();
+  const patterns = new Set([`%${t}%`]);
+  for (const [key, aliases] of PM_SEARCH_AREA_ALIASES) {
+    const hit =
+      key.includes(t) ||
+      t.includes(key) ||
+      aliases.some((a) => a.includes(t) || t.includes(String(a).toLowerCase()));
+    if (hit) for (const a of aliases) patterns.add(`%${a}%`);
+  }
+  return [...patterns];
+}
+
+function buildAreaLocationMatchSql(shopAlias, token, params) {
+  const patterns = expandLocationLikePatterns(token);
+  const locParts = [];
+  for (const p of patterns) {
+    locParts.push(
+      `IFNULL(${shopAlias}.location_text, '') LIKE ? COLLATE NOCASE`,
+      `IFNULL(${shopAlias}.address, '') LIKE ? COLLATE NOCASE`
+    );
+    params.push(p, p);
+  }
+  return `(${locParts.join(" OR ")})`;
+}
+
+/** One keyword matches product name, brand, pack size, or shop area on a listing row. */
+function buildTokenSpecMatchOnListingSql(
+  token,
+  { mpAlias, brandAlias, shopAlias, listingAlias, params }
+) {
+  const cap = parseCapacityFromToken(token);
+  const like = `%${token}%`;
+  const parts = [
+    `${mpAlias}.name LIKE ? COLLATE NOCASE`,
+    `${brandAlias}.name LIKE ? COLLATE NOCASE`,
+    `${brandAlias}.slug LIKE ? COLLATE NOCASE`,
+    buildAreaLocationMatchSql(shopAlias, token, params)
+  ];
+  params.push(like, like, like);
+  if (cap != null) {
+    parts.push(`ABS(${listingAlias}.capacity_ltr - ?) < 0.001`);
+    params.push(cap);
+  }
+  return `(${parts.join(" OR ")})`;
+}
+
+/**
+ * Multi-keyword search: every word must match on the same listing.
+ * Each word can match product name, brand, pack size (1L/3.6L/18L), or location area.
+ */
+function buildMultiTokenProductSearchFilter(q, { tableAlias = "mp" } = {}) {
+  const words = tokenizeSearchQuery(q);
+  if (!words.length) return { sql: "", params: [], capacityFromQuery: null };
+
+  let capacityFromQuery = null;
+  const tokenConds = [];
+  const params = [];
+
+  for (const w of words) {
+    const cap = parseCapacityFromToken(w);
+    if (cap != null) capacityFromQuery = capacityFromQuery ?? cap;
+    tokenConds.push(
+      buildTokenSpecMatchOnListingSql(w, {
+        mpAlias: tableAlias,
+        brandAlias: "b",
+        shopAlias: "s_mt",
+        listingAlias: "sl_mt",
+        params
+      })
+    );
+  }
+
+  return {
+    sql: ` AND EXISTS (
+      SELECT 1 FROM shop_listings sl_mt
+      JOIN shops s_mt ON s_mt.id = sl_mt.shop_id
+      WHERE sl_mt.master_product_id = ${tableAlias}.id
+        AND sl_mt.available = 1
+        AND ${tokenConds.join(" AND ")}
+    )`,
+    params,
+    capacityFromQuery
+  };
+}
+
+function buildMultiTokenShopSearchFilter(q, { shopAlias = "s" } = {}) {
+  const words = tokenizeSearchQuery(q);
+  if (!words.length) return { sql: "", params: [] };
+
+  const tokenConds = [];
+  const params = [];
+  for (const w of words) {
+    tokenConds.push(
+      buildTokenSpecMatchOnListingSql(w, {
+        mpAlias: "mp_sw",
+        brandAlias: "b_sw",
+        shopAlias,
+        listingAlias: "sl_sw",
+        params
+      })
+    );
+  }
+
+  return {
+    sql: ` AND EXISTS (
+      SELECT 1 FROM shop_listings sl_sw
+      JOIN master_products mp_sw ON mp_sw.id = sl_sw.master_product_id
+      JOIN brands b_sw ON b_sw.id = mp_sw.brand_id
+      WHERE sl_sw.shop_id = ${shopAlias}.id
+        AND sl_sw.available = 1
+        AND ${tokenConds.join(" AND ")}
+    )`,
+    params
+  };
+}
+
+/**
+ * Rank by search-bar word order: earlier keywords weigh more.
+ * Per word: name > brand > pack size > location area.
+ */
+function buildSearchKeywordPriorityScoreSql(q, { tableAlias = "mp" } = {}) {
+  const words = tokenizeSearchQuery(q);
+  if (!words.length) return { sql: "0", params: [] };
+
+  const params = [];
+  const scoreParts = [];
+  const n = words.length;
+
+  for (let i = 0; i < n; i++) {
+    const w = words[i];
+    const pw = n - i;
+    const like = `%${w}%`;
+    const cap = parseCapacityFromToken(w);
+    const branches = [];
+
+    branches.push(`WHEN ${tableAlias}.name LIKE ? COLLATE NOCASE THEN ${100 * pw}`);
+    params.push(like);
+    branches.push(`WHEN b.name LIKE ? COLLATE NOCASE OR b.slug LIKE ? COLLATE NOCASE THEN ${80 * pw}`);
+    params.push(like, like);
+
+    if (cap != null) {
+      branches.push(`WHEN EXISTS (
+        SELECT 1 FROM shop_listings sl_sc
+        WHERE sl_sc.master_product_id = ${tableAlias}.id
+          AND sl_sc.available = 1
+          AND ABS(sl_sc.capacity_ltr - ?) < 0.001
+      ) THEN ${60 * pw}`);
+      params.push(cap);
+    }
+
+    const locExists = [];
+    for (const p of expandLocationLikePatterns(w)) {
+      locExists.push(`EXISTS (
+        SELECT 1 FROM shop_listings sl_lc
+        JOIN shops s_lc ON s_lc.id = sl_lc.shop_id
+        WHERE sl_lc.master_product_id = ${tableAlias}.id
+          AND sl_lc.available = 1
+          AND (
+            IFNULL(s_lc.location_text, '') LIKE ? COLLATE NOCASE
+            OR IFNULL(s_lc.address, '') LIKE ? COLLATE NOCASE
+          )
+      )`);
+      params.push(p, p);
+    }
+    if (locExists.length) {
+      branches.push(`WHEN (${locExists.join(" OR ")}) THEN ${40 * pw}`);
+    }
+
+    branches.push("ELSE 0");
+    scoreParts.push(`(CASE ${branches.join(" ")} END)`);
+  }
+
+  return { sql: scoreParts.join(" + "), params };
+}
+
+function appendSearchPriorityOrder(sql, params, q, sort, tailParts) {
+  const words = tokenizeSearchQuery(q);
+  if (!words.length) return { sql, params };
+  const { sql: scoreSql, params: scoreParams } = buildSearchKeywordPriorityScoreSql(q);
+  const tail = tailParts.length ? `, ${tailParts.join(", ")}` : "";
+  return {
+    sql: `${sql} ORDER BY (${scoreSql}) DESC${tail}`,
+    params: [...params, ...scoreParams]
+  };
+}
+
+/** Shop that lists this product — prefers listing matching the search keywords. */
+function buildPickShopSlugSubquery(q, capacityLtr) {
+  const capFilter =
+    capacityLtr != null ? " AND ABS(sl_pick.capacity_ltr - ?) < 0.001" : "";
+  const capParams = capacityLtr != null ? [capacityLtr] : [];
+  const words = tokenizeSearchQuery(q);
+  const tokenConds = [];
+  const tokenParams = [];
+  for (const w of words) {
+    tokenConds.push(
+      buildTokenSpecMatchOnListingSql(w, {
+        mpAlias: "mp",
+        brandAlias: "b",
+        shopAlias: "s_pick",
+        listingAlias: "sl_pick",
+        params: tokenParams
+      })
+    );
+  }
+  const tokenFilter = words.length ? ` AND ${tokenConds.join(" AND ")}` : "";
+  return {
+    sql: `(
+        SELECT s_pick.slug
+        FROM shop_listings sl_pick
+        JOIN shops s_pick ON s_pick.id = sl_pick.shop_id
+        WHERE sl_pick.master_product_id = mp.id
+          AND sl_pick.available = 1
+          AND sl_pick.price_amount IS NOT NULL
+          ${capFilter}
+          ${tokenFilter}
+        ORDER BY sl_pick.price_amount ASC, s_pick.name ASC
+        LIMIT 1
+      )`,
+    params: [...capParams, ...tokenParams]
+  };
+}
+
 function parseBrowseProductSort(raw) {
   const s = String(raw || "popularity").trim().toLowerCase();
   if (s === "price_asc" || s === "price-low") return "price_asc";
@@ -532,22 +782,8 @@ function buildPricesMapProductFilter({ productId, productIds, productName, q }) 
   if (ids.length) {
     return { sql: ` AND mp.id IN (${ids.map(() => "?").join(", ")})`, params: ids };
   }
-  const words = String(q || "")
-    .trim()
-    .split(/\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!words.length) return { sql: "", params: [] };
-  const parts = [];
-  const params = [];
-  for (const w of words) {
-    const like = `%${w}%`;
-    parts.push(
-      "(mp.name LIKE ? COLLATE NOCASE OR IFNULL(mp.description, '') LIKE ? COLLATE NOCASE OR b.name LIKE ? COLLATE NOCASE OR c.name LIKE ? COLLATE NOCASE)"
-    );
-    params.push(like, like, like, like);
-  }
-  return { sql: ` AND (${parts.join(" AND ")})`, params };
+  const { sql, params } = buildMultiTokenProductSearchFilter(q);
+  return { sql, params };
 }
 
 async function getSessionUser(db, req) {
@@ -894,9 +1130,20 @@ async function main() {
       const hasCategory = Number.isFinite(categoryId) && categoryId > 0;
       const hasBrand = Number.isFinite(brandId) && brandId > 0;
       const q = String(req.query.q || "").trim();
-      const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
+      let capacityLtr = parseCapacityLtr(req.query.capacityLtr);
+      const queryTokens = tokenizeSearchQuery(q);
+      if (capacityLtr == null && queryTokens.length) {
+        for (const t of queryTokens) {
+          const cap = parseCapacityFromToken(t);
+          if (cap != null) {
+            capacityLtr = cap;
+            break;
+          }
+        }
+      }
       const sort = parseBrowseProductSort(req.query.sort);
       const listed = buildProductListedExists(capacityLtr);
+      const pickShop = buildPickShopSlugSubquery(q, capacityLtr);
       const capListingSql =
         capacityLtr != null
           ? ` AND ABS(sl2.capacity_ltr - ?) < 0.001`
@@ -905,6 +1152,7 @@ async function main() {
       let sql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, mp.default_image_url,
                         b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name,
                         c.slug AS category_slug, c.name AS category_name,
+                        ${pickShop.sql} AS shop_slug,
                         (
                           SELECT MIN(sl2.price_amount)
                           FROM shop_listings sl2
@@ -937,7 +1185,7 @@ async function main() {
                  JOIN brands b ON b.id = mp.brand_id
                  JOIN catalog_categories c ON c.id = mp.category_id
                  WHERE ${listed.sql}`;
-      const params = [...capListingParams, ...capListingParams, ...listed.params];
+      let params = [...pickShop.params, ...capListingParams, ...capListingParams, ...listed.params];
       if (hasCategory) {
         sql += ` AND mp.category_id = ?`;
         params.push(categoryId);
@@ -947,16 +1195,43 @@ async function main() {
         params.push(brandId);
       }
       if (q.length >= 1) {
-        sql += ` AND (mp.name LIKE ? COLLATE NOCASE OR b.name LIKE ? COLLATE NOCASE)`;
-        const like = `%${q}%`;
-        params.push(like, like);
+        const { sql: qSql, params: qParams } = buildMultiTokenProductSearchFilter(q);
+        sql += qSql;
+        params.push(...qParams);
       }
       if (sort === "price_asc") {
-        sql += ` ORDER BY (min_price IS NULL), min_price ASC, mp.popularity_score DESC, mp.name ASC`;
+        if (q.length >= 1) {
+          ({ sql, params } = appendSearchPriorityOrder(sql, params, q, sort, [
+            "(min_price IS NULL)",
+            "min_price ASC",
+            "mp.popularity_score DESC",
+            "mp.name ASC"
+          ]));
+        } else {
+          sql += ` ORDER BY (min_price IS NULL), min_price ASC, mp.popularity_score DESC, mp.name ASC`;
+        }
       } else if (sort === "price_desc") {
-        sql += ` ORDER BY (min_price IS NULL), min_price DESC, mp.popularity_score DESC, mp.name ASC`;
+        if (q.length >= 1) {
+          ({ sql, params } = appendSearchPriorityOrder(sql, params, q, sort, [
+            "(min_price IS NULL)",
+            "min_price DESC",
+            "mp.popularity_score DESC",
+            "mp.name ASC"
+          ]));
+        } else {
+          sql += ` ORDER BY (min_price IS NULL), min_price DESC, mp.popularity_score DESC, mp.name ASC`;
+        }
       } else if (sort === "name") {
-        sql += ` ORDER BY mp.name ASC`;
+        if (q.length >= 1) {
+          ({ sql, params } = appendSearchPriorityOrder(sql, params, q, sort, ["mp.name ASC"]));
+        } else {
+          sql += ` ORDER BY mp.name ASC`;
+        }
+      } else if (q.length >= 1) {
+        ({ sql, params } = appendSearchPriorityOrder(sql, params, q, sort, [
+          "mp.popularity_score DESC",
+          "mp.name ASC"
+        ]));
       } else {
         sql += ` ORDER BY mp.popularity_score DESC, mp.name ASC`;
       }
@@ -996,13 +1271,15 @@ async function main() {
       const capacityLtr = parseCapacityLtr(req.query.capacityLtr);
       const like = `%${q}%`;
       const listed = buildProductListedExists(capacityLtr);
+      const { sql: qSql, params: qParams } = buildMultiTokenProductSearchFilter(q);
       let productSql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score,
                 b.id AS brand_id, b.slug AS brand_slug, b.name AS brand_name
          FROM master_products mp
          JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
          WHERE ${listed.sql}
-           AND (mp.name LIKE ? COLLATE NOCASE OR b.name LIKE ? COLLATE NOCASE)`;
-      const productParams = [...listed.params, like, like];
+           ${qSql}`;
+      const productParams = [...listed.params, ...qParams];
       if (hasCategory) {
         productSql += ` AND mp.category_id = ?`;
         productParams.push(categoryId);
@@ -1011,7 +1288,14 @@ async function main() {
         productSql += ` AND mp.brand_id = ?`;
         productParams.push(brandId);
       }
-      productSql += ` ORDER BY mp.popularity_score DESC, mp.name ASC LIMIT 12`;
+      ({ sql: productSql, params: productParams } = appendSearchPriorityOrder(
+        productSql,
+        productParams,
+        q,
+        "popularity",
+        ["mp.popularity_score DESC", "mp.name ASC"]
+      ));
+      productSql += ` LIMIT 12`;
       const products = await dbm.all(db, productSql, productParams);
       await enrichSuggestProducts(db, products, capacityLtr);
       let brandSql = `SELECT b.id, b.slug, b.name, b.sort_order
@@ -1072,35 +1356,41 @@ async function main() {
         res.json({ products: [], shops: [], capacityLtr });
         return;
       }
-      const like = `%${q}%`;
-      const { sql: capSql, params: capParams } = buildCapacityListingFilter(capacityLtr);
-      const productCapExists =
-        capacityLtr != null
-          ? ` AND EXISTS (
-             SELECT 1 FROM shop_listings sl
-             WHERE sl.master_product_id = mp.id
-               AND sl.available = 1
-               AND sl.price_amount IS NOT NULL
-               ${capSql}
-           )`
-          : "";
-      const products = await dbm.all(
-        db,
-        `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, b.name AS brand_name,
+      let capLtr = capacityLtr;
+      const queryTokens = tokenizeSearchQuery(q);
+      if (capLtr == null && queryTokens.length) {
+        for (const t of queryTokens) {
+          const cap = parseCapacityFromToken(t);
+          if (cap != null) {
+            capLtr = cap;
+            break;
+          }
+        }
+      }
+      const { sql: capSql, params: capParams } = buildCapacityListingFilter(capLtr);
+      const listed = buildProductListedExists(capLtr);
+      const { sql: qSql, params: qParams } = buildMultiTokenProductSearchFilter(q);
+      let productSql = `SELECT mp.id, mp.name, mp.slug, mp.popularity_score, b.name AS brand_name,
                 c.slug AS category_slug, c.name AS category_name
          FROM master_products mp
          JOIN brands b ON b.id = mp.brand_id
          JOIN catalog_categories c ON c.id = mp.category_id
-         WHERE mp.name LIKE ? COLLATE NOCASE
-           ${productCapExists}
-         ORDER BY mp.popularity_score DESC, mp.name ASC
-         LIMIT 12`,
-        capacityLtr != null ? [like, ...capParams] : [like]
-      );
+         WHERE ${listed.sql}
+           ${qSql}`;
+      let productParams = [...listed.params, ...qParams];
+      ({ sql: productSql, params: productParams } = appendSearchPriorityOrder(
+        productSql,
+        productParams,
+        q,
+        "popularity",
+        ["mp.popularity_score DESC", "mp.name ASC"]
+      ));
+      productSql += ` LIMIT 12`;
+      const products = await dbm.all(db, productSql, productParams);
       products.forEach(normalizeCategoryNameFields);
-      await enrichSuggestProducts(db, products, capacityLtr);
+      await enrichSuggestProducts(db, products, capLtr);
       const shopCapExists =
-        capacityLtr != null
+        capLtr != null
           ? ` AND EXISTS (
              SELECT 1 FROM shop_listings sl2
              WHERE sl2.shop_id = s.id
@@ -1109,28 +1399,17 @@ async function main() {
                AND ABS(sl2.capacity_ltr - ?) < 0.001
            )`
           : "";
+      const { sql: shopQSql, params: shopQParams } = buildMultiTokenShopSearchFilter(q);
       const shops = await dbm.all(
         db,
         `SELECT DISTINCT s.id, s.name, s.slug, s.location_text, s.address, s.photo_url, s.lat, s.lng
          FROM shops s
-         WHERE (
-           s.name LIKE ? COLLATE NOCASE
-           OR s.location_text LIKE ? COLLATE NOCASE
-           OR s.address LIKE ? COLLATE NOCASE
-           OR EXISTS (
-             SELECT 1 FROM shop_listings sl
-             JOIN master_products mp ON mp.id = sl.master_product_id
-             WHERE sl.shop_id = s.id
-               AND sl.available = 1
-               AND sl.price_amount IS NOT NULL
-               AND mp.name LIKE ? COLLATE NOCASE
-               ${capSql}
-           )
-         )
-         ${shopCapExists}
+         WHERE s.lat IS NOT NULL AND s.lng IS NOT NULL
+           ${shopQSql}
+           ${shopCapExists}
          ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC
          LIMIT 8`,
-        capacityLtr != null ? [like, like, like, like, ...capParams, capacityLtr] : [like, like, like, like, ...capParams]
+        capLtr != null ? [...shopQParams, capLtr] : shopQParams
       );
       res.json({ products, shops, capacityLtr });
     })
@@ -1198,19 +1477,28 @@ async function main() {
         res.json({ terms: [], query: "" });
         return;
       }
-      const like = `%${q}%`;
       const listed = buildProductListedExists(null);
-      const products = await dbm.all(
-        db,
-        `SELECT mp.name AS text, 'product' AS kind, mp.slug AS slug, mp.id AS id,
+      const { sql: qSql, params: qParams } = buildMultiTokenProductSearchFilter(q);
+      let productSql = `SELECT mp.name AS text, 'product' AS kind, mp.slug AS slug, mp.id AS id,
                 mp.popularity_score AS score
          FROM master_products mp
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
          WHERE ${listed.sql}
-           AND mp.name LIKE ? COLLATE NOCASE
-         ORDER BY mp.popularity_score DESC, mp.name ASC
-         LIMIT 24`,
-        [...listed.params, like]
-      );
+           ${qSql}`;
+      let productParams = [...listed.params, ...qParams];
+      ({ sql: productSql, params: productParams } = appendSearchPriorityOrder(
+        productSql,
+        productParams,
+        q,
+        "popularity",
+        ["mp.popularity_score DESC", "mp.name ASC"]
+      ));
+      productSql += ` LIMIT 24`;
+      const products = await dbm.all(db, productSql, productParams);
+      const words = tokenizeSearchQuery(q);
+      const lastWord = words.length ? words[words.length - 1] : q;
+      const like = `%${lastWord}%`;
       const brands = await dbm.all(
         db,
         `SELECT b.name AS text, 'brand' AS kind, b.slug AS slug, b.id AS id,
@@ -1242,27 +1530,27 @@ async function main() {
         [like, like]
       );
       categories.forEach(normalizeCategoryNameFields);
+      const { sql: shopQSql, params: shopQParams } = buildMultiTokenShopSearchFilter(q);
       const shops = await dbm.all(
         db,
         `SELECT s.name AS text, 'shop' AS kind, s.slug AS slug, s.id AS id, 0 AS score
          FROM shops s
-         WHERE s.name LIKE ? COLLATE NOCASE
-            OR s.location_text LIKE ? COLLATE NOCASE
-            OR s.address LIKE ? COLLATE NOCASE
+         WHERE 1=1
+           ${shopQSql}
          ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC
          LIMIT 12`,
-        [like, like, like]
+        shopQParams
       );
       const places = await dbm.all(
         db,
         `SELECT DISTINCT COALESCE(NULLIF(TRIM(s.location_text), ''), NULLIF(TRIM(s.address), '')) AS text,
                 'place' AS kind, s.slug AS slug, s.id AS id, 0 AS score
          FROM shops s
-         WHERE (s.location_text LIKE ? COLLATE NOCASE OR s.address LIKE ? COLLATE NOCASE)
-           AND COALESCE(NULLIF(TRIM(s.location_text), ''), NULLIF(TRIM(s.address), '')) IS NOT NULL
+         WHERE COALESCE(NULLIF(TRIM(s.location_text), ''), NULLIF(TRIM(s.address), '')) IS NOT NULL
+           ${shopQSql}
          ORDER BY text ASC
          LIMIT 8`,
-        [like, like]
+        shopQParams
       );
       const seen = new Set();
       const terms = [];
