@@ -1691,4 +1691,4 @@ html[dir="rtl"] body[data-pm-page-title="shop_metaTitle"] .pm-shop-brand-sidebar
 html[dir="rtl"] body[data-pm-page-title="browse_metaTitle"] .pm-shop-brand-sidebar__head::after
 {
   background: linear-gradient(270deg, rgba(13, 148, 136, 0.28), transparent);
-}
+}
