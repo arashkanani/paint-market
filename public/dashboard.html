@@ -4,7 +4,16 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="PAINTIK" />
+  <meta name="theme-color" content="#0f766e" />
+  <link rel="manifest" href="/paint/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/paint/img/brand/paintik-icon.png" />
+  <link rel="stylesheet" href="/paint/css/paint-app-shell.css" />
+  <script src="/paint/js/paint-pwa.js"></script>
   <title>Shop dashboard</title>
   <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -578,7 +587,18 @@
     }
     @media (min-width: 1024px) {
       .pm-dash-catalog-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1rem;
+      }
+    }
+    @media (min-width: 1536px) {
+      .pm-dash-catalog-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+    @media (min-width: 1920px) {
+      .pm-dash-catalog-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
       }
     }
     .pm-dash-catalog-card {
@@ -1184,7 +1204,7 @@
         font-size: 0.8125rem;
         padding: 0.5rem 0.4rem;
       }
-      main.max-w-6xl {
+      main.pm-page-shell {
         padding-left: max(0.75rem, env(safe-area-inset-left, 0));
         padding-right: max(0.75rem, env(safe-area-inset-right, 0));
       }
@@ -1299,7 +1319,7 @@
 </head>
 <body class="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100 text-slate-900 min-h-screen" data-pm-page-title="dash_metaTitle">
   <header class="border-b border-white/20 bg-slate-950/80 backdrop-blur sticky top-0 z-30">
-    <div class="pm-header-bar max-w-6xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex flex-nowrap items-center justify-between gap-1 sm:gap-3 min-w-0">
+    <div class="pm-header-bar pm-page-shell py-2 sm:py-3 flex flex-nowrap items-center justify-between gap-1 sm:gap-3 min-w-0">
       <div class="min-w-0 flex-1 truncate">
           <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-300 truncate" data-pm-t="dash_hdr_logged">Logged in shop</p>
           <p id="shopTitle" class="text-sm sm:text-lg font-semibold text-white truncate">Loading…</p>
@@ -1331,7 +1351,7 @@
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-4 sm:space-y-6">
+  <main class="pm-page-shell py-6 sm:py-8 space-y-4 sm:space-y-6">
     <div class="pm-dash-product-row">
       <div class="pm-dash-product-actions" role="group" aria-label="Product actions">
         <button id="dashAddProductBtn" type="button" class="pm-dash-product-action-btn pm-dash-product-action-btn--add" data-pm-t="dash_add_product">Add product</button>

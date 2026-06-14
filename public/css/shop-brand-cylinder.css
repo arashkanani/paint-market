@@ -51,6 +51,14 @@ body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-grid
   }
 }
 
+@media (min-width: 1536px)
+{
+  body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-grid {
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.9rem;
+  }
+}
+
 body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card
 {
   display: flex;
@@ -146,6 +154,87 @@ body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__meta
   font-size: 0.62rem;
   line-height: 1.25;
   color: #565959;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel {
+  margin: 0 0 1rem;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel__card {
+  padding: 0.85rem 1rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(13, 148, 136, 0.28);
+  background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 48%, #eff6ff 100%);
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel__label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f766e;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel__query {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel__meta {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel__back {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0d9488;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-panel__back:hover {
+  color: #0f766e;
+  text-decoration: underline;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-focus {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-focus__title {
+  letter-spacing: -0.01em;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-search-more {
+  margin-top: 0.25rem;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card--search-focus {
+  box-shadow:
+    0 0 0 2px rgba(13, 148, 136, 0.45),
+    0 4px 14px rgba(13, 148, 136, 0.12);
 }
 
 html[lang="ar"] body[data-pm-page-title="shop_metaTitle"] .pm-shop-amazon-card__title,

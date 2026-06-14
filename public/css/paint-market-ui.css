@@ -1,5 +1,36 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,600&family=Noto+Sans+Arabic:wght@500;600;700;800&display=swap");
 
+html {
+  width: 100%;
+  max-width: 100%;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Full-width shell — no max-width column; safe-area horizontal padding only */
+.pm-page-shell {
+  width: 100%;
+  max-width: none;
+  margin-inline: auto;
+  box-sizing: border-box;
+  padding-inline: max(0.75rem, env(safe-area-inset-left, 0px)) max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 640px) {
+  .pm-page-shell {
+    padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 1280px) {
+  .pm-page-shell {
+    padding-inline: max(1.25rem, env(safe-area-inset-left, 0px)) max(1.25rem, env(safe-area-inset-right, 0px));
+  }
+}
+
 /* Native <select> dropdown: solid surface + explicit option colors (fixes Windows/light-on-light). */
 .paint-market-header-select {
   font-family: "DM Sans", "Noto Sans Arabic", system-ui, sans-serif;
@@ -32,6 +63,44 @@ html[dir="rtl"] .paint-market-header-select {
   background-position: 0.65rem calc(50% + 3px), 1rem calc(50% + 3px);
   padding-inline-end: 0.65rem;
   padding-inline-start: 2rem;
+}
+
+.paint-market-header-select--light {
+  background-color: #f3f4f6;
+  color: #0f172a;
+  border: 1px solid #e5e7eb;
+  box-shadow: none;
+  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%);
+}
+
+.paint-market-header-select--light option {
+  background-color: #fff;
+  color: #0f172a;
+}
+
+.paint-market-header-select--light:focus {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+}
+
+.pm-geo-compact-btn--light {
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #334155;
+  box-shadow: none;
+}
+
+.pm-geo-compact-btn--light:hover {
+  filter: none;
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-geo-compact-btn--light .pm-geo-sym-city,
+body[data-pm-page-title="shop_metaTitle"] .pm-geo-compact-btn--light .pm-geo-sym-lang {
+  text-shadow: none;
+  color: #334155;
 }
 
 html[lang="ar"] body {
@@ -920,6 +989,12 @@ body[data-pm-index-view="products"] .pm-index-product-grid {
   line-height: 0;
   text-decoration: none;
   flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pm-brand-logo-link:active {
+  opacity: 0.88;
 }
 
 .pm-brand-logo-link__img {
@@ -962,16 +1037,119 @@ body[data-pm-index-view="products"] .pm-index-product-grid {
   --pm-shop-shadow: 0 8px 24px -8px rgba(13, 148, 136, 0.35), 0 4px 12px -6px rgba(37, 99, 235, 0.2);
 }
 
+body[data-pm-page-title="shop_metaTitle"] {
+  background: #f8fafc;
+  min-height: 100dvh;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header {
+  background: #fff;
+  border-bottom: 1px solid #eef0f3;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.1rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__back {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: #334155;
+  text-decoration: none;
+  font-size: 1.65rem;
+  line-height: 1;
+  padding: 0;
+  margin: 0 -0.1rem 0 0;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__back:hover {
+  color: #0f172a;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__label {
+  margin: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__spacer {
+  flex: 1 1 auto;
+  min-width: 0.35rem;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  color: #334155;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__link:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__link--primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  color: #fff;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__link--primary:hover {
+  background: linear-gradient(135deg, #0f766e 0%, #0e7490 100%);
+  color: #fff;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__geo-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+body[data-pm-page-title="shop_metaTitle"] .pm-shop-page-header__geo {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.35rem;
+}
+
 body[data-pm-page-title="index_metaTitle"] {
   background: var(--pm-shops-bg);
-  height: 100dvh;
+  height: var(--pm-app-height, 100dvh);
   overflow: hidden;
 }
 
 .pm-index-main {
   display: flex;
   flex-direction: column;
-  height: calc(100dvh - var(--pm-index-header-h, 8.5rem));
+  height: calc(var(--pm-app-height, 100dvh) - var(--pm-index-header-h, 8.5rem));
   min-height: 0;
   overflow: hidden;
   background: var(--pm-shops-bg);
@@ -2278,9 +2456,11 @@ html[lang="ar"] .pm-shops-section__title-bar {
   position: relative;
   border-radius: 0.75rem;
   padding: 0.55rem 0.65rem;
-  background: #374151;
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+  background: #fff;
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    0 4px 14px rgba(13, 148, 136, 0.08);
 }
 
 .pm-shop-hero-bar__row {

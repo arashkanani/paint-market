@@ -80,6 +80,21 @@ function paintMarketSearchResultsUrl(opts = {}) {
   return `/paint/search-results.html${suffix}`;
 }
 
+function paintMarketShopUrl(opts = {}) {
+  const qs = new URLSearchParams();
+  const slug = opts.slug != null ? String(opts.slug).trim() : "";
+  if (slug) qs.set("slug", slug);
+  const productId = Number(opts.productId);
+  if (Number.isFinite(productId) && productId > 0) qs.set("productId", String(productId));
+  const q = opts.q != null ? String(opts.q).trim() : "";
+  if (q) qs.set("q", q);
+  const cap =
+    typeof PaintApi !== "undefined" ? PaintApi.normalizeCapacityLtr(opts.capacityLtr) : null;
+  if (cap != null) qs.set("capacityLtr", String(cap));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return `/paint/shop.html${suffix}`;
+}
+
 const PM_RECENT_SEARCH_KEY = "paint-market-recent-searches";
 const PM_RECENT_SEARCH_MAX = 12;
 

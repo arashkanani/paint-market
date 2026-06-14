@@ -21,7 +21,7 @@ body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] {
 
 .pm-pfinder-home .pm-index-main {
   background: var(--pm-pfinder-bg);
-  height: calc(100dvh - var(--pm-index-header-h, 7.5rem));
+  height: calc(var(--pm-app-height, 100dvh) - var(--pm-index-header-h, 7.5rem));
   width: 100%;
   max-width: none;
   margin-left: 0;
@@ -105,6 +105,12 @@ body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] {
   text-decoration: none;
   line-height: 0;
   flex: 0 0 auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pm-pfinder-logo:active {
+  opacity: 0.88;
 }
 
 .pm-pfinder-logo__img {
@@ -638,6 +644,8 @@ body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] {
 
 /* Bottom navigation */
 .pm-pfinder-bottom-nav {
+  --pm-pfinder-pad-x: 1rem;
+  --pm-pfinder-accent: #2563eb;
   position: fixed;
   left: 0;
   right: 0;
@@ -858,6 +866,17 @@ body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {
 
   .pm-pfinder-bottom-nav {
     display: none !important;
+  }
+
+  body.pm-shop-page .pm-pfinder-bottom-nav,
+  body.pm-dash-page .pm-pfinder-bottom-nav,
+  html.pm-app-standalone .pm-pfinder-bottom-nav,
+  html.pm-app-immersive .pm-pfinder-bottom-nav,
+  html.pm-app-scroll-fullscreen .pm-pfinder-bottom-nav,
+  html.pm-app-fullscreen .pm-pfinder-bottom-nav,
+  html:fullscreen .pm-pfinder-bottom-nav,
+  html:-webkit-full-screen .pm-pfinder-bottom-nav {
+    display: flex !important;
   }
 
   body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {

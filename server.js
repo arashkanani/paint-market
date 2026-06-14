@@ -2806,6 +2806,13 @@ async function main() {
           res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
           res.setHeader("Pragma", "no-cache");
         }
+        if (filePath.endsWith(".webmanifest")) {
+          res.setHeader("Content-Type", "application/manifest+json");
+        }
+        if (filePath.endsWith("sw.js")) {
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Service-Worker-Allowed", "/paint/");
+        }
       }
     })
   );

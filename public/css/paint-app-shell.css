@@ -1,0 +1,135 @@
+/* Full-screen mobile shell — uses --pm-app-height from paint-pwa.js (visual viewport) */
+
+:root {
+  --pm-app-height: 100dvh;
+  --pm-notch-offset: 0px;
+}
+
+html.pm-app-fullscreen,
+html:fullscreen,
+html:-webkit-full-screen,
+html.pm-app-standalone {
+  --pm-notch-offset: calc(env(safe-area-inset-top, 0px) + 0.45rem);
+}
+
+html {
+  height: 100%;
+  min-height: var(--pm-app-height);
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+body {
+  min-height: var(--pm-app-height);
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
+html.pm-app-standalone,
+html.pm-app-standalone body {
+  overscroll-behavior-y: none;
+}
+
+html:fullscreen,
+html:-webkit-full-screen,
+html.pm-app-fullscreen {
+  width: 100%;
+  height: 100%;
+}
+
+html:fullscreen body,
+html:-webkit-full-screen body,
+html.pm-app-fullscreen body {
+  min-height: 100%;
+  height: 100%;
+}
+
+/* App-style pages: lock to visible viewport (hides gap when mobile URL bar collapses) */
+body.pm-pfinder-home,
+body.pm-sr-page,
+body.pm-search-page {
+  height: var(--pm-app-height);
+  max-height: var(--pm-app-height);
+  min-height: var(--pm-app-height);
+  overflow: hidden;
+}
+
+body.pm-pfinder-home .pm-index-main {
+  height: calc(var(--pm-app-height) - var(--pm-index-header-h, 7.5rem));
+  min-height: 0;
+}
+
+body.pm-sr-page .pm-sr-list-view,
+body.pm-sr-page.pm-sr-page--map {
+  height: var(--pm-app-height);
+  max-height: var(--pm-app-height);
+}
+
+body.pm-sr-page .pm-sr-map-screen {
+  height: var(--pm-app-height);
+  max-height: var(--pm-app-height);
+}
+
+body.pm-search-page {
+  min-height: var(--pm-app-height);
+}
+
+/* Fullscreen / standalone — push search headers below camera notch */
+html.pm-app-fullscreen .pm-pfinder-header,
+html:fullscreen .pm-pfinder-header,
+html:-webkit-full-screen .pm-pfinder-header,
+html.pm-app-standalone .pm-pfinder-header,
+html.pm-app-fullscreen .pm-search-header,
+html:fullscreen .pm-search-header,
+html:-webkit-full-screen .pm-search-header,
+html.pm-app-standalone .pm-search-header,
+html.pm-app-fullscreen .pm-sr-header,
+html:fullscreen .pm-sr-header,
+html:-webkit-full-screen .pm-sr-header,
+html.pm-app-standalone .pm-sr-header {
+  padding-top: var(--pm-notch-offset);
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --pm-notch-offset: calc(env(safe-area-inset-top, 0px) + 0.45rem);
+  }
+}
+
+/* Footer menu — shop showroom + shop dashboard */
+body.pm-shop-page .pm-pfinder-bottom-nav,
+body.pm-dash-page .pm-pfinder-bottom-nav {
+  display: flex !important;
+  z-index: 500;
+}
+
+body.pm-shop-page,
+body.pm-dash-page {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.pm-shop-page .pm-shop-page-main {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+html.pm-app-standalone .pm-pfinder-bottom-nav,
+html.pm-app-immersive .pm-pfinder-bottom-nav,
+html.pm-app-scroll-fullscreen .pm-pfinder-bottom-nav,
+html.pm-app-fullscreen .pm-pfinder-bottom-nav,
+html:fullscreen .pm-pfinder-bottom-nav,
+html:-webkit-full-screen .pm-pfinder-bottom-nav {
+  display: flex !important;
+  z-index: 500;
+}
+
+html.pm-app-immersive body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+html.pm-app-scroll-fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+html.pm-app-fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+html.pm-app-standalone body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+html:fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+html:-webkit-full-screen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.04);
+}

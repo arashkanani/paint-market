@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="PAINTIK" />
+  <meta name="theme-color" content="#0f766e" />
+  <link rel="manifest" href="/paint/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/paint/img/brand/paintik-icon.png" />
+  <link rel="stylesheet" href="/paint/css/paint-app-shell.css" />
+  <script src="/paint/js/paint-pwa.js"></script>
   <title>Browse products</title>
   <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,7 +31,7 @@
 </head>
 <body class="text-slate-900 min-h-screen bg-slate-50" data-pm-page-title="browse_metaTitle">
   <header class="sticky top-0 z-30 bg-slate-950/85 backdrop-blur border-b border-slate-200 shadow-sm">
-    <div class="pm-header-bar max-w-6xl mx-auto px-2 sm:px-4 py-2 sm:py-3 flex flex-nowrap items-center justify-between gap-2 min-w-0">
+    <div class="pm-header-bar pm-page-shell py-2 sm:py-3 flex flex-nowrap items-center justify-between gap-2 min-w-0">
       <div class="flex flex-nowrap items-center gap-2 min-w-0">
         <a href="/paint/" class="pm-browse-back shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg border border-white/20 text-slate-100 hover:bg-white/10" aria-label="Back to home"><span aria-hidden="true">‹</span></a>
         <div class="min-w-0">
@@ -36,7 +45,7 @@
       </nav>
     </div>
     <div class="bg-white border-t border-slate-200">
-      <div class="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0">
+      <div class="pm-page-shell py-2 flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0">
         <div class="pm-browse-filter-bar flex flex-wrap items-center gap-2 min-w-0 flex-1">
           <button type="button" id="browseCategoryBtn" class="pm-browse-filter-btn">
             <span class="pm-browse-filter-btn__label" data-pm-t="index_browse_categories">Categories</span>
@@ -77,7 +86,7 @@
     </div>
   </header>
 
-  <main class="pm-browse-main max-w-6xl mx-auto px-4 space-y-3">
+  <main class="pm-browse-main pm-page-shell space-y-3">
     <p id="browseProductPickHint" class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600 hidden" data-pm-t="browse_pick_filter">Use the category or brand buttons in the top bar to browse products.</p>
 
     <section id="browseProductsWrap" class="pm-index-browse-panel pm-index-browse-panel--products shrink-0" aria-label="Products">

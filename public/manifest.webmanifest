@@ -1,0 +1,26 @@
+{
+  "name": "PAINTIK",
+  "short_name": "PAINTIK",
+  "description": "Find paints, prices, and shops near you",
+  "start_url": "/paint/",
+  "scope": "/paint/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/paint/img/brand/paintik-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/paint/img/brand/paintik-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

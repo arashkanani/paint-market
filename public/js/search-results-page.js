@@ -956,7 +956,16 @@
     const pid = Number(card.dataset.productId);
     if (Number.isFinite(pid) && pid > 0) PaintApi.trackProduct(pid).catch(() => {});
     if (slug) {
-      window.location.href = `/paint/shop.html?slug=${encodeURIComponent(slug)}`;
+      const url =
+        typeof paintMarketShopUrl === "function"
+          ? paintMarketShopUrl({
+              slug,
+              productId: pid,
+              q: state.q,
+              capacityLtr: state.capacityLtr
+            })
+          : `/paint/shop.html?slug=${encodeURIComponent(slug)}&productId=${pid}`;
+      window.location.href = url;
     }
   });
 

@@ -6,7 +6,7 @@
   --pm-sr-pad: 0.75rem;
   --pm-sr-nav-h: calc(4.65rem + env(safe-area-inset-bottom, 0px));
   background: var(--pm-sr-bg);
-  height: 100dvh;
+  height: var(--pm-app-height, 100dvh);
   overflow: hidden;
   display: flex;
   flex-direction: column;

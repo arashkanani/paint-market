@@ -6,7 +6,7 @@
   --pm-search-pad-x: 0.85rem;
   --pm-search-divider: #eef0f3;
   background: var(--pm-search-bg);
-  min-height: 100dvh;
+  min-height: var(--pm-app-height, 100dvh);
   padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
 }
 
