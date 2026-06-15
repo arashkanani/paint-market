@@ -90,6 +90,21 @@ html.pm-app-standalone .pm-sr-header {
   padding-top: var(--pm-notch-offset);
 }
 
+html.pm-app-fullscreen body.pm-shop-page,
+html:fullscreen body.pm-shop-page,
+html:-webkit-full-screen body.pm-shop-page,
+html.pm-app-standalone body.pm-shop-page,
+html.pm-app-immersive body.pm-shop-page,
+html.pm-app-scroll-fullscreen body.pm-shop-page,
+html.pm-app-fullscreen body.pm-dash-page,
+html:fullscreen body.pm-dash-page,
+html:-webkit-full-screen body.pm-dash-page,
+html.pm-app-standalone body.pm-dash-page,
+html.pm-app-immersive body.pm-dash-page,
+html.pm-app-scroll-fullscreen body.pm-dash-page {
+  --pm-shop-header-safe-top: var(--pm-notch-offset);
+}
+
 @media (display-mode: standalone), (display-mode: fullscreen) {
   :root {
     --pm-notch-offset: calc(env(safe-area-inset-top, 0px) + 0.45rem);
@@ -98,18 +113,16 @@ html.pm-app-standalone .pm-sr-header {
 
 /* Footer menu — shop showroom + shop dashboard */
 body.pm-shop-page .pm-pfinder-bottom-nav,
-body.pm-dash-page .pm-pfinder-bottom-nav {
+body.pm-dash-page .pm-pfinder-bottom-nav,
+body.pm-account-page .pm-pfinder-bottom-nav {
   display: flex !important;
   z-index: 500;
 }
 
 body.pm-shop-page,
-body.pm-dash-page {
+body.pm-dash-page,
+body.pm-account-page {
   padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-}
-
-body.pm-shop-page .pm-shop-page-main {
-  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
 }
 
 html.pm-app-standalone .pm-pfinder-bottom-nav,

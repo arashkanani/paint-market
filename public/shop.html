@@ -21,68 +21,69 @@
   <link rel="stylesheet" href="/paint/css/shop-brand-cylinder.css?v=20260531c" />
   <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260601h" />
   <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
-  <link rel="stylesheet" href="/paint/css/paint-app-shell.css?v=20260601i" />
+  <link rel="stylesheet" href="/paint/css/paint-app-shell.css?v=20260601k" />
 </head>
 <body class="pm-shop-page text-slate-900 min-h-screen bg-slate-50" data-pm-page-title="shop_metaTitle">
-  <main class="pm-page-shell pm-shop-page-main py-6 space-y-6">
-    <section class="pm-shop-hero pm-shop-hero-bar w-full max-w-full min-w-0">
-      <div class="pm-shop-hero-bar__row">
-        <div class="pm-shop-hero-bar__logo shop-photo-frame pm-shop-hero-bar__logo-frame">
-          <img id="heroImg" alt="" class="shop-photo-frame__img" loading="lazy" />
-        </div>
-        <div class="pm-shop-hero-bar__title">
-          <h1 id="shopName" class="min-w-0">Loading…</h1>
-          <button
-            type="button"
-            id="shopFavBtn"
-            class="paint-market-fav-btn hidden shrink-0"
-            aria-hidden="true"
-          ></button>
-        </div>
-        <div class="pm-shop-hero-bar__actions">
-          <button
-            type="button"
-            id="shopInfoBtn"
-            class="pm-shop-hero-bar__btn pm-shop-hero-bar__btn--info"
-            aria-expanded="false"
-            aria-controls="shopInfoDropdown"
-          >
-            <span data-pm-t="shop_info_btn">Description</span>
-          </button>
-          <a
-            id="openDirectionsMap"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="pm-shop-hero-bar__btn pm-shop-hero-bar__btn--dir hidden"
-            data-pm-t="shop_get_directions"
-          >Get directions</a>
-        </div>
+  <header class="pm-shop-page-header pm-shop-hero-bar">
+    <div class="pm-shop-page-header__bar pm-page-shell pm-shop-hero-bar__row">
+      <a id="shopHeaderBack" href="/paint/" class="pm-shop-page-header__back" aria-label="Back"><span aria-hidden="true">‹</span></a>
+      <div class="pm-shop-hero-bar__logo shop-photo-frame pm-shop-hero-bar__logo-frame">
+        <img id="heroImg" alt="" class="shop-photo-frame__img" loading="lazy" />
       </div>
-      <div id="shopInfoDropdown" class="pm-shop-hero-info-drop" hidden>
-        <div class="pm-shop-hero-info-drop__inner" aria-label="Shop information">
-          <p id="locationText" class="pm-shop-hero-info-drop__line"></p>
-          <p id="addressText" class="pm-shop-hero-info-drop__line"></p>
-          <p id="phoneText" class="pm-shop-hero-info-drop__line pm-shop-hero-info-drop__line--phone" hidden>
-            <span class="pm-shop-hero-info-drop__label" data-pm-t="shop_info_phone">Phone</span>
-            <span id="phoneTextValue"></span>
-          </p>
-          <p class="pm-shop-hero-info-drop__line pm-shop-hero-info-drop__line--muted">
-            <span data-pm-t="index_last_update">Last update:</span>
-            <span id="lastUpdated"></span>
-          </p>
-          <a
-            id="openExtMap"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="pm-shop-hero-info-drop__map-link hidden"
-            data-pm-t="shop_map_hint"
-          >Show on map</a>
-        </div>
+      <div class="pm-shop-hero-bar__title">
+        <h1 id="shopName" class="min-w-0">Loading…</h1>
+        <button
+          type="button"
+          id="shopFavBtn"
+          class="paint-market-fav-btn hidden shrink-0"
+          aria-hidden="true"
+        ></button>
       </div>
-    </section>
+      <div class="pm-shop-hero-bar__actions">
+        <button
+          type="button"
+          id="shopInfoBtn"
+          class="pm-shop-hero-bar__btn pm-shop-hero-bar__btn--info"
+          aria-expanded="false"
+          aria-controls="shopInfoDropdown"
+        >
+          <span data-pm-t="shop_info_btn">Description</span>
+        </button>
+        <a
+          id="openDirectionsMap"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="pm-shop-hero-bar__btn pm-shop-hero-bar__btn--dir hidden"
+          data-pm-t="shop_get_directions"
+        >Get directions</a>
+      </div>
+    </div>
+    <div id="shopInfoDropdown" class="pm-shop-hero-info-drop pm-page-shell" hidden>
+      <div class="pm-shop-hero-info-drop__inner" aria-label="Shop information">
+        <p id="locationText" class="pm-shop-hero-info-drop__line"></p>
+        <p id="addressText" class="pm-shop-hero-info-drop__line"></p>
+        <p id="phoneText" class="pm-shop-hero-info-drop__line pm-shop-hero-info-drop__line--phone" hidden>
+          <span class="pm-shop-hero-info-drop__label" data-pm-t="shop_info_phone">Phone</span>
+          <span id="phoneTextValue"></span>
+        </p>
+        <p class="pm-shop-hero-info-drop__line pm-shop-hero-info-drop__line--muted">
+          <span data-pm-t="index_last_update">Last update:</span>
+          <span id="lastUpdated"></span>
+        </p>
+        <a
+          id="openExtMap"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="pm-shop-hero-info-drop__map-link hidden"
+          data-pm-t="shop_map_hint"
+        >Show on map</a>
+      </div>
+    </div>
+  </header>
 
+  <main class="pm-page-shell pm-shop-page-main py-4 space-y-4">
     <div id="errorBox" class="hidden rounded-xl border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3 text-sm"></div>
 
     <section class="pm-shop-catalog" id="shopCatalog">
@@ -129,7 +130,7 @@
       <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">🏪</span>
       <span data-pm-t="index_nav_shops">Shops</span>
     </a>
-    <a href="/paint/login.html" class="pm-pfinder-bottom-nav__item">
+    <a href="/paint/account.html" class="pm-pfinder-bottom-nav__item">
       <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">👤</span>
       <span data-pm-t="index_nav_account">Account</span>
     </a>
@@ -157,6 +158,10 @@
     const focusCapacityRaw = params.get("capacityLtr");
     const focusCapacity =
       typeof PaintApi !== "undefined" ? PaintApi.normalizeCapacityLtr(focusCapacityRaw) : null;
+    const shopHeaderBack = document.getElementById("shopHeaderBack");
+    if (shopHeaderBack && focusQuery && typeof paintMarketSearchResultsUrl === "function") {
+      shopHeaderBack.href = paintMarketSearchResultsUrl({ q: focusQuery, capacityLtr: focusCapacity });
+    }
     const heroImg = document.getElementById("heroImg");
 
     function setupPublicShopLinks(shop) {
@@ -304,8 +309,8 @@
 
     function scrollShopProductsToTop() {
       const catalog = document.getElementById("shopCatalog");
-      const y = catalog ? catalog.getBoundingClientRect().top + window.scrollY - 10 : 0;
-      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+      if (!catalog) return;
+      catalog.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function listingMasterProductId(row) {

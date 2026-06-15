@@ -1,0 +1,611 @@
+/* PAINTIK account hub — noon-inspired */
+
+.pm-account-page {
+  --pm-account-bg: #f4f7fb;
+  --pm-account-card: #fff;
+  --pm-account-text: #1e293b;
+  --pm-account-muted: #64748b;
+  --pm-account-accent: #2563eb;
+  --pm-account-pad-x: 1rem;
+  background: var(--pm-account-bg);
+  min-height: var(--pm-app-height, 100dvh);
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  color: var(--pm-account-text);
+}
+
+.pm-account-main {
+  padding: 1rem var(--pm-account-pad-x) 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pm-account-welcome {
+  background: var(--pm-account-card);
+  border-radius: 1rem;
+  padding: 1.25rem 1rem 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+/* Dolmaa-style login card */
+.pm-auth-card {
+  background: var(--pm-account-card);
+  border-radius: 1rem;
+  padding: 1.25rem 1rem 1.15rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.pm-auth-card__title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #ff7a21;
+}
+
+.pm-auth-card__sub {
+  margin: 0.4rem 0 1rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.pm-auth-seg {
+  display: flex;
+  padding: 0.2rem;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  gap: 0.15rem;
+  margin-bottom: 0.85rem;
+}
+
+.pm-auth-seg--input {
+  background: #e8ecf4;
+}
+
+.pm-auth-seg__btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.55rem 0.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.pm-auth-seg__btn.is-active {
+  background: #717fe0;
+  color: #fff;
+}
+
+.pm-auth-seg--input .pm-auth-seg__btn.is-active {
+  background: #fff;
+  color: #1e293b;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.pm-auth-social {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.pm-auth-social__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.pm-auth-social__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.pm-auth-social__icon--google {
+  color: #4285f4;
+}
+
+.pm-auth-social__icon--apple {
+  font-size: 1.1rem;
+}
+
+.pm-auth-or {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.15rem 0 0.85rem;
+  color: #94a3b8;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.pm-auth-or::before,
+.pm-auth-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.pm-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pm-auth-form__block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pm-auth-phone {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.pm-auth-phone__country {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  padding: 0;
+}
+
+.pm-auth-phone__caret {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.pm-auth-phone__sep {
+  width: 1px;
+  height: 1.25rem;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.pm-auth-phone__tel-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.pm-auth-phone__dial {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.pm-auth-phone input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.9375rem;
+  outline: none;
+}
+
+.pm-auth-phone__clear {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.15rem;
+}
+
+.pm-auth-hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: #94a3b8;
+}
+
+.pm-auth-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.pm-auth-input-wrap__icon {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.pm-auth-input-wrap input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.9375rem;
+  outline: none;
+}
+
+.pm-auth-input-wrap__toggle {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.55;
+}
+
+.pm-auth-password-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.15rem;
+}
+
+.pm-auth-password-head__label {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pm-auth-password-head__link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ff7a21;
+  text-decoration: underline;
+}
+
+.pm-auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  color: #475569;
+  cursor: pointer;
+}
+
+.pm-auth-remember input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #717fe0;
+}
+
+.pm-auth-submit {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 9999px;
+  background: #ff7a21;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 0.15rem;
+}
+
+.pm-auth-submit:active {
+  transform: scale(0.99);
+}
+
+.pm-account-welcome__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #0f172a;
+}
+
+.pm-account-welcome__sub {
+  margin: 0.35rem 0 1rem;
+  font-size: 0.875rem;
+  color: var(--pm-account-muted);
+  line-height: 1.4;
+}
+
+.pm-account-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 0.65rem;
+  background: #1e293b;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pm-account-login-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: #facc15;
+  color: #1e293b;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.pm-account-profile {
+  background: var(--pm-account-card);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pm-account-profile__avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #0d9488, #2563eb);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.pm-account-profile__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.pm-account-profile__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-account-profile__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--pm-account-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-account-section__title {
+  margin: 0 0 0.5rem;
+  padding: 0 0.15rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pm-account-settings {
+  background: var(--pm-account-card);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.pm-account-settings__row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pm-account-settings__row + .pm-account-settings__row {
+  border-top: 1px solid #eef0f3;
+}
+
+.pm-account-settings__icon {
+  font-size: 1.15rem;
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.pm-account-settings__label {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.pm-account-settings__value {
+  font-size: 0.8125rem;
+  color: var(--pm-account-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pm-account-settings__chev {
+  color: #94a3b8;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.pm-account-plan-card {
+  background: var(--pm-account-card);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  border: 1px solid transparent;
+}
+
+.pm-account-plan-card--pro {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: linear-gradient(180deg, #fff 0%, #f5f9ff 100%);
+}
+
+.pm-account-plan-card__badge {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pm-account-plan-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.pm-account-plan-card__price {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--pm-account-muted);
+}
+
+.pm-account-plan-card__list {
+  margin: 0 0 0.75rem;
+  padding: 0 0 0 1.1rem;
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.pm-account-plan-card__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: 0.55rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pm-account-plan-card--pro .pm-account-plan-card__btn {
+  border: none;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+}
+
+#accountLoggedIn {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pm-account-plans {
+  margin-top: 0.25rem;
+}
+
+.pm-account-plans .pm-account-plan-card + .pm-account-plan-card {
+  margin-top: 0.65rem;
+}
+
+.pm-account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pm-account-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 0.55rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pm-account-action-btn--primary {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #fff;
+}
+
+.pm-account-action-btn--danger {
+  color: #be123c;
+  border-color: #fecdd3;
+  background: #fff1f2;
+}
+
+/* Legacy welcome button (unused) */
+
+.pm-account-auth-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #be123c;
+}
+
+.pm-account-auth-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--pm-account-muted);
+}
+
+.pm-account-auth-link {
+  font-size: 0.8125rem;
+  color: var(--pm-account-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pm-account-hidden {
+  display: none !important;
+}

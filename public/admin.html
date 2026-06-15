@@ -238,7 +238,7 @@
     async function guard() {
       const me = await PaintApi.me();
       if (!me.user || me.user.role !== "admin") {
-        window.location.href = "/paint/login.html";
+        window.location.href = "/paint/account.html";
       }
       return me;
     }

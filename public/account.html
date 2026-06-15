@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="PAINTIK" />
+  <meta name="theme-color" content="#0f766e" />
+  <link rel="manifest" href="/paint/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/paint/img/brand/paintik-icon.png" />
+  <script src="/paint/js/paint-pwa.js?v=20260601e"></script>
+  <title>Account</title>
+  <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260601h" />
+  <link rel="stylesheet" href="/paint/css/account-page.css?v=20260601b" />
+  <link rel="stylesheet" href="/paint/css/paint-app-shell.css?v=20260601k" />
+  <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
+</head>
+<body class="pm-account-page" data-pm-page-title="account_metaTitle">
+  <main class="pm-account-main" id="accountMain">
+    <section id="accountGuest" class="pm-auth-card">
+      <h1 class="pm-auth-card__title" data-pm-t="account_auth_title">Login / Register</h1>
+      <p class="pm-auth-card__sub" data-pm-t="account_auth_sub">Sign in to find paint shops, manage your showroom, and upgrade your plan on PAINTIK.</p>
+
+      <div class="pm-auth-seg" role="tablist" aria-label="Login or register">
+        <button type="button" class="pm-auth-seg__btn is-active" data-auth-mode="login" role="tab" aria-selected="true" data-pm-t="account_tab_login">Login</button>
+        <button type="button" class="pm-auth-seg__btn" data-auth-mode="register" role="tab" aria-selected="false" data-pm-t="account_tab_register">Create an Account</button>
+      </div>
+
+      <div class="pm-auth-social">
+        <button type="button" class="pm-auth-social__btn" data-auth-method="google">
+          <span class="pm-auth-social__icon pm-auth-social__icon--google" aria-hidden="true">G</span>
+          <span data-pm-t="account_auth_google">Sign in with Google</span>
+        </button>
+        <button type="button" class="pm-auth-social__btn" data-auth-method="apple">
+          <span class="pm-auth-social__icon pm-auth-social__icon--apple" aria-hidden="true">&#63743;</span>
+          <span data-pm-t="account_auth_apple">Sign in with Apple</span>
+        </button>
+      </div>
+
+      <div class="pm-auth-or" aria-hidden="true"><span data-pm-t="account_auth_or">OR CONTINUE WITH</span></div>
+
+      <div class="pm-auth-seg pm-auth-seg--input" role="tablist" aria-label="Email or phone">
+        <button type="button" class="pm-auth-seg__btn" data-input-method="email" role="tab" aria-selected="false" data-pm-t="account_input_email">Email Address</button>
+        <button type="button" class="pm-auth-seg__btn is-active" data-input-method="phone" role="tab" aria-selected="true" data-pm-t="account_input_phone">Phone Number</button>
+      </div>
+
+      <form id="accountAuthForm" class="pm-auth-form" novalidate>
+        <div id="accountEmailFields" class="pm-auth-form__block pm-account-hidden">
+          <label class="pm-auth-input-wrap">
+            <span class="pm-auth-input-wrap__icon" aria-hidden="true">✉</span>
+            <input name="email" type="email" autocomplete="email" placeholder="Email address" data-pm-placeholder="account_email_placeholder" />
+          </label>
+        </div>
+
+        <div id="accountPhoneFields" class="pm-auth-form__block">
+          <div class="pm-auth-phone">
+            <button type="button" id="accountPhoneCountry" class="pm-auth-phone__country" aria-label="Country code">
+              <span id="accountPhoneCountryCode">OM</span>
+              <span class="pm-auth-phone__caret" aria-hidden="true">▾</span>
+            </button>
+            <span class="pm-auth-phone__sep" aria-hidden="true"></span>
+            <span class="pm-auth-phone__tel-icon" aria-hidden="true">📞</span>
+            <span id="accountPhoneDial" class="pm-auth-phone__dial">+968</span>
+            <input id="accountPhoneInput" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Phone number" data-pm-placeholder="account_phone_placeholder" />
+            <button type="button" id="accountPhoneClear" class="pm-auth-phone__clear" aria-label="Clear" hidden>×</button>
+          </div>
+          <p class="pm-auth-hint" id="accountPhoneExample" data-pm-t="account_phone_example">Example: +968 9737 3518</p>
+        </div>
+
+        <div id="accountPhoneCodeBlock" class="pm-auth-form__block pm-account-hidden">
+          <label class="pm-auth-input-wrap">
+            <span class="pm-auth-input-wrap__icon" aria-hidden="true">#</span>
+            <input name="code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code" data-pm-placeholder="account_phone_code_placeholder" />
+          </label>
+        </div>
+
+        <div id="accountPasswordBlock" class="pm-auth-form__block pm-account-hidden">
+          <div class="pm-auth-password-head">
+            <span class="pm-auth-password-head__label" data-pm-t="account_password_label">Password</span>
+            <a href="/paint/account.html" class="pm-auth-password-head__link" data-pm-t="account_forgot_password">Forgot Password?</a>
+          </div>
+          <label class="pm-auth-input-wrap">
+            <span class="pm-auth-input-wrap__icon" aria-hidden="true">🔒</span>
+            <input id="accountPasswordInput" name="password" type="password" autocomplete="current-password" placeholder="Enter Password" data-pm-placeholder="account_password_placeholder" />
+            <button type="button" id="accountPasswordToggle" class="pm-auth-input-wrap__toggle" aria-label="Show password">👁</button>
+          </label>
+        </div>
+
+        <label id="accountRememberRow" class="pm-auth-remember pm-account-hidden">
+          <input type="checkbox" name="remember" id="accountRemember" />
+          <span data-pm-t="account_remember_me">Remember me</span>
+        </label>
+
+        <button type="submit" id="accountAuthSubmit" class="pm-auth-submit" data-pm-t="account_email_submit">Sign in</button>
+      </form>
+
+      <p id="accountAuthError" class="pm-account-auth-error pm-account-hidden"></p>
+      <p id="accountPhoneError" class="pm-account-auth-error pm-account-hidden"></p>
+      <p id="accountEmailError" class="pm-account-auth-error pm-account-hidden"></p>
+      <a id="accountOAuthRegister" href="/paint/register.html" class="pm-account-auth-link pm-account-hidden" data-pm-t="account_oauth_register">Complete shop registration</a>
+    </section>
+
+    <section id="accountLoggedIn" class="pm-account-hidden">
+      <div class="pm-account-profile">
+        <div id="accountAvatar" class="pm-account-profile__avatar" aria-hidden="true">P</div>
+        <div class="pm-account-profile__body">
+          <p id="accountDisplayName" class="pm-account-profile__name">—</p>
+          <p id="accountDisplayMeta" class="pm-account-profile__meta">—</p>
+        </div>
+      </div>
+      <div class="pm-account-actions">
+        <a id="accountDashLink" href="/paint/dashboard.html" class="pm-account-action-btn pm-account-action-btn--primary" data-pm-t="account_dashboard">Shop dashboard</a>
+        <button type="button" id="accountLogoutBtn" class="pm-account-action-btn pm-account-action-btn--danger" data-pm-t="account_logout">Log out</button>
+      </div>
+
+      <section id="accountPlans" class="pm-account-plans">
+        <h2 class="pm-account-section__title" data-pm-t="account_upgrade_plan">Upgrade plan</h2>
+        <div class="pm-account-plan-card">
+          <p class="pm-account-plan-card__title" data-pm-t="account_plan_basic">Basic</p>
+          <p class="pm-account-plan-card__price" data-pm-t="account_plan_basic_price">Free for shops</p>
+          <ul class="pm-account-plan-card__list">
+            <li data-pm-t="account_plan_basic_feat1">List products in your showroom</li>
+            <li data-pm-t="account_plan_basic_feat2">Appear in local search</li>
+          </ul>
+          <button type="button" class="pm-account-plan-card__btn" disabled data-pm-t="account_plan_current">Current plan</button>
+        </div>
+        <div class="pm-account-plan-card pm-account-plan-card--pro">
+          <span class="pm-account-plan-card__badge" data-pm-t="account_plan_pro">Pro</span>
+          <p class="pm-account-plan-card__title" data-pm-t="account_plan_pro">Pro</p>
+          <p class="pm-account-plan-card__price" data-pm-t="account_plan_pro_price">Coming soon</p>
+          <ul class="pm-account-plan-card__list">
+            <li data-pm-t="account_plan_pro_feat1">Featured shop placement</li>
+            <li data-pm-t="account_plan_pro_feat2">Priority support &amp; analytics</li>
+          </ul>
+          <button type="button" class="pm-account-plan-card__btn" disabled data-pm-t="account_plan_upgrade">Upgrade to Pro</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <nav class="pm-pfinder-bottom-nav" aria-label="Main navigation">
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">⌂</span>
+      <span data-pm-t="index_nav_home">Home</span>
+    </a>
+    <a href="/paint/browse.html" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">☰</span>
+      <span data-pm-t="index_nav_browse">Browse</span>
+    </a>
+    <div class="pm-pfinder-bottom-nav__fab-wrap">
+      <a href="/paint/register.html" class="pm-pfinder-bottom-nav__fab" title="Register shop" aria-label="Add listing">+</a>
+    </div>
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">🏪</span>
+      <span data-pm-t="index_nav_shops">Shops</span>
+    </a>
+    <a href="/paint/account.html" class="pm-pfinder-bottom-nav__item is-active" aria-current="page">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">👤</span>
+      <span data-pm-t="index_nav_account">Account</span>
+    </a>
+  </nav>
+
+  <div id="g_id_onload" class="pm-account-hidden"></div>
+  <div id="g_id_signin" class="pm-account-hidden"></div>
+
+  <script src="/paint/js/paint-i18n.js"></script>
+  <script src="/paint/js/common.js"></script>
+  <script src="/paint/js/account-page.js?v=20260601c"></script>
+</body>
+</html>

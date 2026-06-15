@@ -792,7 +792,7 @@ async function getSessionUser(db, req) {
   if (!token) return null;
   const row = await dbm.get(
     db,
-    `SELECT u.id, u.email, u.role, u.shop_id, s.slug AS shop_slug, s.name AS shop_name
+    `SELECT u.id, u.email, u.role, u.shop_id, u.phone, s.slug AS shop_slug, s.name AS shop_name
      FROM sessions sess
      JOIN users u ON u.id = sess.user_id
      LEFT JOIN shops s ON s.id = u.shop_id
@@ -830,6 +830,72 @@ async function readCustomerAccess(db) {
 async function readShopsListShowLastUpdate(db) {
   const row = await dbm.get(db, "SELECT value FROM site_settings WHERE key = 'shops_list_show_last_update'");
   return !row || row.value !== "0";
+}
+
+const PHONE_OTP_TTL_MS = 10 * 60 * 1000;
+const phoneOtpStore = new Map();
+
+function normalizePhoneDigits(raw) {
+  return String(raw || "").replace(/\D/g, "");
+}
+
+function issuePhoneOtp(phone) {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  phoneOtpStore.set(phone, { code, expires: Date.now() + PHONE_OTP_TTL_MS });
+  return code;
+}
+
+function verifyPhoneOtp(phone, code) {
+  const entry = phoneOtpStore.get(phone);
+  if (!entry || entry.expires < Date.now()) {
+    phoneOtpStore.delete(phone);
+    return false;
+  }
+  if (String(code).trim() !== entry.code) return false;
+  phoneOtpStore.delete(phone);
+  return true;
+}
+
+async function loadAuthUserPayload(db, userId) {
+  const user = await dbm.get(db, "SELECT id, email, role, shop_id, phone FROM users WHERE id = ?", [userId]);
+  if (!user) return null;
+  const shop = user.shop_id
+    ? await dbm.get(
+        db,
+        "SELECT id, name, slug, location_text, phone, photo_url, last_catalog_update FROM shops WHERE id = ?",
+        [user.shop_id]
+      )
+    : null;
+  return {
+    user: { id: user.id, email: user.email, role: user.role, shopId: user.shop_id, phone: user.phone || null },
+    shop
+  };
+}
+
+async function issueUserSession(db, res, userId) {
+  const token = randomToken(24);
+  const maxAge = 1000 * 60 * 60 * 24 * 30;
+  await dbm.run(db, "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+30 days'))", [
+    token,
+    userId
+  ]);
+  setSessionCookie(res, token, maxAge);
+  return loadAuthUserPayload(db, userId);
+}
+
+async function verifyGoogleIdToken(idToken) {
+  const token = String(idToken || "").trim();
+  if (!token) return null;
+  const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (clientId && data.aud && data.aud !== clientId) return null;
+  return {
+    sub: data.sub,
+    email: String(data.email || "").trim().toLowerCase(),
+    name: String(data.name || data.email || "").trim()
+  };
 }
 
 function setSessionCookie(res, token, maxAgeMs) {
@@ -871,6 +937,14 @@ async function main() {
 
   app.get("/paint/api/health", (_req, res) => {
     res.json({ ok: true, service: "paint-market", uiBuild: UI_BUILD });
+  });
+
+  app.get("/paint/api/config", (_req, res) => {
+    res.json({
+      googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+      appleClientId: process.env.APPLE_CLIENT_ID || "",
+      oauthDevMode: process.env.OAUTH_DEV_MODE === "1"
+    });
   });
 
   app.get(
@@ -924,8 +998,8 @@ async function main() {
         const shopId = rShop.lastID;
         const rUser = await dbm.run(
           db,
-          "INSERT INTO users (email, password_hash, role, shop_id) VALUES (?, ?, 'shop', ?)",
-          [email, passHash, shopId]
+          "INSERT INTO users (email, password_hash, role, shop_id, phone) VALUES (?, ?, 'shop', ?, ?)",
+          [email, passHash, shopId, phone]
         );
         await dbm.run(db, "COMMIT");
         const userId = rUser.lastID;
@@ -970,15 +1044,113 @@ async function main() {
         user.id
       ]);
       setSessionCookie(res, token, 1000 * 60 * 60 * 24 * 30);
-      const shop = user.shop_id
-        ? await dbm.get(db, "SELECT id, name, slug, location_text, phone, photo_url, last_catalog_update FROM shops WHERE id = ?", [
-            user.shop_id
-          ])
-        : null;
-      res.json({
-        user: { id: user.id, email: user.email, role: user.role, shopId: user.shop_id },
-        shop
-      });
+      const payload = await loadAuthUserPayload(db, user.id);
+      res.json(payload);
+    })
+  );
+
+  app.post(
+    "/paint/api/auth/phone/send-code",
+    asyncHandler(async (req, res) => {
+      const phone = normalizePhoneDigits(req.body?.phone);
+      if (phone.length < 8) {
+        res.status(400).json({ error: "Valid phone number required" });
+        return;
+      }
+      const code = issuePhoneOtp(phone);
+      const dev = process.env.NODE_ENV !== "production";
+      res.json({ ok: true, devCode: dev ? code : undefined });
+    })
+  );
+
+  app.post(
+    "/paint/api/auth/phone/verify",
+    asyncHandler(async (req, res) => {
+      const phone = normalizePhoneDigits(req.body?.phone);
+      const code = String(req.body?.code || "").trim();
+      if (!phone || !code) {
+        res.status(400).json({ error: "phone and code required" });
+        return;
+      }
+      if (!verifyPhoneOtp(phone, code)) {
+        res.status(401).json({ error: "Invalid or expired code" });
+        return;
+      }
+      const user = await dbm.get(
+        db,
+        `SELECT u.id FROM users u
+         LEFT JOIN shops s ON s.id = u.shop_id
+         WHERE u.phone = ? OR s.phone = ?
+         ORDER BY u.id ASC LIMIT 1`,
+        [phone, phone]
+      );
+      if (!user) {
+        res.status(404).json({ error: "No account for this phone", needsRegistration: true });
+        return;
+      }
+      const payload = await issueUserSession(db, res, user.id);
+      res.json(payload);
+    })
+  );
+
+  app.post(
+    "/paint/api/auth/oauth",
+    asyncHandler(async (req, res) => {
+      const provider = String(req.body?.provider || "").trim().toLowerCase();
+      if (!["google", "apple"].includes(provider)) {
+        res.status(400).json({ error: "provider must be google or apple" });
+        return;
+      }
+
+      let profile = null;
+      if (provider === "google") {
+        profile = await verifyGoogleIdToken(req.body?.credential || req.body?.idToken);
+        if (!profile && req.body?.email && process.env.OAUTH_DEV_MODE === "1") {
+          profile = {
+            sub: String(req.body?.subject || req.body?.email),
+            email: String(req.body.email).trim().toLowerCase(),
+            name: String(req.body?.name || req.body.email).trim()
+          };
+        }
+      } else if (provider === "apple") {
+        const sub = String(req.body?.subject || req.body?.user || "").trim();
+        const email = String(req.body?.email || "").trim().toLowerCase();
+        if (sub) {
+          profile = { sub, email, name: String(req.body?.name || email || "Apple user").trim() };
+        }
+      }
+
+      if (!profile || !profile.sub) {
+        res.status(401).json({ error: "Could not verify sign-in" });
+        return;
+      }
+
+      let user = await dbm.get(db, "SELECT id FROM users WHERE oauth_provider = ? AND oauth_subject = ?", [
+        provider,
+        profile.sub
+      ]);
+      if (!user && profile.email) {
+        user = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [profile.email]);
+        if (user) {
+          await dbm.run(db, "UPDATE users SET oauth_provider = ?, oauth_subject = ? WHERE id = ?", [
+            provider,
+            profile.sub,
+            user.id
+          ]);
+        }
+      }
+
+      if (!user) {
+        res.status(404).json({
+          error: "No account yet",
+          needsRegistration: true,
+          profile: { email: profile.email || "", name: profile.name || "" }
+        });
+        return;
+      }
+
+      const payload = await issueUserSession(db, res, user.id);
+      res.json(payload);
     })
   );
 
@@ -1007,7 +1179,7 @@ async function main() {
           ])
         : null;
       res.json({
-        user: { id: u.id, email: u.email, role: u.role, shopId: u.shop_id },
+        user: { id: u.id, email: u.email, role: u.role, shopId: u.shop_id, phone: u.phone || null },
         shop
       });
     })

@@ -282,6 +282,19 @@ async function migrate(db) {
     await run(db, "ALTER TABLE shop_listings ADD COLUMN ral_code TEXT");
   }
 
+  const userCols = await all(db, "PRAGMA table_info(users)");
+  if (!userCols.some((c) => c.name === "phone")) {
+    await run(db, "ALTER TABLE users ADD COLUMN phone TEXT");
+  }
+  if (!userCols.some((c) => c.name === "oauth_provider")) {
+    await run(db, "ALTER TABLE users ADD COLUMN oauth_provider TEXT");
+  }
+  if (!userCols.some((c) => c.name === "oauth_subject")) {
+    await run(db, "ALTER TABLE users ADD COLUMN oauth_subject TEXT");
+  }
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_subject)`);
+
   await run(
     db,
     `CREATE TABLE IF NOT EXISTS shop_custom_colors (

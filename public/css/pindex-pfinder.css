@@ -870,6 +870,7 @@ body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {
 
   body.pm-shop-page .pm-pfinder-bottom-nav,
   body.pm-dash-page .pm-pfinder-bottom-nav,
+  body.pm-account-page .pm-pfinder-bottom-nav,
   html.pm-app-standalone .pm-pfinder-bottom-nav,
   html.pm-app-immersive .pm-pfinder-bottom-nav,
   html.pm-app-scroll-fullscreen .pm-pfinder-bottom-nav,

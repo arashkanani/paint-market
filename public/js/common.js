@@ -183,6 +183,18 @@ const PaintApi = {
   registerShop(body) {
     return this.request("/auth/register-shop", { method: "POST", body });
   },
+  sendPhoneCode(phone) {
+    return this.request("/auth/phone/send-code", { method: "POST", body: { phone } });
+  },
+  verifyPhoneCode(phone, code) {
+    return this.request("/auth/phone/verify", { method: "POST", body: { phone, code } });
+  },
+  oauthLogin(body) {
+    return this.request("/auth/oauth", { method: "POST", body });
+  },
+  publicConfig() {
+    return this.request("/config");
+  },
   publicShops(q) {
     const qs = q ? `?q=${encodeURIComponent(q)}` : "";
     return this.request(`/public/shops${qs}`);
