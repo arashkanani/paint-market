@@ -51,7 +51,7 @@
       </div>
       <div>
         <label class="text-xs font-semibold text-slate-600" data-pm-t="register_password">Password</label>
-        <input name="password" type="password" required minlength="6" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
+        <input name="password" type="password" required minlength="8" pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}" data-pm-title="account_err_email_password" title="Password must be at least 8 characters and include a capital letter, a number, and a symbol." class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
       </div>
       <div>
         <label class="text-xs font-semibold text-slate-600" data-pm-t="register_shop_name">Shop name</label>
@@ -70,8 +70,8 @@
         <textarea name="address" rows="2" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-teal-500/30 focus:ring-4" data-pm-ph="register_address_ph" placeholder="Shown on your showroom page and shop cards"></textarea>
       </div>
       <div>
-        <label class="text-xs font-semibold text-slate-600" data-pm-t="register_phone">Phone (optional)</label>
-        <input name="phone" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
+        <label class="text-xs font-semibold text-slate-600" data-pm-t="register_phone">Business phone (optional)</label>
+        <input name="phone" type="tel" inputmode="tel" autocomplete="tel" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
       </div>
       <button class="w-full rounded-lg bg-teal-700 text-white py-2.5 font-medium hover:bg-teal-800" type="submit" data-pm-t="register_submit">Create shop</button>
     </form>
@@ -84,11 +84,46 @@
   <script>
     const form = document.getElementById("form");
     const errorEl = document.getElementById("error");
+    const phoneInput = form.elements.phone;
+    function isStrongPassword(password) {
+      const value = String(password || "");
+      return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("email") && form.elements.email) form.elements.email.value = params.get("email");
+    if (params.get("phone") && phoneInput) phoneInput.value = params.get("phone");
+    try {
+      const draftEmail = sessionStorage.getItem("paint_register_email");
+      const draftPassword = sessionStorage.getItem("paint_register_password");
+      if (draftEmail && form.elements.email && !form.elements.email.value) form.elements.email.value = draftEmail;
+      if (draftPassword && form.elements.password) form.elements.password.value = draftPassword;
+      sessionStorage.removeItem("paint_register_email");
+      sessionStorage.removeItem("paint_register_password");
+    } catch {
+      /* ignore */
+    }
     paintMarketInitShopLocationForm(form, "");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errorEl.classList.add("hidden");
       const fd = new FormData(form);
+      if (!isStrongPassword(fd.get("password"))) {
+        errorEl.textContent = paintMarketT("account_err_email_password");
+        errorEl.classList.remove("hidden");
+        return;
+      }
+      const country = String(fd.get("locationCountry") || paintMarketCountryGet() || "OM");
+      const phoneRaw = String(fd.get("phone") || "").trim();
+      const phoneCheck = phoneRaw
+        ? typeof paintMarketValidatePhone === "function"
+          ? paintMarketValidatePhone(phoneRaw, country)
+          : { ok: true, normalized: phoneRaw }
+        : { ok: true, normalized: "" };
+      if (!phoneCheck.ok) {
+        errorEl.textContent = paintMarketT("register_phone_invalid");
+        errorEl.classList.remove("hidden");
+        return;
+      }
       try {
         await PaintApi.registerShop({
           email: fd.get("email"),
@@ -96,7 +131,7 @@
           shopName: fd.get("shopName"),
           location: paintMarketReadShopLocationFields(form),
           address: fd.get("address"),
-          phone: fd.get("phone")
+          phone: phoneCheck.normalized
         });
         window.location.href = "/paint/dashboard.html";
       } catch (err) {

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>Choose account type</title>
+  <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260601h" />
+  <link rel="stylesheet" href="/paint/css/paint-app-shell.css?v=20260601k" />
+  <style>
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: #f4f7fb;
+    }
+
+    .pm-type-main {
+      min-height: 100dvh;
+      padding: 1rem 1rem calc(5.25rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .pm-type-shell {
+      width: 100%;
+      max-width: 32rem;
+      margin: 0 auto;
+    }
+
+    .pm-type-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 1rem;
+      border-radius: 1.25rem;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+    }
+
+    .pm-type-avatar {
+      display: grid;
+      place-items: center;
+      width: 3.15rem;
+      height: 3.15rem;
+      border-radius: 9999px;
+      background: #f1f3f8;
+      color: #334155;
+      font-weight: 800;
+    }
+
+    .pm-type-profile__body {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .pm-type-title {
+      margin: 0;
+      color: #1f2937;
+      font-size: 1.1rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .pm-type-email {
+      margin: 0.15rem 0 0;
+      color: #64748b;
+      font-size: 0.9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pm-type-edit {
+      border: none;
+      border-radius: 9999px;
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+      padding: 0.45rem 0.8rem;
+    }
+
+    .pm-type-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.95rem;
+    }
+
+    .pm-type-grid--single {
+      grid-template-columns: 1fr;
+    }
+
+    .pm-type-card,
+    .pm-type-row {
+      border: none;
+      background: #fff;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+    }
+
+    .pm-type-card {
+      min-height: 6.2rem;
+      border-radius: 1rem;
+      padding: 1rem;
+    }
+
+    .pm-type-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      margin-bottom: 0.65rem;
+      border-radius: 0.5rem;
+      background: #fff200;
+      color: #1f2937;
+      box-shadow: inset 0 0 0 2px rgba(31, 41, 55, 0.12);
+      font-weight: 800;
+    }
+
+    .pm-type-card__title,
+    .pm-type-row__title {
+      display: block;
+      color: #1f2937;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .pm-type-card__sub,
+    .pm-type-row__sub {
+      display: block;
+      margin-top: 0.25rem;
+      color: #7c8494;
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .pm-type-section-title {
+      margin: 1.35rem 0 0.65rem;
+      color: #1f2937;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    .pm-type-list {
+      overflow: hidden;
+      border-radius: 1rem;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+    }
+
+    .pm-type-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      width: 100%;
+      padding: 1rem;
+      box-shadow: none;
+    }
+
+    .pm-type-row + .pm-type-row {
+      border-top: 1px solid #eef2f7;
+    }
+
+    .pm-type-row__body {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .pm-type-row__chev {
+      color: #94a3b8;
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    .pm-type-help {
+      position: fixed;
+      right: 1rem;
+      bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+      z-index: 20;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border-radius: 9999px;
+      background: #fff200;
+      color: #1f2937;
+      padding: 0.7rem 1rem;
+      font-weight: 800;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body class="pm-account-type-page text-slate-900">
+  <main class="pm-type-main">
+    <section class="pm-type-shell">
+      <div class="pm-type-profile">
+        <div id="accountTypeInitials" class="pm-type-avatar" aria-hidden="true">PA</div>
+        <div class="pm-type-profile__body">
+          <h1 class="pm-type-title" data-pm-t="account_type_title">Choose account type</h1>
+          <p id="accountTypeEmail" class="pm-type-email">account@paintik.com</p>
+        </div>
+        <button type="button" class="pm-type-edit" onclick="window.location.href='/paint/account.html'" data-pm-t="account_auth_back">Back</button>
+      </div>
+
+      <div class="pm-type-grid pm-type-grid--single">
+        <button type="button" data-account-type="customer" class="pm-type-card">
+          <span class="pm-type-icon" aria-hidden="true">☻</span>
+          <span class="pm-type-card__title" data-pm-t="account_type_customer">Customer</span>
+          <span class="pm-type-card__sub" data-pm-t="account_type_customer_sub">Browse shops and products.</span>
+        </button>
+      </div>
+
+      <h2 class="pm-type-section-title" data-pm-t="account_type_business_title">Business accounts</h2>
+      <div class="pm-type-list">
+        <button type="button" data-account-type="shop" class="pm-type-row">
+          <span class="pm-type-icon" aria-hidden="true">▣</span>
+          <span class="pm-type-row__body">
+            <span class="pm-type-row__title" data-pm-t="account_type_shop">Shop</span>
+            <span class="pm-type-row__sub" data-pm-t="account_type_business_sub">Register your company and upload documents.</span>
+          </span>
+          <span class="pm-type-row__chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" data-account-type="wholesaler" class="pm-type-row">
+          <span class="pm-type-icon" aria-hidden="true">▤</span>
+          <span class="pm-type-row__body">
+            <span class="pm-type-row__title" data-pm-t="account_type_wholesaler">Wholesaler</span>
+            <span class="pm-type-row__sub" data-pm-t="account_type_business_sub">Register your company and upload documents.</span>
+          </span>
+          <span class="pm-type-row__chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" data-account-type="raw_supplier" class="pm-type-row">
+          <span class="pm-type-icon" aria-hidden="true">◫</span>
+          <span class="pm-type-row__body">
+            <span class="pm-type-row__title" data-pm-t="account_type_raw_supplier">Raw material supplier</span>
+            <span class="pm-type-row__sub" data-pm-t="account_type_business_sub">Register your company and upload documents.</span>
+          </span>
+          <span class="pm-type-row__chev" aria-hidden="true">›</span>
+        </button>
+      </div>
+      <p id="accountTypeError" class="mt-4 hidden text-sm text-rose-600"></p>
+    </section>
+  </main>
+
+  <a href="/paint/account.html" class="pm-type-help">
+    <span aria-hidden="true">ⓘ</span>
+    <span data-pm-t="account_type_help">Need Help?</span>
+  </a>
+
+  <nav class="pm-pfinder-bottom-nav" aria-label="Main navigation">
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">⌂</span>
+      <span data-pm-t="index_nav_home">Home</span>
+    </a>
+    <a href="/paint/browse.html" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">☰</span>
+      <span data-pm-t="index_nav_browse">Browse</span>
+    </a>
+    <div class="pm-pfinder-bottom-nav__fab-wrap">
+      <a href="/paint/register.html" class="pm-pfinder-bottom-nav__fab" title="Register shop" aria-label="Add listing">+</a>
+    </div>
+    <a href="/paint/" class="pm-pfinder-bottom-nav__item">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">🏪</span>
+      <span data-pm-t="index_nav_shops">Shops</span>
+    </a>
+    <a href="/paint/account.html" class="pm-pfinder-bottom-nav__item is-active" aria-current="page">
+      <span class="pm-pfinder-bottom-nav__icon" aria-hidden="true">👤</span>
+      <span data-pm-t="index_nav_account">Account</span>
+    </a>
+  </nav>
+
+  <script src="/paint/js/paint-i18n.js"></script>
+  <script src="/paint/js/common.js"></script>
+  <script>
+    const errorEl = document.getElementById("accountTypeError");
+    const emailEl = document.getElementById("accountTypeEmail");
+    const initialsEl = document.getElementById("accountTypeInitials");
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email") || sessionStorage.getItem("paint_register_email") || "";
+    const password = sessionStorage.getItem("paint_register_password") || "";
+    if (!email || !password) window.location.href = "/paint/account.html";
+    emailEl.textContent = email;
+    const prefix = String(email).split("@")[0] || "PA";
+    initialsEl.textContent = prefix.slice(0, 2).toUpperCase();
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove("hidden");
+    }
+
+    document.querySelectorAll("[data-account-type]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const type = btn.getAttribute("data-account-type");
+        errorEl.classList.add("hidden");
+        if (type === "customer") {
+          try {
+            await PaintApi.registerCustomer({ email, password });
+            sessionStorage.removeItem("paint_register_email");
+            sessionStorage.removeItem("paint_register_password");
+            window.location.href = "/paint/";
+          } catch (err) {
+            showError(err.message || paintMarketT("register_err"));
+          }
+          return;
+        }
+        sessionStorage.setItem("paint_register_account_type", type);
+        sessionStorage.setItem("paint_register_email", email);
+        sessionStorage.setItem("paint_register_password", password);
+        window.location.href = `/paint/business-register.html?type=${encodeURIComponent(type)}`;
+      });
+    });
+  </script>
+</body>
+</html>

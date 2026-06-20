@@ -8,34 +8,20 @@
   const displayMeta = document.getElementById("accountDisplayMeta");
   const avatar = document.getElementById("accountAvatar");
   const emailFields = document.getElementById("accountEmailFields");
-  const phoneFields = document.getElementById("accountPhoneFields");
-  const phoneCodeBlock = document.getElementById("accountPhoneCodeBlock");
   const passwordBlock = document.getElementById("accountPasswordBlock");
   const rememberRow = document.getElementById("accountRememberRow");
   const authSubmit = document.getElementById("accountAuthSubmit");
-  const phoneInput = document.getElementById("accountPhoneInput");
-  const phoneClear = document.getElementById("accountPhoneClear");
-  const phoneCountryBtn = document.getElementById("accountPhoneCountry");
-  const phoneCountryCode = document.getElementById("accountPhoneCountryCode");
-  const phoneDial = document.getElementById("accountPhoneDial");
-  const phoneExample = document.getElementById("accountPhoneExample");
   const passwordInput = document.getElementById("accountPasswordInput");
+  const confirmPasswordBlock = document.getElementById("accountConfirmPasswordBlock");
+  const confirmPasswordInput = document.getElementById("accountConfirmPasswordInput");
   const passwordToggle = document.getElementById("accountPasswordToggle");
-  const phoneError = document.getElementById("accountPhoneError");
+  const forgotPasswordLink = document.getElementById("accountForgotPasswordLink");
   const emailError = document.getElementById("accountEmailError");
   const dashLink = document.getElementById("accountDashLink");
 
-  const DIAL_BY_COUNTRY = { AE: "+971", OM: "+968", SA: "+966" };
-  const EXAMPLE_BY_COUNTRY = {
-    AE: "+971 50 123 4567",
-    OM: "+968 9737 3518",
-    SA: "+966 50 123 4567"
-  };
-
   let authMode = "login";
-  let inputMethod = "phone";
-  let phoneCodeSent = false;
-  let phoneCountry = "OM";
+  let inputStarted = false;
+  let inputMethod = "email";
   let appConfig = { googleClientId: "", appleClientId: "", oauthDevMode: false };
   let googleScriptLoaded = false;
 
@@ -57,40 +43,18 @@
   function clearErrors() {
     showError(authError, "");
     showError(emailError, "");
-    showError(phoneError, "");
   }
 
-  function readStoredCountry() {
-    try {
-      return localStorage.getItem("paint_market_country") || "OM";
-    } catch {
-      return "OM";
-    }
-  }
-
-  function syncPhoneCountry(code) {
-    phoneCountry = String(code || "OM").toUpperCase();
-    if (phoneCountryCode) phoneCountryCode.textContent = phoneCountry;
-    const dial = DIAL_BY_COUNTRY[phoneCountry] || "+968";
-    if (phoneDial) phoneDial.textContent = dial;
-    if (phoneExample) {
-      const ex = EXAMPLE_BY_COUNTRY[phoneCountry] || EXAMPLE_BY_COUNTRY.OM;
-      phoneExample.textContent = `${t("account_phone_example_prefix")} ${ex}`;
-    }
-  }
-
-  function fullPhoneNumber(raw) {
-    const digits = String(raw || "").replace(/\D/g, "");
-    const dial = (DIAL_BY_COUNTRY[phoneCountry] || "+968").replace(/\D/g, "");
-    if (!digits) return "";
-    if (digits.startsWith(dial)) return `+${digits}`;
-    return `+${dial}${digits}`;
+  function isStrongPassword(password) {
+    const value = String(password || "");
+    return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
   }
 
   function updateAuthUi() {
     const isLogin = authMode === "login";
     const isEmail = inputMethod === "email";
-    const isPhone = inputMethod === "phone";
+
+    authForm?.classList.toggle("pm-account-hidden", !inputStarted);
 
     guestEl?.querySelectorAll("[data-auth-mode]").forEach((btn) => {
       const on = btn.getAttribute("data-auth-mode") === authMode;
@@ -98,29 +62,18 @@
       btn.setAttribute("aria-selected", on ? "true" : "false");
     });
 
-    guestEl?.querySelectorAll("[data-input-method]").forEach((btn) => {
-      const on = btn.getAttribute("data-input-method") === inputMethod;
-      btn.classList.toggle("is-active", on);
-      btn.setAttribute("aria-selected", on ? "true" : "false");
-    });
+    emailFields?.classList.toggle("pm-account-hidden", !inputStarted || !isEmail);
 
-    emailFields?.classList.toggle("pm-account-hidden", !isEmail);
-    phoneFields?.classList.toggle("pm-account-hidden", !isPhone);
-
-    const showPassword = isLogin && isEmail;
+    const showPassword = inputStarted && isEmail;
+    const showConfirmPassword = showPassword && !isLogin;
     passwordBlock?.classList.toggle("pm-account-hidden", !showPassword);
-    rememberRow?.classList.toggle("pm-account-hidden", !isLogin);
-
-    const showCode = isLogin && isPhone && phoneCodeSent;
-    phoneCodeBlock?.classList.toggle("pm-account-hidden", !showCode);
+    confirmPasswordBlock?.classList.toggle("pm-account-hidden", !showConfirmPassword);
+    forgotPasswordLink?.classList.toggle("pm-account-hidden", !isLogin);
+    rememberRow?.classList.toggle("pm-account-hidden", !inputStarted || !isLogin);
 
     if (authSubmit) {
       if (!isLogin) {
         authSubmit.textContent = t("account_tab_register");
-      } else if (isPhone && !phoneCodeSent) {
-        authSubmit.textContent = t("account_phone_send");
-      } else if (isPhone && phoneCodeSent) {
-        authSubmit.textContent = t("account_phone_verify");
       } else {
         authSubmit.textContent = t("account_email_submit");
       }
@@ -130,16 +83,12 @@
       passwordInput.required = showPassword;
       passwordInput.autocomplete = isLogin ? "current-password" : "new-password";
     }
-    if (phoneInput) phoneInput.required = isPhone;
+    if (confirmPasswordInput) confirmPasswordInput.required = showConfirmPassword;
     const emailInput = authForm?.elements.email;
-    if (emailInput) emailInput.required = isEmail;
+    if (emailInput) emailInput.required = inputStarted && isEmail;
   }
 
-  function resetPhoneFlow() {
-    phoneCodeSent = false;
-    phoneCodeBlock?.classList.add("pm-account-hidden");
-    const codeInput = authForm?.elements.code;
-    if (codeInput) codeInput.value = "";
+  function resetAuthForm() {
     updateAuthUi();
   }
 
@@ -149,6 +98,10 @@
     if (!user) {
       guestEl?.classList.remove("pm-account-hidden");
       loggedInEl?.classList.add("pm-account-hidden");
+      inputStarted = false;
+      clearErrors();
+      oauthRegister?.classList.add("pm-account-hidden");
+      resetAuthForm();
       return;
     }
     guestEl?.classList.add("pm-account-hidden");
@@ -158,7 +111,16 @@
     if (displayMeta) displayMeta.textContent = user.email || user.phone || "";
     if (avatar) avatar.textContent = String(name).trim().charAt(0).toUpperCase() || "P";
     if (dashLink) {
-      dashLink.href = user.role === "admin" ? "/paint/admin.html" : "/paint/dashboard.html";
+      if (user.role === "admin") {
+        dashLink.href = "/paint/admin.html";
+        dashLink.textContent = "Admin dashboard";
+      } else if (user.role === "shop") {
+        dashLink.href = "/paint/dashboard.html";
+        dashLink.textContent = t("account_dashboard");
+      } else {
+        dashLink.href = "/paint/";
+        dashLink.textContent = t("index_nav_home");
+      }
     }
   }
 
@@ -264,33 +226,42 @@
 
   function goRegister() {
     const fd = new FormData(authForm);
+    const email = String(fd.get("email") || "").trim();
+    const password = String(fd.get("password") || "");
+    const confirmPassword = String(fd.get("confirmPassword") || "");
+    if (!email || !isStrongPassword(password)) {
+      showError(emailError, t("account_err_email_password"));
+      return;
+    }
+    if (password !== confirmPassword) {
+      showError(emailError, t("account_err_password_match"));
+      return;
+    }
     const params = new URLSearchParams();
-    if (inputMethod === "email" && fd.get("email")) params.set("email", String(fd.get("email")));
-    if (inputMethod === "phone" && fd.get("phone")) params.set("phone", fullPhoneNumber(fd.get("phone")));
+    params.set("email", email);
+    try {
+      sessionStorage.setItem("paint_register_email", email);
+      sessionStorage.setItem("paint_register_password", password);
+    } catch {
+      /* ignore */
+    }
     const qs = params.toString();
-    window.location.href = qs ? `/paint/register.html?${qs}` : "/paint/register.html";
+    window.location.href = qs ? `/paint/account-type.html?${qs}` : "/paint/account-type.html";
   }
 
   document.getElementById("accountLogoutBtn")?.addEventListener("click", async () => {
     await PaintApi.logout();
     renderLoggedIn(null);
-    resetPhoneFlow();
+    resetAuthForm();
   });
 
   guestEl?.querySelectorAll("[data-auth-mode]").forEach((btn) => {
     btn.addEventListener("click", () => {
       authMode = btn.getAttribute("data-auth-mode") || "login";
+      inputStarted = false;
       clearErrors();
-      resetPhoneFlow();
-      updateAuthUi();
-    });
-  });
-
-  guestEl?.querySelectorAll("[data-input-method]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      inputMethod = btn.getAttribute("data-input-method") || "phone";
-      clearErrors();
-      resetPhoneFlow();
+      oauthRegister?.classList.add("pm-account-hidden");
+      resetAuthForm();
       updateAuthUi();
     });
   });
@@ -300,28 +271,14 @@
       const method = btn.getAttribute("data-auth-method");
       if (method === "google") signInWithGoogle();
       else if (method === "apple") signInWithApple();
+      else if (method === "email") {
+        inputMethod = "email";
+        inputStarted = true;
+        clearErrors();
+        resetAuthForm();
+        updateAuthUi();
+      }
     });
-  });
-
-  phoneInput?.addEventListener("input", () => {
-    if (phoneClear) phoneClear.hidden = !phoneInput.value;
-    if (phoneCodeSent) resetPhoneFlow();
-  });
-
-  phoneClear?.addEventListener("click", () => {
-    if (phoneInput) {
-      phoneInput.value = "";
-      phoneInput.focus();
-    }
-    phoneClear.hidden = true;
-    resetPhoneFlow();
-  });
-
-  phoneCountryBtn?.addEventListener("click", () => {
-    const codes = Object.keys(DIAL_BY_COUNTRY);
-    const idx = codes.indexOf(phoneCountry);
-    syncPhoneCountry(codes[(idx + 1) % codes.length]);
-    resetPhoneFlow();
   });
 
   passwordToggle?.addEventListener("click", () => {
@@ -356,37 +313,10 @@
       return;
     }
 
-    const phone = fullPhoneNumber(fd.get("phone"));
-    try {
-      if (!phoneCodeSent) {
-        const res = await PaintApi.sendPhoneCode(phone);
-        phoneCodeSent = true;
-        phoneCodeBlock?.classList.remove("pm-account-hidden");
-        if (res.devCode && authForm.elements.code) {
-          authForm.elements.code.value = res.devCode;
-        }
-        updateAuthUi();
-        return;
-      }
-      const data = await PaintApi.verifyPhoneCode(phone, fd.get("code"));
-      afterLogin(data);
-    } catch (err) {
-      if (err?.data?.needsRegistration) {
-        handleNeedsRegistration(null);
-        oauthRegister.href = `/paint/register.html?phone=${encodeURIComponent(phone)}`;
-      } else {
-        showError(phoneError, err.message || t("account_err_generic"));
-      }
-    }
-  });
-
-  document.addEventListener("paint-market-country-change", (e) => {
-    syncPhoneCountry(e.detail?.code || readStoredCountry());
-    resetPhoneFlow();
+    showError(emailError, t("account_err_generic"));
   });
 
   (async function boot() {
-    syncPhoneCountry(readStoredCountry());
     updateAuthUi();
 
     try {

@@ -183,6 +183,12 @@ const PaintApi = {
   registerShop(body) {
     return this.request("/auth/register-shop", { method: "POST", body });
   },
+  registerCustomer(body) {
+    return this.request("/auth/register-customer", { method: "POST", body });
+  },
+  registerBusiness(formData) {
+    return this.request("/auth/register-business", { method: "POST", body: formData });
+  },
   sendPhoneCode(phone) {
     return this.request("/auth/phone/send-code", { method: "POST", body: { phone } });
   },
@@ -1789,6 +1795,48 @@ function paintMarketCountryInit() {
   paintMarketGeoInit();
 }
 
+function paintMarketNormalizePhone(raw, countryCode = "OM") {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const ccByCountry = { AE: "971", OM: "968", SA: "966" };
+  const known = ["971", "968", "966"];
+  for (const cc of known) {
+    if (digits.startsWith(cc)) return `+${digits}`;
+  }
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  const cc = ccByCountry[String(countryCode || "OM").toUpperCase()] || "968";
+  return `+${cc}${digits}`;
+}
+
+function paintMarketValidatePhone(raw, countryCode = "OM") {
+  const normalized = paintMarketNormalizePhone(raw, countryCode);
+  if (!normalized) return { ok: false, normalized: "", messageKey: "account_err_invalid_phone" };
+  const digits = normalized.slice(1);
+  if (digits.startsWith("968")) {
+    const local = digits.slice(3);
+    if (local.length !== 8 || !/^[79]\d{7}$/.test(local)) {
+      return { ok: false, normalized, messageKey: "account_err_invalid_phone" };
+    }
+    return { ok: true, normalized };
+  }
+  if (digits.startsWith("971")) {
+    const local = digits.slice(3);
+    if (local.length !== 9 || !/^5[024568]\d{7}$/.test(local)) {
+      return { ok: false, normalized, messageKey: "account_err_invalid_phone" };
+    }
+    return { ok: true, normalized };
+  }
+  if (digits.startsWith("966")) {
+    const local = digits.slice(3);
+    if (local.length !== 9 || !/^5\d{8}$/.test(local)) {
+      return { ok: false, normalized, messageKey: "account_err_invalid_phone" };
+    }
+    return { ok: true, normalized };
+  }
+  return { ok: false, normalized, messageKey: "account_err_invalid_phone" };
+}
+
 window.PaintApi = PaintApi;
 window.debounce = debounce;
 window.paintMarketCountryGet = paintMarketCountryGet;
@@ -1829,6 +1877,8 @@ window.paintMarketFavoriteToggle = paintMarketFavoriteToggle;
 window.paintMarketSortShopsFavoritesFirst = paintMarketSortShopsFavoritesFirst;
 window.paintMarketFavoriteApplyButton = paintMarketFavoriteApplyButton;
 window.paintMarketBrowsePageUrl = paintMarketBrowsePageUrl;
+window.paintMarketNormalizePhone = paintMarketNormalizePhone;
+window.paintMarketValidatePhone = paintMarketValidatePhone;
 window.paintMarketSearchResultsUrl = paintMarketSearchResultsUrl;
 window.paintMarketRecentSearchesGet = paintMarketRecentSearchesGet;
 window.paintMarketRecentSearchAdd = paintMarketRecentSearchAdd;

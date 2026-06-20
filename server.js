@@ -98,7 +98,8 @@ function asyncHandler(fn) {
 const uploadDirShop = path.join(ROOT, "uploads", "shops");
 const uploadDirProduct = path.join(ROOT, "uploads", "products");
 const uploadDirAds = path.join(ROOT, "uploads", "ads");
-for (const d of [uploadDirShop, uploadDirProduct, uploadDirAds]) {
+const uploadDirDocuments = path.join(ROOT, "uploads", "documents");
+for (const d of [uploadDirShop, uploadDirProduct, uploadDirAds, uploadDirDocuments]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 }
 
@@ -123,9 +124,17 @@ const storageAd = multer.diskStorage({
     cb(null, `ad-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
   }
 });
+const storageDocument = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDirDocuments),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || "") || ".bin";
+    cb(null, `document-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
 const uploadShop = multer({ storage: storageShop, limits: { fileSize: 6 * 1024 * 1024 } });
 const uploadProduct = multer({ storage: storageProduct, limits: { fileSize: 6 * 1024 * 1024 } });
 const uploadAd = multer({ storage: storageAd, limits: { fileSize: 40 * 1024 * 1024 } });
+const uploadDocument = multer({ storage: storageDocument, limits: { fileSize: 10 * 1024 * 1024 } });
 const uploadCatalogZip = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 80 * 1024 * 1024 }
@@ -839,6 +848,43 @@ function normalizePhoneDigits(raw) {
   return String(raw || "").replace(/\D/g, "");
 }
 
+function normalizePhoneE164(raw, countryCode = "OM") {
+  let digits = normalizePhoneDigits(raw);
+  if (!digits) return "";
+  const ccByCountry = { AE: "971", OM: "968", SA: "966" };
+  for (const cc of ["971", "968", "966"]) {
+    if (digits.startsWith(cc)) return `+${digits}`;
+  }
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  const cc = ccByCountry[String(countryCode || "OM").toUpperCase()] || "968";
+  return `+${cc}${digits}`;
+}
+
+function isValidRegionalPhone(raw, countryCode = "OM") {
+  const normalized = normalizePhoneE164(raw, countryCode);
+  if (!normalized) return false;
+  const digits = normalized.slice(1);
+  if (digits.startsWith("968")) {
+    const local = digits.slice(3);
+    return local.length === 8 && /^[79]\d{7}$/.test(local);
+  }
+  if (digits.startsWith("971")) {
+    const local = digits.slice(3);
+    return local.length === 9 && /^5[024568]\d{7}$/.test(local);
+  }
+  if (digits.startsWith("966")) {
+    const local = digits.slice(3);
+    return local.length === 9 && /^5\d{8}$/.test(local);
+  }
+  return false;
+}
+
+function isStrongPassword(password) {
+  const value = String(password || "");
+  return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+}
+
 function issuePhoneOtp(phone) {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   phoneOtpStore.set(phone, { code, expires: Date.now() + PHONE_OTP_TTL_MS });
@@ -967,9 +1013,18 @@ async function main() {
       const shopName = String(body.shopName || "").trim();
       const locationText = String(body.location || "").trim();
       const addressText = String(body.address || "").trim();
-      const phone = String(body.phone || "").trim();
+      const phoneRaw = String(body.phone || "").trim();
+      const phone = phoneRaw ? normalizePhoneE164(phoneRaw) : "";
       if (!email || !password || !shopName) {
         res.status(400).json({ error: "email, password, and shopName are required" });
+        return;
+      }
+      if (!isStrongPassword(password)) {
+        res.status(400).json({ error: "Password must be at least 8 characters and include a capital letter, a number, and a symbol" });
+        return;
+      }
+      if (phone && !isValidRegionalPhone(phone)) {
+        res.status(400).json({ error: "Valid phone number required" });
         return;
       }
       const existing = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [email]);
@@ -1022,6 +1077,110 @@ async function main() {
   );
 
   app.post(
+    "/paint/api/auth/register-customer",
+    asyncHandler(async (req, res) => {
+      const body = req.body || {};
+      const email = String(body.email || "")
+        .trim()
+        .toLowerCase();
+      const password = String(body.password || "");
+      if (!email || !password) {
+        res.status(400).json({ error: "email and password are required" });
+        return;
+      }
+      if (!isStrongPassword(password)) {
+        res.status(400).json({ error: "Password must be at least 8 characters and include a capital letter, a number, and a symbol" });
+        return;
+      }
+      const existing = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [email]);
+      if (existing) {
+        res.status(409).json({ error: "Email already registered" });
+        return;
+      }
+      const passHash = await hashPassword(password);
+      const rUser = await dbm.run(db, "INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'customer')", [
+        email,
+        passHash
+      ]);
+      const payload = await issueUserSession(db, res, rUser.lastID);
+      res.status(201).json(payload);
+    })
+  );
+
+  app.post(
+    "/paint/api/auth/register-business",
+    uploadDocument.single("document"),
+    asyncHandler(async (req, res) => {
+      const accountType = String(req.body?.accountType || "").trim();
+      if (!["shop", "wholesaler", "raw_supplier"].includes(accountType)) {
+        res.status(400).json({ error: "Valid account type required" });
+        return;
+      }
+      const email = String(req.body?.email || "")
+        .trim()
+        .toLowerCase();
+      const password = String(req.body?.password || "");
+      const companyName = String(req.body?.companyName || "").trim();
+      const contactName = String(req.body?.contactName || "").trim();
+      const locationText = String(req.body?.location || "").trim();
+      const termsSignature = String(req.body?.termsSignature || "").trim();
+      const termsAccepted = String(req.body?.termsAccepted || "") === "1";
+      const phoneRaw = String(req.body?.phone || "").trim();
+      const phone = phoneRaw ? normalizePhoneE164(phoneRaw) : "";
+      if (!email || !password || !companyName || !contactName) {
+        res.status(400).json({ error: "email, password, companyName, and contactName are required" });
+        return;
+      }
+      if (!isStrongPassword(password)) {
+        res.status(400).json({ error: "Password must be at least 8 characters and include a capital letter, a number, and a symbol" });
+        return;
+      }
+      if (phone && !isValidRegionalPhone(phone)) {
+        res.status(400).json({ error: "Valid phone number required" });
+        return;
+      }
+      if (!termsAccepted || !termsSignature) {
+        res.status(400).json({ error: "Terms signature is required" });
+        return;
+      }
+      if (!req.file) {
+        res.status(400).json({ error: "Company document is required" });
+        return;
+      }
+      const existing = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [email]);
+      if (existing) {
+        res.status(409).json({ error: "Email already registered" });
+        return;
+      }
+      const rel = path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/");
+      const documentUrl = publicUrlForUpload(rel);
+      const passHash = await hashPassword(password);
+      await dbm.run(db, "BEGIN");
+      try {
+        const rUser = await dbm.run(db, "INSERT INTO users (email, password_hash, role, phone) VALUES (?, ?, ?, ?)", [
+          email,
+          passHash,
+          accountType,
+          phone
+        ]);
+        await dbm.run(
+          db,
+          `INSERT INTO business_applications
+           (user_id, account_type, company_name, contact_name, phone, location_text, document_url, terms_signature)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [rUser.lastID, accountType, companyName, contactName, phone, locationText, documentUrl, termsSignature]
+        );
+        await dbm.run(db, "COMMIT");
+        const payload = await issueUserSession(db, res, rUser.lastID);
+        res.status(201).json({ ...payload, application: { accountType, status: "pending", documentUrl } });
+      } catch (e) {
+        await dbm.run(db, "ROLLBACK").catch(() => {});
+        throw e;
+      }
+    })
+  );
+
+  app.post(
     "/paint/api/auth/login",
     asyncHandler(async (req, res) => {
       const body = req.body || {};
@@ -1052,8 +1211,9 @@ async function main() {
   app.post(
     "/paint/api/auth/phone/send-code",
     asyncHandler(async (req, res) => {
-      const phone = normalizePhoneDigits(req.body?.phone);
-      if (phone.length < 8) {
+      const phoneE164 = normalizePhoneE164(req.body?.phone);
+      const phone = normalizePhoneDigits(phoneE164);
+      if (!isValidRegionalPhone(phoneE164)) {
         res.status(400).json({ error: "Valid phone number required" });
         return;
       }
@@ -1066,10 +1226,15 @@ async function main() {
   app.post(
     "/paint/api/auth/phone/verify",
     asyncHandler(async (req, res) => {
-      const phone = normalizePhoneDigits(req.body?.phone);
+      const phoneE164 = normalizePhoneE164(req.body?.phone);
+      const phone = normalizePhoneDigits(phoneE164);
       const code = String(req.body?.code || "").trim();
       if (!phone || !code) {
         res.status(400).json({ error: "phone and code required" });
+        return;
+      }
+      if (!isValidRegionalPhone(phoneE164)) {
+        res.status(400).json({ error: "Valid phone number required" });
         return;
       }
       if (!verifyPhoneOtp(phone, code)) {
@@ -1080,7 +1245,8 @@ async function main() {
         db,
         `SELECT u.id FROM users u
          LEFT JOIN shops s ON s.id = u.shop_id
-         WHERE u.phone = ? OR s.phone = ?
+         WHERE REPLACE(REPLACE(COALESCE(u.phone, ''), '+', ''), ' ', '') = ?
+            OR REPLACE(REPLACE(COALESCE(s.phone, ''), '+', ''), ' ', '') = ?
          ORDER BY u.id ASC LIMIT 1`,
         [phone, phone]
       );
