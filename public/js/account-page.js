@@ -249,6 +249,25 @@
     window.location.href = qs ? `/paint/account-type.html?${qs}` : "/paint/account-type.html";
   }
 
+  function handleLoginError(err, fd) {
+    const email = String(fd.get("email") || "").trim().toLowerCase();
+    try {
+      const draftEmail = String(sessionStorage.getItem("paint_register_email") || "").trim().toLowerCase();
+      const draftPassword = sessionStorage.getItem("paint_register_password") || "";
+      if (err?.status === 401 && draftEmail && draftEmail === email && draftPassword) {
+        const params = new URLSearchParams({ email });
+        oauthRegister.href = `/paint/account-type.html?${params.toString()}`;
+        oauthRegister.textContent = t("account_continue_setup");
+        oauthRegister.classList.remove("pm-account-hidden");
+        showError(emailError, t("account_err_complete_setup"));
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+    showError(emailError, err?.status === 401 ? t("account_err_invalid_login") : err.message || t("account_err_generic"));
+  }
+
   document.getElementById("accountLogoutBtn")?.addEventListener("click", async () => {
     await PaintApi.logout();
     renderLoggedIn(null);
@@ -308,7 +327,7 @@
         });
         afterLogin(data);
       } catch (err) {
-        showError(emailError, err.message || t("account_err_generic"));
+        handleLoginError(err, fd);
       }
       return;
     }

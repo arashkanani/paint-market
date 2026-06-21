@@ -84,7 +84,7 @@
         if (data.user.role === "admin") window.location.href = "/paint/admin.html";
         else window.location.href = "/paint/dashboard.html";
       } catch (err) {
-        errorEl.textContent = err.message || paintMarketT("login_err_failed");
+        errorEl.textContent = err.status === 401 ? paintMarketT("account_err_invalid_login") : err.message || paintMarketT("login_err_failed");
         errorEl.classList.remove("hidden");
       }
     });
