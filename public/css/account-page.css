@@ -1,7 +1,7 @@
 /* PAINTIK account hub — noon-inspired */
 
 .pm-account-page {
-  --pm-account-bg: #f4f7fb;
+  --pm-account-bg: #f3f5ff;
   --pm-account-card: #fff;
   --pm-account-text: #1e293b;
   --pm-account-muted: #64748b;
@@ -14,10 +14,12 @@
 }
 
 .pm-account-main {
-  padding: 1rem var(--pm-account-pad-x) 1.5rem;
+  padding: 1.15rem var(--pm-account-pad-x) 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-width: 32rem;
+  margin: 0 auto;
 }
 
 .pm-account-welcome {
@@ -470,20 +472,20 @@
 
 .pm-account-profile {
   background: var(--pm-account-card);
-  border-radius: 1rem;
+  border-radius: 1.15rem;
   padding: 1rem;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
 .pm-account-profile__avatar {
-  width: 3rem;
-  height: 3rem;
+  width: 3.25rem;
+  height: 3.25rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #0d9488, #2563eb);
-  color: #fff;
+  background: #f3f4f8;
+  color: #334155;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -499,8 +501,8 @@
 
 .pm-account-profile__name {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -508,34 +510,46 @@
 
 .pm-account-profile__meta {
   margin: 0.15rem 0 0;
-  font-size: 0.75rem;
+  font-size: 0.86rem;
   color: var(--pm-account-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.pm-account-section__title {
-  margin: 0 0 0.5rem;
-  padding: 0 0.15rem;
-  font-size: 1.05rem;
+.pm-account-profile__edit {
+  border: none;
+  border-radius: 9999px;
+  background: #f4f5f8;
+  color: #334155;
+  padding: 0.42rem 0.82rem;
+  font: inherit;
+  font-size: 0.86rem;
   font-weight: 800;
-  color: #0f172a;
+  cursor: pointer;
+}
+
+.pm-account-section__title {
+  margin: 0 0 0.7rem;
+  padding: 0 0.15rem;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #303545;
 }
 
 .pm-account-settings {
   background: var(--pm-account-card);
   border-radius: 1rem;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
 }
 
 .pm-account-settings__row {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.9rem;
   width: 100%;
-  padding: 0.9rem 1rem;
+  padding: 1.05rem 1rem;
   border: none;
   background: transparent;
   font: inherit;
@@ -545,20 +559,27 @@
 }
 
 .pm-account-settings__row + .pm-account-settings__row {
-  border-top: 1px solid #eef0f3;
+  border-top: 1px solid #f0f2f5;
 }
 
 .pm-account-settings__icon {
-  font-size: 1.15rem;
-  width: 1.5rem;
+  display: inline-grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.45rem;
+  background: #fff200;
+  color: #303545;
+  box-shadow: inset 0 0 0 2px rgba(31, 41, 55, 0.12);
+  font-size: 1rem;
   text-align: center;
   flex-shrink: 0;
 }
 
 .pm-account-settings__label {
   flex: 1;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .pm-account-settings__value {
@@ -570,9 +591,13 @@
 }
 
 .pm-account-settings__chev {
-  color: #94a3b8;
-  font-size: 1.25rem;
+  color: #7c8494;
+  font-size: 1.65rem;
   line-height: 1;
+}
+
+.pm-account-settings__row--danger .pm-account-settings__label {
+  color: #be123c;
 }
 
 .pm-account-plan-card {
@@ -644,7 +669,176 @@
 #accountLoggedIn {
   display: flex;
   flex-direction: column;
+  gap: 1.35rem;
+}
+
+#accountLoggedIn.pm-account-hidden {
+  display: none;
+}
+
+.pm-account-dashboard {
+  position: relative;
+}
+
+.pm-account-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pm-account-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 6.25rem;
+  border: none;
+  border-radius: 1rem;
+  background: #fff;
+  color: inherit;
+  padding: 1rem;
+  text-align: left;
+  text-decoration: none;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+}
+
+.pm-account-tile__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.45rem;
+  background: #fff200;
+  color: #303545;
+  box-shadow: inset 0 0 0 2px rgba(31, 41, 55, 0.12);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.pm-account-tile__body {
+  min-width: 0;
+}
+
+.pm-account-tile__title {
+  display: block;
+  color: #303545;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.pm-account-tile__sub {
+  display: block;
+  margin-top: 0.35rem;
+  color: #7c8494;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.pm-account-dashboard-section {
+  display: block;
+}
+
+.pm-account-help-pill {
+  position: fixed;
+  right: 1.1rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  background: #fff200;
+  color: #1f2937;
+  padding: 0.78rem 1rem;
+  font-weight: 900;
+  box-shadow: 0 12px 24px rgba(250, 204, 21, 0.42);
+  text-decoration: none;
+}
+
+.pm-account-divider {
+  align-self: center;
+  width: 5.25rem;
+  height: 1px;
+  margin: 0.2rem 0 0;
+  background: #d8deeb;
+}
+
+.pm-account-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 1rem;
+  width: 100%;
+  border: none;
+  border-radius: 1rem;
+  background: #fff;
+  color: #303545;
+  padding: 1.1rem;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+}
+
+.pm-account-signout__icon {
+  color: #303545;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.pm-account-dashboard-footer {
+  margin-top: 0.35rem;
+  padding: 1.35rem 0 2.2rem;
+  color: #8a92a3;
+  text-align: center;
+}
+
+.pm-account-dashboard-footer__social {
+  display: flex;
+  justify-content: center;
+  gap: 2.1rem;
+  margin-bottom: 1.2rem;
+}
+
+.pm-account-dashboard-footer__social a {
+  color: #6b7280;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.pm-account-dashboard-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem 0.75rem;
+  padding: 0 1.2rem;
+  font-size: 0.82rem;
+  line-height: 1.9;
+}
+
+.pm-account-dashboard-footer__links a {
+  color: #7c8494;
+  text-decoration: none;
+}
+
+.pm-account-dashboard-footer__links span {
+  color: #aeb5c2;
+}
+
+.pm-account-dashboard-footer__version,
+.pm-account-dashboard-footer__copy {
+  margin: 1.1rem 0 0;
+  font-size: 0.72rem;
+  color: #c3cad8;
+}
+
+.pm-account-dashboard-footer__copy {
+  margin-top: 0.75rem;
+  color: #9aa3b4;
 }
 
 .pm-account-plans {

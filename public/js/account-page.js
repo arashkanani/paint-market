@@ -6,6 +6,8 @@
   const oauthRegister = document.getElementById("accountOAuthRegister");
   const displayName = document.getElementById("accountDisplayName");
   const displayMeta = document.getElementById("accountDisplayMeta");
+  const roleBadge = document.getElementById("accountRoleBadge");
+  const loginInfo = document.getElementById("accountLoginInfo");
   const avatar = document.getElementById("accountAvatar");
   const emailFields = document.getElementById("accountEmailFields");
   const passwordBlock = document.getElementById("accountPasswordBlock");
@@ -47,7 +49,7 @@
 
   function isStrongPassword(password) {
     const value = String(password || "");
-    return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+    return value.length > 0;
   }
 
   function updateAuthUi() {
@@ -108,7 +110,11 @@
     loggedInEl?.classList.remove("pm-account-hidden");
     const name = shop?.name || user.email || "—";
     if (displayName) displayName.textContent = name;
+    const method = user.email ? `${t("account_login_email")}: ${user.email}` : user.phone ? `${t("account_login_phone")}: ${user.phone}` : "";
+    const role = user.role ? `${t("account_login_role")}: ${user.role}` : "";
     if (displayMeta) displayMeta.textContent = user.email || user.phone || "";
+    if (roleBadge) roleBadge.textContent = role || t("index_nav_user_dashboard");
+    if (loginInfo) loginInfo.textContent = method || "—";
     if (avatar) avatar.textContent = String(name).trim().charAt(0).toUpperCase() || "P";
     if (dashLink) {
       if (user.role === "admin") {
@@ -119,14 +125,18 @@
         dashLink.textContent = t("account_dashboard");
       } else {
         dashLink.href = "/paint/";
-        dashLink.textContent = t("index_nav_home");
+        dashLink.textContent = t("index_nav_user_dashboard");
       }
     }
   }
 
   function afterLogin(data) {
     clearErrors();
-    renderLoggedIn(data);
+    if (data?.user?.role === "admin") {
+      window.location.href = "/paint/admin.html";
+      return;
+    }
+    window.location.href = "/paint/";
   }
 
   function handleNeedsRegistration(profile) {

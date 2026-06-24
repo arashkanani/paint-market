@@ -51,7 +51,7 @@
       </div>
       <div>
         <label class="text-xs font-semibold text-slate-600" data-pm-t="register_password">Password</label>
-        <input name="password" type="password" required minlength="8" pattern="(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}" data-pm-title="account_err_email_password" title="Password must be at least 8 characters and include a capital letter, a number, and a symbol." class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
+        <input name="password" type="password" required class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
       </div>
       <div>
         <label class="text-xs font-semibold text-slate-600" data-pm-t="register_shop_name">Shop name</label>
@@ -87,7 +87,7 @@
     const phoneInput = form.elements.phone;
     function isStrongPassword(password) {
       const value = String(password || "");
-      return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+      return value.length > 0;
     }
     const params = new URLSearchParams(window.location.search);
     if (params.get("email") && form.elements.email) form.elements.email.value = params.get("email");
@@ -133,7 +133,7 @@
           address: fd.get("address"),
           phone: phoneCheck.normalized
         });
-        window.location.href = "/paint/dashboard.html";
+        window.location.href = "/paint/";
       } catch (err) {
         errorEl.textContent = err.message || paintMarketT("register_err");
         errorEl.classList.remove("hidden");

@@ -882,7 +882,7 @@ function isValidRegionalPhone(raw, countryCode = "OM") {
 
 function isStrongPassword(password) {
   const value = String(password || "");
-  return value.length >= 8 && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+  return value.length > 0;
 }
 
 function issuePhoneOtp(phone) {
@@ -1020,7 +1020,7 @@ async function main() {
         return;
       }
       if (!isStrongPassword(password)) {
-        res.status(400).json({ error: "Password must be at least 8 characters and include a capital letter, a number, and a symbol" });
+        res.status(400).json({ error: "Password is required" });
         return;
       }
       if (phone && !isValidRegionalPhone(phone)) {
@@ -1089,7 +1089,7 @@ async function main() {
         return;
       }
       if (!isStrongPassword(password)) {
-        res.status(400).json({ error: "Password must be at least 8 characters and include a capital letter, a number, and a symbol" });
+        res.status(400).json({ error: "Password is required" });
         return;
       }
       const existing = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [email]);
@@ -1132,7 +1132,7 @@ async function main() {
         return;
       }
       if (!isStrongPassword(password)) {
-        res.status(400).json({ error: "Password must be at least 8 characters and include a capital letter, a number, and a symbol" });
+        res.status(400).json({ error: "Password is required" });
         return;
       }
       if (phone && !isValidRegionalPhone(phone)) {

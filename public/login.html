@@ -82,7 +82,7 @@
       try {
         const data = await PaintApi.login({ email: fd.get("email"), password: fd.get("password") });
         if (data.user.role === "admin") window.location.href = "/paint/admin.html";
-        else window.location.href = "/paint/dashboard.html";
+        else window.location.href = "/paint/";
       } catch (err) {
         errorEl.textContent = err.status === 401 ? paintMarketT("account_err_invalid_login") : err.message || paintMarketT("login_err_failed");
         errorEl.classList.remove("hidden");

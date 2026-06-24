@@ -91,6 +91,22 @@
       grid-template-columns: 1fr;
     }
 
+    .pm-type-skip {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      width: 100%;
+      margin-top: 0.95rem;
+      padding: 1rem;
+      border: 1px solid rgba(255, 242, 0, 0.7);
+      border-radius: 1rem;
+      background: linear-gradient(135deg, #fffef0 0%, #fff 58%, #fffbea 100%);
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(250, 204, 21, 0.22), 0 1px 4px rgba(15, 23, 42, 0.05);
+    }
+
     .pm-type-card,
     .pm-type-row {
       border: none;
@@ -136,6 +152,29 @@
       color: #7c8494;
       font-size: 0.78rem;
       line-height: 1.35;
+    }
+
+    .pm-type-row__price,
+    .pm-type-row__offer {
+      display: block;
+      margin-top: 0.28rem;
+      font-size: 0.8rem;
+      line-height: 1.3;
+      font-weight: 800;
+    }
+
+    .pm-type-row__price {
+      color: #1f2937;
+    }
+
+    .pm-type-row__price--strike {
+      color: #94a3b8;
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+    }
+
+    .pm-type-row__offer {
+      color: #0f766e;
     }
 
     .pm-type-section-title {
@@ -206,11 +245,14 @@
         <button type="button" class="pm-type-edit" onclick="window.location.href='/paint/account.html'" data-pm-t="account_auth_back">Back</button>
       </div>
 
-      <div class="pm-type-grid pm-type-grid--single">
-        <button type="button" data-account-type="customer" class="pm-type-card">
+      <div>
+        <button type="button" data-account-type="customer" class="pm-type-skip">
           <span class="pm-type-icon" aria-hidden="true">☻</span>
-          <span class="pm-type-card__title" data-pm-t="account_type_customer">Customer</span>
-          <span class="pm-type-card__sub" data-pm-t="account_type_customer_sub">Browse shops and products.</span>
+          <span class="pm-type-row__body">
+            <span class="pm-type-row__title" data-pm-t="account_type_customer">Skip</span>
+            <span class="pm-type-row__sub" data-pm-t="account_type_customer_sub">Browse shops and products.</span>
+          </span>
+          <span class="pm-type-row__chev" aria-hidden="true">›</span>
         </button>
       </div>
 
@@ -220,7 +262,9 @@
           <span class="pm-type-icon" aria-hidden="true">▣</span>
           <span class="pm-type-row__body">
             <span class="pm-type-row__title" data-pm-t="account_type_shop">Shop</span>
-            <span class="pm-type-row__sub" data-pm-t="account_type_business_sub">Register your company and upload documents.</span>
+            <span class="pm-type-row__sub" data-pm-t="account_type_shop_sub">Retail price only.</span>
+            <span class="pm-type-row__price pm-type-row__price--strike" data-pm-t="business_plan_shop_price">2 OMR per month</span>
+            <span class="pm-type-row__offer" data-pm-t="business_plan_offer_now_free">Offer now free</span>
           </span>
           <span class="pm-type-row__chev" aria-hidden="true">›</span>
         </button>
@@ -228,7 +272,8 @@
           <span class="pm-type-icon" aria-hidden="true">▤</span>
           <span class="pm-type-row__body">
             <span class="pm-type-row__title" data-pm-t="account_type_wholesaler">Wholesaler</span>
-            <span class="pm-type-row__sub" data-pm-t="account_type_business_sub">Register your company and upload documents.</span>
+            <span class="pm-type-row__sub" data-pm-t="account_type_wholesaler_sub">Retail + wholesale price.</span>
+            <span class="pm-type-row__price" data-pm-t="business_plan_wholesaler_price">10 OMR per month</span>
           </span>
           <span class="pm-type-row__chev" aria-hidden="true">›</span>
         </button>
@@ -236,7 +281,8 @@
           <span class="pm-type-icon" aria-hidden="true">◫</span>
           <span class="pm-type-row__body">
             <span class="pm-type-row__title" data-pm-t="account_type_raw_supplier">Raw material supplier</span>
-            <span class="pm-type-row__sub" data-pm-t="account_type_business_sub">Register your company and upload documents.</span>
+            <span class="pm-type-row__sub" data-pm-t="account_type_raw_supplier_sub">Supplier raw material for manufacturing.</span>
+            <span class="pm-type-row__price" data-pm-t="business_plan_raw_supplier_price">40 OMR per month</span>
           </span>
           <span class="pm-type-row__chev" aria-hidden="true">›</span>
         </button>
@@ -309,7 +355,7 @@
         sessionStorage.setItem("paint_register_account_type", type);
         sessionStorage.setItem("paint_register_email", email);
         sessionStorage.setItem("paint_register_password", password);
-        window.location.href = `/paint/business-register.html?type=${encodeURIComponent(type)}`;
+        window.location.href = `/paint/business-plan.html?type=${encodeURIComponent(type)}`;
       });
     });
   </script>

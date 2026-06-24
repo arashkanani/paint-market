@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260601h" />
-  <link rel="stylesheet" href="/paint/css/account-page.css?v=20260601d" />
+  <link rel="stylesheet" href="/paint/css/account-page.css?v=20260624a" />
   <link rel="stylesheet" href="/paint/css/paint-app-shell.css?v=20260601k" />
   <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
 </head>
@@ -112,41 +112,128 @@
       </footer>
     </section>
 
-    <section id="accountLoggedIn" class="pm-account-hidden">
+    <section id="accountLoggedIn" class="pm-account-hidden pm-account-dashboard">
       <div class="pm-account-profile">
         <div id="accountAvatar" class="pm-account-profile__avatar" aria-hidden="true">P</div>
         <div class="pm-account-profile__body">
           <p id="accountDisplayName" class="pm-account-profile__name">—</p>
           <p id="accountDisplayMeta" class="pm-account-profile__meta">—</p>
         </div>
-      </div>
-      <div class="pm-account-actions">
-        <a id="accountDashLink" href="/paint/dashboard.html" class="pm-account-action-btn pm-account-action-btn--primary" data-pm-t="account_dashboard">Shop dashboard</a>
-        <button type="button" id="accountLogoutBtn" class="pm-account-action-btn pm-account-action-btn--danger" data-pm-t="account_logout">Log out</button>
+        <button type="button" class="pm-account-profile__edit" data-pm-t="account_profile_edit">Edit</button>
       </div>
 
-      <section id="accountPlans" class="pm-account-plans">
-        <h2 class="pm-account-section__title" data-pm-t="account_upgrade_plan">Upgrade plan</h2>
-        <div class="pm-account-plan-card">
-          <p class="pm-account-plan-card__title" data-pm-t="account_plan_basic">Basic</p>
-          <p class="pm-account-plan-card__price" data-pm-t="account_plan_basic_price">Free for shops</p>
-          <ul class="pm-account-plan-card__list">
-            <li data-pm-t="account_plan_basic_feat1">List products in your showroom</li>
-            <li data-pm-t="account_plan_basic_feat2">Appear in local search</li>
-          </ul>
-          <button type="button" class="pm-account-plan-card__btn" disabled data-pm-t="account_plan_current">Current plan</button>
+      <div class="pm-account-tile-grid" aria-label="Dashboard shortcuts">
+        <a id="accountDashLink" href="/paint/dashboard.html" class="pm-account-tile">
+          <span class="pm-account-tile__icon" aria-hidden="true">▣</span>
+          <span class="pm-account-tile__body">
+            <span class="pm-account-tile__title" data-pm-t="index_nav_user_dashboard">Dashboard</span>
+            <span id="accountRoleBadge" class="pm-account-tile__sub">—</span>
+          </span>
+        </a>
+        <button type="button" class="pm-account-tile">
+          <span class="pm-account-tile__icon" aria-hidden="true">↻</span>
+          <span class="pm-account-tile__body">
+            <span class="pm-account-tile__title" data-pm-t="account_tile_returns">Returns</span>
+            <span class="pm-account-tile__sub" data-pm-t="account_tile_returns_sub">0 active requests</span>
+          </span>
+        </button>
+        <div class="pm-account-tile">
+          <span class="pm-account-tile__icon" aria-hidden="true">✉</span>
+          <span class="pm-account-tile__body">
+            <span class="pm-account-tile__title" data-pm-t="account_tile_login">Login info</span>
+            <span id="accountLoginInfo" class="pm-account-tile__sub">—</span>
+          </span>
         </div>
-        <div class="pm-account-plan-card pm-account-plan-card--pro">
-          <span class="pm-account-plan-card__badge" data-pm-t="account_plan_pro">Pro</span>
-          <p class="pm-account-plan-card__title" data-pm-t="account_plan_pro">Pro</p>
-          <p class="pm-account-plan-card__price" data-pm-t="account_plan_pro_price">Coming soon</p>
-          <ul class="pm-account-plan-card__list">
-            <li data-pm-t="account_plan_pro_feat1">Featured shop placement</li>
-            <li data-pm-t="account_plan_pro_feat2">Priority support &amp; analytics</li>
-          </ul>
-          <button type="button" class="pm-account-plan-card__btn" disabled data-pm-t="account_plan_upgrade">Upgrade to Pro</button>
+        <button type="button" class="pm-account-tile">
+          <span class="pm-account-tile__icon" aria-hidden="true">♡</span>
+          <span class="pm-account-tile__body">
+            <span class="pm-account-tile__title" data-pm-t="account_tile_wishlist">Wishlist</span>
+            <span class="pm-account-tile__sub" data-pm-t="account_tile_wishlist_sub">0 saved items</span>
+          </span>
+        </button>
+      </div>
+
+      <section class="pm-account-dashboard-section">
+        <h2 class="pm-account-section__title" data-pm-t="account_section_my_account">My account</h2>
+        <div class="pm-account-settings">
+          <button type="button" class="pm-account-settings__row">
+            <span class="pm-account-settings__icon" aria-hidden="true">▱</span>
+            <span class="pm-account-settings__label" data-pm-t="account_setting_addresses">Addresses</span>
+            <span class="pm-account-settings__chev" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="pm-account-settings__row">
+            <span class="pm-account-settings__icon" aria-hidden="true">▰</span>
+            <span class="pm-account-settings__label" data-pm-t="account_setting_payment">Payment</span>
+            <span class="pm-account-settings__chev" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="pm-account-settings__row">
+            <span class="pm-account-settings__icon" aria-hidden="true">↺</span>
+            <span class="pm-account-settings__label" data-pm-t="account_setting_warranty">Warranty Claims</span>
+            <span class="pm-account-settings__chev" aria-hidden="true">›</span>
+          </button>
         </div>
       </section>
+
+      <section class="pm-account-dashboard-section">
+        <h2 class="pm-account-section__title" data-pm-t="account_section_settings">Settings</h2>
+        <div class="pm-account-settings">
+          <button type="button" class="pm-account-settings__row">
+            <span class="pm-account-settings__icon" aria-hidden="true">◎</span>
+            <span class="pm-account-settings__label" data-pm-t="account_setting_country">Country</span>
+            <span class="pm-account-settings__value">OM</span>
+            <span class="pm-account-settings__chev" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="pm-account-settings__row">
+            <span class="pm-account-settings__icon" aria-hidden="true">⚑</span>
+            <span class="pm-account-settings__label" data-pm-t="account_setting_language">Language</span>
+            <span class="pm-account-settings__value">EN / AR</span>
+            <span class="pm-account-settings__chev" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="pm-account-settings__row">
+            <span class="pm-account-settings__icon" aria-hidden="true">⌑</span>
+            <span class="pm-account-settings__label" data-pm-t="account_setting_security">Security</span>
+            <span class="pm-account-settings__chev" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="pm-account-settings__row">
+            <span class="pm-account-settings__icon" aria-hidden="true">⌾</span>
+            <span class="pm-account-settings__label" data-pm-t="account_setting_notifications">Notifications</span>
+            <span class="pm-account-settings__chev" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </section>
+
+      <div class="pm-account-divider" aria-hidden="true"></div>
+
+      <button type="button" id="accountLogoutBtn" class="pm-account-signout">
+        <span class="pm-account-signout__icon" aria-hidden="true">⏻</span>
+        <span data-pm-t="account_sign_out">Sign Out</span>
+      </button>
+
+      <footer class="pm-account-dashboard-footer" aria-label="Account footer">
+        <div class="pm-account-dashboard-footer__social" aria-label="Social links">
+          <a href="#" aria-label="Facebook">f</a>
+          <a href="#" aria-label="X">X</a>
+          <a href="#" aria-label="Instagram">◎</a>
+          <a href="#" aria-label="LinkedIn">in</a>
+        </div>
+        <div class="pm-account-dashboard-footer__links">
+          <a href="#" data-pm-t="account_footer_terms_use">Terms Of Use</a>
+          <span aria-hidden="true">·</span>
+          <a href="#" data-pm-t="account_footer_terms_sale">Terms Of Sale</a>
+          <span aria-hidden="true">·</span>
+          <a href="#" data-pm-t="account_footer_privacy">Privacy Policy</a>
+          <a href="#" data-pm-t="account_footer_return">Return Policy</a>
+          <span aria-hidden="true">·</span>
+          <a href="#" data-pm-t="account_footer_help">Customer Happiness Center</a>
+        </div>
+        <p class="pm-account-dashboard-footer__version" data-pm-t="account_footer_version">Version v1.0</p>
+        <p class="pm-account-dashboard-footer__copy" data-pm-t="account_footer_copy">© 2026 PAINTIK. All rights reserved.</p>
+      </footer>
+
+      <a href="/paint/account.html" class="pm-account-help-pill">
+        <span aria-hidden="true">ⓘ</span>
+        <span data-pm-t="account_type_help">Need Help?</span>
+      </a>
     </section>
   </main>
 
@@ -177,6 +264,6 @@
 
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>
-  <script src="/paint/js/account-page.js?v=20260601f"></script>
+  <script src="/paint/js/account-page.js?v=20260624a"></script>
 </body>
 </html>

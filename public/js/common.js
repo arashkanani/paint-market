@@ -666,6 +666,32 @@ function paintMarketTf(key, vars) {
   return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] != null ? String(vars[k]) : `{${k}}`));
 }
 
+async function paintMarketUpdateAccountNavForSession() {
+  if (typeof document === "undefined" || typeof PaintApi === "undefined") return;
+  const links = [...document.querySelectorAll('.pm-pfinder-bottom-nav__item[href="/paint/account.html"]')];
+  if (!links.length) return;
+  let me;
+  try {
+    me = await PaintApi.me();
+  } catch {
+    return;
+  }
+  const user = me?.user;
+  if (!user) return;
+  const isShop = user.role === "shop";
+  const isAdmin = user.role === "admin";
+  const href = isAdmin ? "/paint/admin.html" : isShop ? "/paint/dashboard.html" : "/paint/account.html";
+  const labelKey = isShop ? "index_nav_dashboard" : isAdmin ? "index_nav_admin" : "index_nav_user_dashboard";
+  links.forEach((link) => {
+    link.href = href;
+    const label = link.querySelector("[data-pm-t]");
+    if (label) {
+      label.setAttribute("data-pm-t", labelKey);
+      label.textContent = paintMarketT(labelKey);
+    }
+  });
+}
+
 function paintMarketIsPlaceholderImageUrl(url) {
   const u = String(url || "").trim().toLowerCase();
   return !u || u.includes("placehold.co/");
@@ -1253,6 +1279,7 @@ function paintMarketApplyDomI18n() {
     el.setAttribute("aria-label", paintMarketT("hdr_ariaLang"));
   });
   paintMarketFavoriteSyncAllFavoriteButtons();
+  paintMarketUpdateAccountNavForSession();
 }
 
 function paintMarketFillLangSelects() {

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>Business plan</title>
+  <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
+  <style>
+    body { font-family: "DM Sans", system-ui, sans-serif; }
+    .pm-plan-price--strike {
+      color: #94a3b8;
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100 text-slate-900">
+  <main class="min-h-screen flex items-center justify-center px-4 py-8">
+    <section class="w-full max-w-md rounded-3xl bg-white/95 p-6 shadow-2xl border border-white/20">
+      <a href="/paint/" class="pm-brand-logo-link pm-brand-logo-link--center mb-5" aria-label="PAINTIK">
+        <img src="/paint/img/brand/paintik-logo.png" alt="PAINTIK" class="pm-brand-logo-link__img pm-brand-logo-link__img--lg" width="140" height="40" decoding="async" />
+      </a>
+      <h1 class="text-2xl font-extrabold text-slate-950" data-pm-t="business_plan_title">Choose your plan</h1>
+      <p class="mt-2 text-sm text-slate-500" data-pm-t="business_plan_sub">Your launch offer is applied automatically.</p>
+
+      <article class="mt-5 overflow-hidden rounded-2xl border border-yellow-200 bg-gradient-to-br from-yellow-50 via-white to-white shadow-xl shadow-yellow-100/70">
+        <div id="businessPlanBadge" class="bg-yellow-300 px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-slate-950" data-pm-t="business_plan_offer_badge">Now offer free</div>
+        <div class="p-5">
+          <p id="businessPlanType" class="text-sm font-bold text-teal-700"></p>
+          <h2 id="businessPlanName" class="mt-1 text-2xl font-extrabold text-slate-950"></h2>
+          <p id="businessPlanPrice" class="mt-3 text-lg font-extrabold text-slate-900"></p>
+          <p id="businessPlanOffer" class="mt-2 rounded-xl bg-teal-50 px-3 py-2 text-sm font-bold text-teal-800"></p>
+          <p id="businessPlanNote" class="mt-3 text-sm text-slate-500"></p>
+        </div>
+      </article>
+
+      <button id="businessPlanContinue" type="button" class="mt-5 w-full rounded-lg bg-teal-700 text-white py-2.5 font-semibold hover:bg-teal-800" data-pm-t="business_plan_continue">Continue</button>
+      <a href="/paint/account-type.html" class="mt-3 block text-center text-sm font-semibold text-slate-500" data-pm-t="account_auth_back">Back</a>
+    </section>
+  </main>
+
+  <script src="/paint/js/paint-i18n.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("type") || sessionStorage.getItem("paint_register_account_type") || "";
+    const email = sessionStorage.getItem("paint_register_email") || "";
+    const password = sessionStorage.getItem("paint_register_password") || "";
+    const planData = {
+      shop: {
+        typeLabel: paintMarketT("account_type_shop"),
+        name: paintMarketT("business_plan_shop_name"),
+        price: paintMarketT("business_plan_shop_price"),
+        offer: paintMarketT("business_plan_shop_offer"),
+        note: paintMarketT("business_plan_shop_note"),
+        hasOffer: true
+      },
+      wholesaler: {
+        typeLabel: paintMarketT("account_type_wholesaler"),
+        name: paintMarketT("business_plan_wholesaler_name"),
+        price: paintMarketT("business_plan_wholesaler_price"),
+        offer: "",
+        note: paintMarketT("business_plan_wholesaler_note"),
+        hasOffer: false
+      },
+      raw_supplier: {
+        typeLabel: paintMarketT("account_type_raw_supplier"),
+        name: paintMarketT("business_plan_raw_supplier_name"),
+        price: paintMarketT("business_plan_raw_supplier_price"),
+        offer: "",
+        note: paintMarketT("business_plan_raw_supplier_note"),
+        hasOffer: false
+      }
+    };
+
+    if (!planData[type] || !email || !password) {
+      window.location.href = "/paint/account.html";
+    } else {
+      sessionStorage.setItem("paint_register_account_type", type);
+      document.getElementById("businessPlanType").textContent = planData[type].typeLabel;
+      document.getElementById("businessPlanName").textContent = planData[type].name;
+      const priceEl = document.getElementById("businessPlanPrice");
+      const offerEl = document.getElementById("businessPlanOffer");
+      const badgeEl = document.getElementById("businessPlanBadge");
+      priceEl.textContent = planData[type].price;
+      priceEl.classList.toggle("pm-plan-price--strike", planData[type].hasOffer);
+      offerEl.textContent = planData[type].offer;
+      offerEl.classList.toggle("hidden", !planData[type].hasOffer);
+      badgeEl.classList.toggle("hidden", !planData[type].hasOffer);
+      document.getElementById("businessPlanNote").textContent = planData[type].note;
+      document.getElementById("businessPlanContinue").addEventListener("click", () => {
+        window.location.href = `/paint/business-register.html?type=${encodeURIComponent(type)}`;
+      });
+    }
+  </script>
+</body>
+</html>
