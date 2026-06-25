@@ -450,6 +450,7 @@ const PAINT_MARKET_COUNTRY_K = "paint_market_country";
 const PAINT_MARKET_CITY_K = "paint_market_city";
 const PAINT_MARKET_LANG_K = "paint_market_lang";
 const PAINT_MARKET_ALLOW_COUNTRY = ["AE", "OM", "SA"];
+const PAINT_MARKET_DEFAULT_COUNTRY = "OM";
 const PAINT_MARKET_ALLOW_LANG = ["en", "ar"];
 
 /** @type {Record<string, string>} */
@@ -523,7 +524,7 @@ const PAINT_MARKET_COUNTRIES = [
 
 function pmCountryRow(code) {
   const c = String(code || "").trim().toUpperCase();
-  return PAINT_MARKET_COUNTRIES.find((r) => r.code === c) || PAINT_MARKET_COUNTRIES[0];
+  return PAINT_MARKET_COUNTRIES.find((r) => r.code === c) || PAINT_MARKET_COUNTRIES.find((r) => r.code === PAINT_MARKET_DEFAULT_COUNTRY) || PAINT_MARKET_COUNTRIES[0];
 }
 
 function pmCityLabel(row) {
@@ -537,12 +538,12 @@ function pmCountryLabel(row) {
 function paintMarketCountryGet() {
   const v = localStorage.getItem(PAINT_MARKET_COUNTRY_K);
   if (PAINT_MARKET_ALLOW_COUNTRY.includes(v)) return v;
-  return "AE";
+  return PAINT_MARKET_DEFAULT_COUNTRY;
 }
 
 function paintMarketCurrencyForCountry(country) {
   const c = String(country || "").trim().toUpperCase();
-  return PAINT_MARKET_CURRENCY_BY_COUNTRY[c] || "AED";
+  return PAINT_MARKET_CURRENCY_BY_COUNTRY[c] || PAINT_MARKET_CURRENCY_BY_COUNTRY[PAINT_MARKET_DEFAULT_COUNTRY] || "OMR";
 }
 
 function paintMarketCurrencyGet() {
@@ -1307,12 +1308,12 @@ function paintMarketSyncLangSelects() {
 }
 
 function paintMarketCityCodesForCountry(country) {
-  const list = PAINT_MARKET_CITIES_BY_COUNTRY[country] || PAINT_MARKET_CITIES_BY_COUNTRY.AE;
+  const list = PAINT_MARKET_CITIES_BY_COUNTRY[country] || PAINT_MARKET_CITIES_BY_COUNTRY[PAINT_MARKET_DEFAULT_COUNTRY];
   return list.map((x) => x.code);
 }
 
 function paintMarketShopCityRows(country) {
-  const list = PAINT_MARKET_CITIES_BY_COUNTRY[country] || PAINT_MARKET_CITIES_BY_COUNTRY.AE;
+  const list = PAINT_MARKET_CITIES_BY_COUNTRY[country] || PAINT_MARKET_CITIES_BY_COUNTRY[PAINT_MARKET_DEFAULT_COUNTRY];
   return list.filter((row) => row.code);
 }
 
@@ -1324,7 +1325,7 @@ function paintMarketShopCityLabel(country, cityCode) {
 
 function paintMarketParseShopLocationText(locationText) {
   const raw = String(locationText || "").trim();
-  if (!raw) return { country: paintMarketCountryGet(), cityCode: "", area: "" };
+  if (!raw) return { country: PAINT_MARKET_DEFAULT_COUNTRY, cityCode: "", area: "" };
   const lower = raw.toLowerCase();
   for (const country of PAINT_MARKET_ALLOW_COUNTRY) {
     for (const row of paintMarketShopCityRows(country)) {
@@ -1338,7 +1339,7 @@ function paintMarketParseShopLocationText(locationText) {
       }
     }
   }
-  return { country: paintMarketCountryGet(), cityCode: "", area: raw };
+  return { country: PAINT_MARKET_DEFAULT_COUNTRY, cityCode: "", area: raw };
 }
 
 function paintMarketComposeShopLocationText(country, cityCode, area) {

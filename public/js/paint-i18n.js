@@ -639,7 +639,7 @@
     business_document: "Company document",
     business_document_hint: "Upload trade license, tax document, or company registration.",
     business_terms_signature: "Type your full name as signature",
-    business_terms_accept: "I agree to the terms and conditions and confirm the uploaded company document is valid.",
+    business_terms_accept: "I agree to the terms, conditions, and Privacy Policy, and confirm the uploaded company document is valid.",
     business_submit: "Submit application",
     business_success: "Application submitted. We will review your documents.",
     login_metaTitle: "Login",
@@ -1311,7 +1311,7 @@
     business_document: "مستند الشركة",
     business_document_hint: "ارفع الرخصة التجارية أو المستند الضريبي أو تسجيل الشركة.",
     business_terms_signature: "اكتب اسمك الكامل كتوقيع",
-    business_terms_accept: "أوافق على الشروط والأحكام وأؤكد أن مستند الشركة المرفوع صحيح.",
+    business_terms_accept: "أوافق على الشروط والأحكام وسياسة الخصوصية، وأؤكد أن مستند الشركة المرفوع صحيح.",
     business_submit: "إرسال الطلب",
     business_success: "تم إرسال الطلب. سنراجع مستنداتك.",
 
