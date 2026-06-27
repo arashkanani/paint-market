@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Paint Market Developer Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial;background:#f4f4f4;color:#222}
+header{background:#111;color:white;padding:24px;text-align:center}
+header h1{margin:0;color:#ff7a00}
+.stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.stat{background:#222;padding:12px 20px;border-radius:12px}
+.controls{max-width:1000px;margin:25px auto;display:flex;gap:10px;padding:0 15px}
+input,select{padding:12px;border:1px solid #ccc;border-radius:10px;width:100%}
+.grid{max-width:1100px;margin:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:15px}
+.card{background:white;border-radius:16px;padding:18px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.card h2{margin-top:0;color:#ff7a00}
+a{display:block;text-decoration:none;color:#222;padding:10px;border-radius:8px;margin:6px 0;background:#f7f7f7}
+a:hover{background:#ff7a00;color:white}
+.badge{float:right;font-size:12px;padding:3px 8px;border-radius:20px}
+.done{background:#d7f7df;color:#137333}
+.work{background:#fff3cd;color:#8a5a00}
+.todo{background:#ffdede;color:#a30000}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Paint Market Developer Dashboard</h1>
+<p>All project pages in one place</p>
+<div class="stats">
+<div class="stat">Total Pages: <b id="total"></b></div>
+<div class="stat">Completed: <b id="done"></b></div>
+<div class="stat">In Progress: <b id="work"></b></div>
+<div class="stat">Todo: <b id="todo"></b></div>
+</div>
+</header>
+
+<div class="controls">
+<input id="search" placeholder="Search pages...">
+<select id="filter">
+<option value="all">All</option>
+<option value="done">Completed</option>
+<option value="work">In Progress</option>
+<option value="todo">Todo</option>
+</select>
+</div>
+
+<div class="grid" id="pages"></div>
+
+<script>
+const groups = [
+{
+title:"Customer Pages",
+items:[
+["Home","index.html","done"],
+["Browse","browse.html","done"],
+["Search","search.html","work"],
+["Search Results","search-results.html","work"],
+["Shop Page","shop.html","work"],
+["Product Detail","product.html","todo"],
+["Price on Map","map.html","todo"],
+["Favorites","favorites.html","todo"],
+["Alerts","alerts.html","todo"]
+]
+},
+{
+title:"Account & Business",
+items:[
+["Account","account.html","done"],
+["Account Type","account-type.html","done"],
+["Business Register","business-register.html","done"],
+["Business Plan","business-plan.html","done"]
+]
+},
+{
+title:"Dashboard",
+items:[
+["Dashboard","dashboard.html","done"],
+["Add Product","add-product.html","todo"],
+["Inventory","inventory.html","todo"],
+["Orders","orders.html","todo"]
+]
+},
+{
+title:"Admin",
+items:[
+["Admin Panel","admin.html","done"],
+["Admin Catalog","admin-catalog.html","work"],
+["Users","users.html","todo"],
+["Categories","categories.html","todo"],
+["Brands","brands.html","todo"],
+["Reports","reports.html","todo"]
+]
+}
+];
+
+const pagesEl=document.getElementById("pages");
+const searchEl=document.getElementById("search");
+const filterEl=document.getElementById("filter");
+
+function render(){
+pagesEl.innerHTML="";
+let total=0,done=0,work=0,todo=0;
+const q=searchEl.value.toLowerCase();
+const f=filterEl.value;
+
+groups.forEach(group=>{
+let visible=group.items.filter(i=>{
+return i[0].toLowerCase().includes(q) && (f==="all" || i[2]===f);
+});
+if(!visible.length)return;
+
+let card=document.createElement("div");
+card.className="card";
+card.innerHTML=`<h2>${group.title}</h2>`;
+
+visible.forEach(i=>{
+total++;
+if(i[2]==="done")done++;
+if(i[2]==="work")work++;
+if(i[2]==="todo")todo++;
+
+card.innerHTML+=`
+<a href="${i[1]}" target="_blank">
+${i[0]}
+<span class="badge ${i[2]}">${i[2]}</span>
+</a>`;
+});
+
+pagesEl.appendChild(card);
+});
+
+document.getElementById("total").textContent=total;
+document.getElementById("done").textContent=done;
+document.getElementById("work").textContent=work;
+document.getElementById("todo").textContent=todo;
+}
+
+searchEl.addEventListener("input",render);
+filterEl.addEventListener("change",render);
+render();
+</script>
+
+</body>
+</html>
