@@ -48,7 +48,7 @@ function normalizeCategoryNameFields(row) {
 }
 const { hashPassword, verifyPassword, randomToken } = require("./auth");
 
-const PORT = Number(process.env.PORT || process.env.PAINT_PORT || 3010);
+const PREFERRED_PORT = Number(process.env.PORT || process.env.PAINT_PORT || 3010);
 const ROOT = __dirname;
 
 const CAPACITIES = new Set([1, 3.6, 18]);
@@ -1132,6 +1132,46 @@ function buildDevStatusPayload(publicDir, serverPort) {
   };
 }
 
+/** Try preferred port, then preferred+1, +2, … until listen succeeds (no process killing). */
+function listenOnAvailablePort(app, preferredPort, maxAttempts = 50) {
+  const start = Number(preferredPort) || 3010;
+  return new Promise((resolve, reject) => {
+    let attempt = 0;
+
+    const tryNext = () => {
+      if (attempt >= maxAttempts) {
+        reject(new Error(`No free port found from ${start} to ${start + maxAttempts - 1}`));
+        return;
+      }
+      const port = start + attempt;
+      attempt += 1;
+      const server = app.listen(port);
+
+      const onError = (err) => {
+        server.removeListener("listening", onListening);
+        if (err && err.code === "EADDRINUSE") {
+          server.close(() => tryNext());
+          return;
+        }
+        server.close(() => reject(err));
+      };
+
+      const onListening = () => {
+        server.removeListener("error", onError);
+        if (port !== start) {
+          console.warn(`Port ${start} is busy. Using port ${port} instead.`);
+        }
+        resolve(port);
+      };
+
+      server.once("error", onError);
+      server.once("listening", onListening);
+    };
+
+    tryNext();
+  });
+}
+
 async function main() {
   const db = dbm.openDb();
   await dbm.migrate(db);
@@ -1145,6 +1185,7 @@ async function main() {
 
   const PUBLIC_DIR = path.join(ROOT, "public");
   const UI_BUILD = "20260602";
+  let listeningPort = PREFERRED_PORT;
   app.get("/paint/dashboard.html", (_req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.setHeader("Pragma", "no-cache");
@@ -1163,7 +1204,7 @@ async function main() {
   /** Live dev dashboard: git snapshot + HTML page inventory from /public */
   const devStatusHandler = (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.json(buildDevStatusPayload(PUBLIC_DIR, PORT));
+    res.json(buildDevStatusPayload(PUBLIC_DIR, listeningPort));
   };
   app.get("/paint/api/dev-status", devStatusHandler);
   app.get("/api/dev-status", devStatusHandler);
@@ -3582,10 +3623,9 @@ async function main() {
     res.status(status).json({ error: err.message || "Server error" });
   });
 
-  app.listen(PORT, () => {
-    console.log(`Paint market UI + API → http://localhost:${PORT}/paint`);
-    console.log(`Default admin login: admin@local.test / admin123 (development only)`);
-  });
+  listeningPort = await listenOnAvailablePort(app, PREFERRED_PORT);
+  console.log(`Paint market UI + API -> http://localhost:${listeningPort}/paint`);
+  console.log(`Default admin login: admin@local.test / admin123 (development only)`);
 }
 
 main().catch((e) => {
