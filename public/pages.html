@@ -865,7 +865,7 @@
       }
     }
   </style>
-<!-- pm-dashboard-build-test -->
+  <!-- pm-commit-push-route-fix -->
 </head>
 <body>
 
@@ -1283,17 +1283,42 @@
     );
   }
 
+  function formatDevActionError(endpoint, status, body) {
+    const snippet = String(body || "").trim().slice(0, 500) || "(empty)";
+    return `Push failed:\nEndpoint: ${endpoint}\nStatus: ${status}\nResponse: ${snippet}`;
+  }
+
   async function postDevAction(path, body) {
-    const res = await fetch(`${DEV_ACTION}${path}`, {
+    const endpoint = `${DEV_ACTION}${path}`;
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: { Accept: "application/json", "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : "{}"
     });
     const ct = (res.headers.get("content-type") || "").toLowerCase();
-    if (!ct.includes("application/json")) {
-      throw new Error(`Unexpected response (${res.status})`);
+    const text = await res.text();
+    let data = null;
+    if (text && ct.includes("application/json")) {
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        data = null;
+      }
     }
-    return res.json();
+    if (!data) {
+      const err = new Error(`Unexpected response (${res.status})`);
+      err.httpStatus = res.status;
+      err.endpoint = endpoint;
+      err.responseBody = text.slice(0, 2000);
+      err.detail = formatDevActionError(endpoint, res.status, text);
+      throw err;
+    }
+    data.httpStatus = res.status;
+    data.endpoint = endpoint;
+    if (!res.ok && !data.error) {
+      data.error = data.message || `HTTP ${res.status}`;
+    }
+    return data;
   }
 
   async function withDevAction(label, fn) {
@@ -1435,56 +1460,44 @@
     }
   }
 
+  function formatPushError(data) {
+    const lines = [];
+    const label = data.step === "push" ? "Push failed:" : "Operation failed:";
+    lines.push(label);
+    if (data.endpoint) lines.push(`Endpoint: ${data.endpoint}`);
+    if (data.httpStatus) lines.push(`Status: ${data.httpStatus}`);
+    if (data.error) lines.push(`Error: ${data.error}`);
+    else if (data.responseBody) lines.push(`Response: ${String(data.responseBody).slice(0, 500)}`);
+    else if (data.output) lines.push(`Response: ${String(data.output).slice(0, 500)}`);
+    return lines.join("\n");
+  }
+
   function startCommitProgressAnimation(fromPct) {
     stopCommitProgressAnimation();
     setCommitProgressPercent(fromPct + 1, true);
   }
 
-  async function runCommitPushPushStream(onPushProgress) {
-    const res = await fetch(`${DEV_ACTION}/commit-push-stream`, {
-      method: "POST",
-      headers: { Accept: "application/x-ndjson", "Content-Type": "application/json" },
-      body: "{}"
-    });
-    if (!res.ok) throw new Error(`Push stream failed (HTTP ${res.status})`);
-    if (!res.body) throw new Error("Push stream unavailable");
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let finalEvent = null;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const ev = JSON.parse(line);
-        if (ev.type === "output" && ev.text) appendCommitProgressOutput(ev.text);
-        if (ev.type === "progress" && ev.progress != null && onPushProgress) onPushProgress(ev.progress);
-        if (ev.type === "done") {
-          finalEvent = ev;
-          if (ev.output) appendCommitProgressOutput(ev.output);
-        }
-      }
-    }
-
-    if (!finalEvent) throw new Error("Push stream ended without result");
-    return finalEvent;
-  }
-
   async function runCommitPushStep(stageDef, message, onPushProgress) {
     if (stageDef.client) return { ok: true, step: "refresh" };
-    if (stageDef.step === "push") {
-      return runCommitPushPushStream(onPushProgress);
-    }
     const body = { step: stageDef.step, message };
-    const data = await postDevAction("/commit-push", body);
-    if (data.output) appendCommitProgressOutput(data.output);
-    return data;
+    try {
+      const data = await postDevAction("/commit-push", body);
+      if (data.output) appendCommitProgressOutput(data.output);
+      if (stageDef.step === "push" && data.pushProgress != null && onPushProgress) {
+        onPushProgress(data.pushProgress);
+      }
+      return data;
+    } catch (err) {
+      return {
+        ok: false,
+        step: stageDef.step,
+        error: err.detail || err.message || "Request failed",
+        endpoint: err.endpoint || `${DEV_ACTION}/commit-push`,
+        httpStatus: err.httpStatus,
+        responseBody: err.responseBody,
+        output: err.responseBody || ""
+      };
+    }
   }
 
   function appendCommitProgressOutput(text) {
@@ -1543,12 +1556,14 @@
       stopCommitProgressAnimation();
       setCommitStageState(stageId, "error");
       setCommitProgressPercent(completedStageWeight(stageId), false);
+      const errText = formatPushError(data);
       if (el.error) {
         el.error.classList.remove("hidden");
-        el.error.textContent = data.error || data.message || "Operation failed";
+        el.error.textContent = errText;
       }
       showCommitProgressFoot("error", data);
-      appendDevConsole(data.output || data.error || "Commit & push failed");
+      appendDevConsole(errText);
+      appendCommitProgressOutput(errText);
       setDevActionStatus(data.error || "Commit & push failed", "error");
     };
 
@@ -1620,7 +1635,12 @@
       setDevActionStatus("Push completed successfully.", "success");
       showLiveNotice("Push completed successfully", false);
     } catch (e) {
-      fail("push", { error: e.message || String(e), output: "" });
+      fail("push", {
+        step: "push",
+        error: e.message,
+        endpoint: `${DEV_ACTION}/commit-push`,
+        detail: e.detail
+      });
     } finally {
       devActionRunning = false;
       setDevActionButtonsDisabled(false);

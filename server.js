@@ -1421,58 +1421,6 @@ async function handleCommitPushPushStep(req, res) {
   }
 }
 
-async function handleCommitPushPushStream(req, res) {
-  res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  const send = (obj) => {
-    if (!res.writableEnded) res.write(`${JSON.stringify(obj)}\n`);
-  };
-
-  send({ type: "start", step: "push" });
-  send({ type: "output", text: "$ git push origin main" });
-
-  try {
-    const push = await runGitPushStreaming(
-      ["push", "origin", "main"],
-      (ev) => {
-        if (ev.type === "output" && ev.text?.trim()) send({ type: "output", text: ev.text.trim() });
-        if (ev.type === "progress") send({ type: "progress", progress: ev.progress });
-      },
-      300000
-    );
-
-    if (!push.ok) {
-      const hint = classifyGitPushError(push.output);
-      send({
-        type: "done",
-        ok: false,
-        step: "push",
-        error: hint || push.stderr || push.stdout || "git push failed",
-        output: push.output,
-        pushProgress: push.lastProgress
-      });
-      res.end();
-      return;
-    }
-
-    const head = getGitHeadInfo();
-    send({
-      type: "done",
-      ok: true,
-      step: "push",
-      commitHash: head.commitHash,
-      branch: head.branch,
-      filesCommitted: head.filesCommitted,
-      githubUrl: getGitHubCommitWebUrl(head.commitHash),
-      output: push.output,
-      pushProgress: push.lastProgress ?? 100
-    });
-  } catch (e) {
-    send({ type: "done", ok: false, step: "push", error: e.message || "git push failed" });
-  }
-  res.end();
-}
-
 function handleCommitPushFull(message, res) {
   const add = runGitCommandDetailed(["add", "-A"]);
   if (!add.ok) {
@@ -1681,11 +1629,6 @@ function registerDevActionRoutes(app, ctx) {
       return;
     }
     handleCommitPushStep(req, res);
-  });
-
-  mountPost("/api/dev-action/commit-push-stream", async (req, res) => {
-    if (devActionForbidden(req, res)) return;
-    await handleCommitPushPushStream(req, res);
   });
 
   mountPost("/api/dev-action/restart", (req, res) => {
