@@ -1177,6 +1177,363 @@ function runGitCommandDetailed(args, timeoutMs = 180000) {
   }
 }
 
+/** Stream `git push` with progress/output callbacks. */
+function runGitPushStreaming(args, onEvent, timeoutMs = 300000) {
+  const argv = Array.isArray(args) ? args : String(args).split(/\s+/);
+  return new Promise((resolve, reject) => {
+    let stdout = "";
+    let stderr = "";
+    let lastProgress = null;
+    const child = spawn("git", argv, { cwd: ROOT });
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new Error("git push timed out"));
+    }, timeoutMs);
+
+    const ingest = (chunk, isErr) => {
+      const text = String(chunk);
+      if (isErr) stderr += text;
+      else stdout += text;
+      for (const line of text.split(/\r?\n/)) {
+        if (!line.trim()) continue;
+        const m =
+          line.match(/Writing objects:\s*(\d+)%/) ||
+          line.match(/Receiving objects:\s*(\d+)%/) ||
+          line.match(/Resolving deltas:\s*(\d+)%/) ||
+          line.match(/(\d{1,3})%\s*\(\d+\/\d+\)/);
+        if (m) {
+          lastProgress = Number(m[1]);
+          if (onEvent) onEvent({ type: "progress", progress: lastProgress, line });
+        } else if (/error|fatal|rejected|denied/i.test(line) && onEvent) {
+          onEvent({ type: "output", text: line });
+        }
+      }
+    };
+
+    child.stdout.on("data", (d) => ingest(d, false));
+    child.stderr.on("data", (d) => ingest(d, true));
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      const output = [stdout, stderr].filter(Boolean).join("\n");
+      resolve({
+        ok: code === 0,
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        output,
+        lastProgress,
+        code: code ?? 1
+      });
+    });
+  });
+}
+
+function countStatusLines(text) {
+  return String(text || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean).length;
+}
+
+function getGitHeadInfo() {
+  const hash = runGitCommandDetailed(["rev-parse", "--short", "HEAD"]);
+  const branch = runGitCommandDetailed(["rev-parse", "--abbrev-ref", "HEAD"]);
+  const files = runGitCommandDetailed(["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"]);
+  return {
+    commitHash: hash.ok ? hash.stdout : "",
+    branch: branch.ok ? branch.stdout : "main",
+    filesCommitted: countStatusLines(files.stdout)
+  };
+}
+
+function getGitHubCommitWebUrl(commitHash) {
+  const remote = runGitCommandDetailed(["config", "--get", "remote.origin.url"]);
+  if (!remote.ok || !remote.stdout || !commitHash) return null;
+  const url = remote.stdout.trim();
+  const match = url.match(/github\.com[:/]([^/]+)\/([^/.]+?)(?:\.git)?$/i);
+  if (!match) return null;
+  return `https://github.com/${match[1]}/${match[2]}/commit/${commitHash}`;
+}
+
+function handleCommitPushStep(req, res) {
+  const step = String(req.body?.step || "full").toLowerCase();
+  const message = String(req.body?.message || "").trim() || "Full project backup update";
+  const lines = [];
+
+  if (step === "scan") {
+    const status = runGitCommandDetailed(["status", "--short"]);
+    res.json({
+      ok: status.ok,
+      step: "scan",
+      filesChanged: countStatusLines(status.stdout),
+      output: status.stdout || "(no changes detected yet)",
+      error: status.ok ? undefined : status.stderr || status.stdout || "git status failed"
+    });
+    return;
+  }
+
+  if (step === "stage") {
+    lines.push("$ git add -A");
+    const add = runGitCommandDetailed(["add", "-A"]);
+    if (add.output) lines.push(add.output);
+    res.json({
+      ok: add.ok,
+      step: "stage",
+      output: lines.join("\n"),
+      error: add.ok ? undefined : add.stderr || add.stdout || "git add failed"
+    });
+    return;
+  }
+
+  if (step === "count") {
+    lines.push("$ git status --short");
+    const status = runGitCommandDetailed(["status", "--short"]);
+    lines.push(status.stdout || "(clean working tree)");
+    const filesChanged = countStatusLines(status.stdout);
+    if (!status.ok) {
+      res.json({
+        ok: false,
+        step: "count",
+        output: lines.join("\n"),
+        error: status.stderr || status.stdout || "git status failed"
+      });
+      return;
+    }
+    if (!filesChanged) {
+      res.json({
+        ok: true,
+        step: "count",
+        nothingToCommit: true,
+        message: "No local changes to commit.",
+        filesChanged: 0,
+        output: lines.join("\n")
+      });
+      return;
+    }
+    res.json({
+      ok: true,
+      step: "count",
+      filesChanged,
+      output: lines.join("\n")
+    });
+    return;
+  }
+
+  if (step === "commit") {
+    lines.push(`$ git commit -m "${message}"`);
+    const pre = runGitCommandDetailed(["status", "--short"]);
+    if (!countStatusLines(pre.stdout)) {
+      res.json({
+        ok: true,
+        step: "commit",
+        nothingToCommit: true,
+        message: "No local changes to commit.",
+        output: pre.stdout || "(clean working tree)"
+      });
+      return;
+    }
+    const commit = runGitCommandDetailed(["commit", "-m", message]);
+    lines.push(commit.output || "(no commit output)");
+    if (!commit.ok) {
+      res.json({
+        ok: false,
+        step: "commit",
+        output: lines.join("\n"),
+        error: commit.stderr || commit.stdout || "git commit failed"
+      });
+      return;
+    }
+    const head = getGitHeadInfo();
+    res.json({
+      ok: true,
+      step: "commit",
+      commitHash: head.commitHash,
+      branch: head.branch,
+      filesCommitted: head.filesCommitted,
+      filesChanged: countStatusLines(pre.stdout),
+      output: lines.join("\n")
+    });
+    return;
+  }
+
+  if (step === "verify") {
+    const status = runGitCommandDetailed(["status", "--short"]);
+    const head = getGitHeadInfo();
+    res.json({
+      ok: true,
+      step: "verify",
+      clean: !countStatusLines(status.stdout),
+      commitHash: head.commitHash,
+      branch: head.branch,
+      filesCommitted: head.filesCommitted,
+      githubUrl: getGitHubCommitWebUrl(head.commitHash),
+      output: status.stdout ? `Working tree after push:\n${status.stdout}` : "Working tree clean."
+    });
+    return;
+  }
+
+  if (step === "full") {
+    handleCommitPushFull(message, res);
+    return;
+  }
+
+  res.status(400).json({ ok: false, error: `Unknown commit-push step: ${step}` });
+}
+
+async function handleCommitPushPushStep(req, res) {
+  const lines = ["$ git push origin main"];
+  try {
+    const push = await runGitPushStreaming(["push", "origin", "main"], null, 300000);
+    if (push.output) lines.push(push.output);
+    if (!push.ok) {
+      const hint = classifyGitPushError(push.output);
+      res.json({
+        ok: false,
+        step: "push",
+        output: lines.join("\n"),
+        error: hint || push.stderr || push.stdout || "git push failed",
+        pushProgress: push.lastProgress
+      });
+      return;
+    }
+    const head = getGitHeadInfo();
+    res.json({
+      ok: true,
+      step: "push",
+      commitHash: head.commitHash,
+      branch: head.branch,
+      filesCommitted: head.filesCommitted,
+      githubUrl: getGitHubCommitWebUrl(head.commitHash),
+      output: lines.join("\n"),
+      pushProgress: push.lastProgress ?? 100
+    });
+  } catch (e) {
+    lines.push(e.message || "push failed");
+    res.json({
+      ok: false,
+      step: "push",
+      output: lines.join("\n"),
+      error: e.message || "git push failed"
+    });
+  }
+}
+
+async function handleCommitPushPushStream(req, res) {
+  res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  const send = (obj) => {
+    if (!res.writableEnded) res.write(`${JSON.stringify(obj)}\n`);
+  };
+
+  send({ type: "start", step: "push" });
+  send({ type: "output", text: "$ git push origin main" });
+
+  try {
+    const push = await runGitPushStreaming(
+      ["push", "origin", "main"],
+      (ev) => {
+        if (ev.type === "output" && ev.text?.trim()) send({ type: "output", text: ev.text.trim() });
+        if (ev.type === "progress") send({ type: "progress", progress: ev.progress });
+      },
+      300000
+    );
+
+    if (!push.ok) {
+      const hint = classifyGitPushError(push.output);
+      send({
+        type: "done",
+        ok: false,
+        step: "push",
+        error: hint || push.stderr || push.stdout || "git push failed",
+        output: push.output,
+        pushProgress: push.lastProgress
+      });
+      res.end();
+      return;
+    }
+
+    const head = getGitHeadInfo();
+    send({
+      type: "done",
+      ok: true,
+      step: "push",
+      commitHash: head.commitHash,
+      branch: head.branch,
+      filesCommitted: head.filesCommitted,
+      githubUrl: getGitHubCommitWebUrl(head.commitHash),
+      output: push.output,
+      pushProgress: push.lastProgress ?? 100
+    });
+  } catch (e) {
+    send({ type: "done", ok: false, step: "push", error: e.message || "git push failed" });
+  }
+  res.end();
+}
+
+function handleCommitPushFull(message, res) {
+  const add = runGitCommandDetailed(["add", "-A"]);
+  if (!add.ok) {
+    res.json({ ok: false, error: add.stderr || add.stdout || "git add failed", output: add.output });
+    return;
+  }
+
+  const status = runGitCommandDetailed(["status", "--short"]);
+  if (!status.ok) {
+    res.json({ ok: false, error: status.stderr || status.stdout || "git status failed", output: status.output });
+    return;
+  }
+  if (!status.stdout.trim()) {
+    res.json({
+      ok: true,
+      nothingToCommit: true,
+      message: "No local changes to commit.",
+      output: status.output || "(clean working tree)"
+    });
+    return;
+  }
+
+  const lines = [`$ git add -A`, status.stdout, `$ git commit -m "${message}"`];
+  const filesChanged = countStatusLines(status.stdout);
+  const commit = runGitCommandDetailed(["commit", "-m", message]);
+  lines.push(commit.output || "(no commit output)");
+  if (!commit.ok) {
+    res.json({
+      ok: false,
+      error: commit.stderr || commit.stdout || "git commit failed",
+      output: lines.join("\n")
+    });
+    return;
+  }
+
+  lines.push("$ git push origin main");
+  const push = runGitCommandDetailed(["push", "origin", "main"], 300000);
+  lines.push(push.output || push.stderr || "(no push output)");
+  if (!push.ok) {
+    const hint = classifyGitPushError(push.output);
+    res.json({
+      ok: false,
+      error: hint || push.stderr || push.stdout || "git push failed",
+      output: lines.join("\n")
+    });
+    return;
+  }
+
+  const head = getGitHeadInfo();
+  res.json({
+    ok: true,
+    message: "Commit and push completed successfully.",
+    output: lines.join("\n"),
+    commitHash: head.commitHash,
+    branch: head.branch,
+    filesCommitted: head.filesCommitted,
+    filesChanged,
+    githubUrl: getGitHubCommitWebUrl(head.commitHash)
+  });
+}
+
 function classifyGitPushError(output) {
   const text = String(output || "").toLowerCase();
   if (
@@ -1316,61 +1673,19 @@ function registerDevActionRoutes(app, ctx) {
     res.json({ ok: true, message: "Pull completed successfully.", output: pull.output || "Already up to date." });
   });
 
-  mountPost("/api/dev-action/commit-push", (req, res) => {
+  mountPost("/api/dev-action/commit-push", async (req, res) => {
     if (devActionForbidden(req, res)) return;
-    const message = String(req.body?.message || "").trim() || "Full project backup update";
-
-    const add = runGitCommandDetailed(["add", "-A"]);
-    if (!add.ok) {
-      res.json({ ok: false, error: add.stderr || add.stdout || "git add failed", output: add.output });
+    const step = String(req.body?.step || "full").toLowerCase();
+    if (step === "push") {
+      await handleCommitPushPushStep(req, res);
       return;
     }
+    handleCommitPushStep(req, res);
+  });
 
-    const status = runGitCommandDetailed(["status", "--short"]);
-    if (!status.ok) {
-      res.json({ ok: false, error: status.stderr || status.stdout || "git status failed", output: status.output });
-      return;
-    }
-    if (!status.stdout.trim()) {
-      res.json({
-        ok: true,
-        nothingToCommit: true,
-        message: "No local changes to commit.",
-        output: status.output || "(clean working tree)"
-      });
-      return;
-    }
-
-    const lines = [`$ git add -A`, status.stdout, `$ git commit -m "${message}"`];
-    const commit = runGitCommandDetailed(["commit", "-m", message]);
-    lines.push(commit.output || "(no commit output)");
-    if (!commit.ok) {
-      res.json({
-        ok: false,
-        error: commit.stderr || commit.stdout || "git commit failed",
-        output: lines.join("\n")
-      });
-      return;
-    }
-
-    lines.push("$ git push origin main");
-    const push = runGitCommandDetailed(["push", "origin", "main"], 300000);
-    lines.push(push.output || push.stderr || "(no push output)");
-    if (!push.ok) {
-      const hint = classifyGitPushError(push.output);
-      res.json({
-        ok: false,
-        error: hint || push.stderr || push.stdout || "git push failed",
-        output: lines.join("\n")
-      });
-      return;
-    }
-
-    res.json({
-      ok: true,
-      message: "Commit and push completed successfully.",
-      output: lines.join("\n")
-    });
+  mountPost("/api/dev-action/commit-push-stream", async (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    await handleCommitPushPushStream(req, res);
   });
 
   mountPost("/api/dev-action/restart", (req, res) => {

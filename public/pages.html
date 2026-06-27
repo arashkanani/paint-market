@@ -103,6 +103,8 @@
 
     .live-notice.hidden { display: none; }
 
+    .hidden { display: none !important; }
+
     @keyframes pmPulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.72; }
@@ -490,6 +492,11 @@
       margin-bottom: 0.85rem;
     }
 
+    .dev-action-buttons .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .dev-action-status {
       padding: 0.55rem 0.75rem;
       border-radius: 8px;
@@ -519,6 +526,148 @@
     .dev-action-console:empty::before {
       content: "Live output will appear here…";
       color: #666;
+    }
+
+    .pm-modal--wide {
+      width: min(640px, calc(100vw - 2rem));
+      max-width: none;
+    }
+
+    .commit-progress-stages {
+      list-style: none;
+      margin: 0 0 0.85rem;
+      padding: 0;
+    }
+
+    .commit-progress-stages li {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.35rem 0;
+      font-size: 0.82rem;
+      color: var(--gray-500);
+    }
+
+    .commit-progress-stages li.is-active {
+      color: var(--orange-dark);
+      font-weight: 700;
+    }
+
+    .commit-progress-stages li.is-done {
+      color: var(--done);
+    }
+
+    .commit-progress-stages li.is-error {
+      color: var(--todo);
+    }
+
+    .commit-stage-icon {
+      width: 1.1rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .commit-progress-bar-wrap {
+      margin-bottom: 0.75rem;
+    }
+
+    .commit-progress-bar-wrap label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      margin-bottom: 0.35rem;
+    }
+
+    .commit-progress-bar {
+      height: 0.55rem;
+      border-radius: 999px;
+      background: var(--gray-200);
+      overflow: hidden;
+    }
+
+    .commit-progress-bar__fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+      transition: width 0.35s ease;
+    }
+
+    .commit-progress-bar.is-indeterminate .commit-progress-bar__fill {
+      width: 35% !important;
+      animation: commitProgressSlide 1.2s ease-in-out infinite;
+    }
+
+    @keyframes commitProgressSlide {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(320%); }
+    }
+
+    .commit-progress-output {
+      margin: 0;
+      padding: 0.65rem 0.75rem;
+      background: #111;
+      color: #e8e8e8;
+      border-radius: 8px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.68rem;
+      line-height: 1.4;
+      max-height: 10rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .commit-progress-success {
+      margin-top: 0.85rem;
+      padding: 0.85rem;
+      border-radius: 10px;
+      background: var(--done-bg);
+      border: 1px solid rgba(22, 163, 74, 0.2);
+    }
+
+    .commit-progress-success h4 {
+      margin: 0 0 0.55rem;
+      color: var(--done);
+      font-size: 0.95rem;
+    }
+
+    .commit-progress-summary {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 0.75rem;
+      font-size: 0.82rem;
+      margin: 0;
+    }
+
+    .commit-progress-summary dt {
+      color: var(--gray-500);
+      font-weight: 600;
+    }
+
+    .commit-progress-summary dd {
+      margin: 0;
+      color: var(--black);
+      font-family: ui-monospace, monospace;
+    }
+
+    .commit-progress-error {
+      margin-top: 0.85rem;
+      padding: 0.75rem;
+      border-radius: 10px;
+      background: var(--todo-bg);
+      color: var(--todo);
+      font-size: 0.82rem;
+    }
+
+    .commit-progress-empty {
+      margin-top: 0.85rem;
+      padding: 0.85rem;
+      text-align: center;
+      color: var(--gray-700);
+      background: var(--gray-100);
+      border-radius: 10px;
     }
 
     .status-select {
@@ -716,6 +865,7 @@
       }
     }
   </style>
+<!-- pm-dashboard-build-test -->
 </head>
 <body>
 
@@ -895,6 +1045,41 @@
   </div>
 </dialog>
 
+<dialog id="commitProgressModal" class="pm-modal pm-modal--wide">
+  <div class="pm-modal__head">
+    <h3 id="commitProgressTitle">Commit &amp; Push All</h3>
+    <button type="button" class="btn btn--ghost" id="commitProgressCloseBtn" aria-label="Close" hidden>✕</button>
+  </div>
+  <div class="pm-modal__body">
+    <ul id="commitProgressStages" class="commit-progress-stages" aria-live="polite"></ul>
+    <div class="commit-progress-bar-wrap">
+      <label><span>Progress</span><span id="commitProgressPct">0%</span></label>
+      <div id="commitProgressBar" class="commit-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="commitProgressFill" class="commit-progress-bar__fill"></div>
+      </div>
+    </div>
+    <pre id="commitProgressOutput" class="commit-progress-output" aria-label="Git output"></pre>
+    <div id="commitProgressSuccess" class="commit-progress-success hidden">
+      <h4>✅ Push completed successfully</h4>
+      <dl class="commit-progress-summary">
+        <dt>Commit</dt><dd id="commitSummaryHash">—</dd>
+        <dt>Branch</dt><dd id="commitSummaryBranch">main</dd>
+        <dt>Files committed</dt><dd id="commitSummaryFiles">—</dd>
+        <dt>Files changed</dt><dd id="commitSummaryChanged">—</dd>
+        <dt>Duration</dt><dd id="commitSummaryDuration">—</dd>
+      </dl>
+    </div>
+    <div id="commitProgressError" class="commit-progress-error hidden"></div>
+    <div id="commitProgressEmpty" class="commit-progress-empty hidden">No local changes to commit.</div>
+  </div>
+  <div class="pm-modal__foot" id="commitProgressFoot">
+    <button type="button" class="btn btn--ghost hidden" id="commitProgressRetry">Retry</button>
+    <button type="button" class="btn btn--ghost hidden" id="commitProgressViewGitHub">View on GitHub</button>
+    <button type="button" class="btn btn--ghost hidden" id="commitProgressCopyHash">Copy Commit Hash</button>
+    <button type="button" class="btn btn--primary hidden" id="commitProgressDone">Close</button>
+  </div>
+</dialog>
+
 <script>
 (function () {
   const STORAGE_KEY = "paint-market-pm-dashboard-v1";
@@ -910,6 +1095,19 @@
 
   let projectRoot = "";
   let devActionRunning = false;
+  let commitPushPendingMessage = "";
+  let commitPushLastResult = null;
+  let commitPushAnimTimer = null;
+
+  const COMMIT_PUSH_STAGES = [
+    { id: "scan", label: "Scanning project files...", weight: 8, step: "scan" },
+    { id: "stage", label: "Staging all files with git add -A...", weight: 14, step: "stage" },
+    { id: "count", label: "Counting changes...", weight: 10, step: "count" },
+    { id: "commit", label: "Creating commit...", weight: 22, step: "commit" },
+    { id: "push", label: "Uploading to GitHub...", weight: 30, step: "push" },
+    { id: "verify", label: "Verifying push...", weight: 11, step: "verify" },
+    { id: "refresh", label: "Refreshing dashboard...", weight: 5, client: true }
+  ];
 
   const defaultRoadmap = [
     { id: "rm-1", title: "Customer marketplace launch", desc: "Hub, browse, search, shop showroom", status: "work", quarter: "Phase 1" },
@@ -1145,24 +1343,288 @@
     });
   }
 
-  async function runCommitPush(message) {
-    await withDevAction("Commit & Push All", async () => {
-      const data = await postDevAction("/commit-push", { message });
-      appendDevConsole(data.output || data.message || "(no output)");
-      if (data.nothingToCommit) {
-        setDevActionStatus(data.message || "No local changes to commit.", "success");
-        showLiveNotice(data.message, false);
-        return;
-      }
-      if (!data.ok) {
-        setDevActionStatus(data.error || "Commit & push failed", "error");
-        showLiveNotice(data.error || "Commit & push failed", true);
-        return;
-      }
-      setDevActionStatus(data.message || "Commit and push completed successfully.", "success");
-      showLiveNotice(data.message || "Pushed to origin/main", false);
-      await fetchDevStatus();
+  function formatDuration(ms) {
+    if (ms < 1000) return `${ms}ms`;
+    const s = (ms / 1000).toFixed(1);
+    return `${s}s`;
+  }
+
+  function getCommitProgressEls() {
+    return {
+      modal: document.getElementById("commitProgressModal"),
+      stages: document.getElementById("commitProgressStages"),
+      output: document.getElementById("commitProgressOutput"),
+      fill: document.getElementById("commitProgressFill"),
+      bar: document.getElementById("commitProgressBar"),
+      pct: document.getElementById("commitProgressPct"),
+      success: document.getElementById("commitProgressSuccess"),
+      error: document.getElementById("commitProgressError"),
+      empty: document.getElementById("commitProgressEmpty"),
+      retry: document.getElementById("commitProgressRetry"),
+      viewGh: document.getElementById("commitProgressViewGitHub"),
+      copyHash: document.getElementById("commitProgressCopyHash"),
+      done: document.getElementById("commitProgressDone"),
+      closeBtn: document.getElementById("commitProgressCloseBtn")
+    };
+  }
+
+  function resetCommitProgressModal() {
+    const el = getCommitProgressEls();
+    stopCommitProgressAnimation();
+    if (el.output) el.output.textContent = "";
+    if (el.success) el.success.classList.add("hidden");
+    if (el.error) {
+      el.error.classList.add("hidden");
+      el.error.textContent = "";
+    }
+    if (el.empty) el.empty.classList.add("hidden");
+    [el.retry, el.viewGh, el.copyHash, el.done, el.closeBtn].forEach((b) => {
+      if (b) b.classList.add("hidden");
     });
+    if (el.stages) {
+      el.stages.innerHTML = COMMIT_PUSH_STAGES.map(
+        (s) =>
+          `<li data-stage="${s.id}"><span class="commit-stage-icon">○</span><span>${escapeHtml(s.label)}</span></li>`
+      ).join("");
+    }
+    setCommitProgressPercent(0, false);
+  }
+
+  function setCommitStageState(stageId, state) {
+    const el = getCommitProgressEls();
+    const li = el.stages?.querySelector(`[data-stage="${stageId}"]`);
+    if (!li) return;
+    li.classList.remove("is-active", "is-done", "is-error");
+    const icon = li.querySelector(".commit-stage-icon");
+    if (state === "active") {
+      li.classList.add("is-active");
+      if (icon) icon.textContent = "◉";
+    } else if (state === "done") {
+      li.classList.add("is-done");
+      if (icon) icon.textContent = "✓";
+    } else if (state === "error") {
+      li.classList.add("is-error");
+      if (icon) icon.textContent = "✕";
+    } else if (icon) icon.textContent = "○";
+  }
+
+  function completedStageWeight(beforeStageId) {
+    let total = 0;
+    for (const s of COMMIT_PUSH_STAGES) {
+      if (s.id === beforeStageId) break;
+      total += s.weight;
+    }
+    return total;
+  }
+
+  function setCommitProgressPercent(pct, indeterminate) {
+    const el = getCommitProgressEls();
+    const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+    if (el.fill) el.fill.style.width = `${indeterminate ? 35 : clamped}%`;
+    if (el.pct) el.pct.textContent = indeterminate ? "…" : `${clamped}%`;
+    if (el.bar) {
+      el.bar.setAttribute("aria-valuenow", String(clamped));
+      el.bar.classList.toggle("is-indeterminate", Boolean(indeterminate));
+    }
+  }
+
+  function stopCommitProgressAnimation() {
+    if (commitPushAnimTimer) {
+      clearInterval(commitPushAnimTimer);
+      commitPushAnimTimer = null;
+    }
+  }
+
+  function startCommitProgressAnimation(fromPct) {
+    stopCommitProgressAnimation();
+    setCommitProgressPercent(fromPct + 1, true);
+  }
+
+  async function runCommitPushPushStream(onPushProgress) {
+    const res = await fetch(`${DEV_ACTION}/commit-push-stream`, {
+      method: "POST",
+      headers: { Accept: "application/x-ndjson", "Content-Type": "application/json" },
+      body: "{}"
+    });
+    if (!res.ok) throw new Error(`Push stream failed (HTTP ${res.status})`);
+    if (!res.body) throw new Error("Push stream unavailable");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalEvent = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const ev = JSON.parse(line);
+        if (ev.type === "output" && ev.text) appendCommitProgressOutput(ev.text);
+        if (ev.type === "progress" && ev.progress != null && onPushProgress) onPushProgress(ev.progress);
+        if (ev.type === "done") {
+          finalEvent = ev;
+          if (ev.output) appendCommitProgressOutput(ev.output);
+        }
+      }
+    }
+
+    if (!finalEvent) throw new Error("Push stream ended without result");
+    return finalEvent;
+  }
+
+  async function runCommitPushStep(stageDef, message, onPushProgress) {
+    if (stageDef.client) return { ok: true, step: "refresh" };
+    if (stageDef.step === "push") {
+      return runCommitPushPushStream(onPushProgress);
+    }
+    const body = { step: stageDef.step, message };
+    const data = await postDevAction("/commit-push", body);
+    if (data.output) appendCommitProgressOutput(data.output);
+    return data;
+  }
+
+  function appendCommitProgressOutput(text) {
+    const el = getCommitProgressEls();
+    if (!el.output || !text) return;
+    el.output.textContent += (el.output.textContent ? "\n" : "") + text;
+    el.output.scrollTop = el.output.scrollHeight;
+  }
+
+  function showCommitProgressFoot(mode, result) {
+    const el = getCommitProgressEls();
+    commitPushLastResult = result || null;
+    [el.retry, el.viewGh, el.copyHash, el.done, el.closeBtn].forEach((b) => {
+      if (b) b.classList.add("hidden");
+    });
+    if (mode === "success") {
+      if (el.viewGh && result?.githubUrl) el.viewGh.classList.remove("hidden");
+      if (el.copyHash && result?.commitHash) el.copyHash.classList.remove("hidden");
+      if (el.done) el.done.classList.remove("hidden");
+      if (el.closeBtn) el.closeBtn.classList.remove("hidden");
+    } else if (mode === "error") {
+      if (el.retry) el.retry.classList.remove("hidden");
+      if (el.done) el.done.classList.remove("hidden");
+    } else if (mode === "empty") {
+      if (el.done) el.done.classList.remove("hidden");
+      if (el.closeBtn) el.closeBtn.classList.remove("hidden");
+    }
+  }
+
+  function closeCommitProgressModal() {
+    const el = getCommitProgressEls();
+    stopCommitProgressAnimation();
+    if (el.modal?.open) el.modal.close();
+  }
+
+  async function runCommitPushWithProgress(message) {
+    if (devActionRunning) return;
+    commitPushPendingMessage = message || "Full project backup update";
+    devActionRunning = true;
+    setDevActionButtonsDisabled(true);
+
+    resetCommitProgressModal();
+    const el = getCommitProgressEls();
+    el.modal?.showModal();
+
+    const started = Date.now();
+    let filesChanged = 0;
+    let filesCommitted = 0;
+    let commitHash = "";
+    let branch = "main";
+    let githubUrl = null;
+    let pushBasePct = completedStageWeight("push");
+    let pushWeight = COMMIT_PUSH_STAGES.find((s) => s.id === "push")?.weight || 30;
+
+    const fail = (stageId, data) => {
+      stopCommitProgressAnimation();
+      setCommitStageState(stageId, "error");
+      setCommitProgressPercent(completedStageWeight(stageId), false);
+      if (el.error) {
+        el.error.classList.remove("hidden");
+        el.error.textContent = data.error || data.message || "Operation failed";
+      }
+      showCommitProgressFoot("error", data);
+      appendDevConsole(data.output || data.error || "Commit & push failed");
+      setDevActionStatus(data.error || "Commit & push failed", "error");
+    };
+
+    try {
+      for (const stageDef of COMMIT_PUSH_STAGES) {
+        setCommitStageState(stageDef.id, "active");
+        const base = completedStageWeight(stageDef.id);
+        const next = base + stageDef.weight;
+        setCommitProgressPercent(base + 2, true);
+        startCommitProgressAnimation(base);
+
+        if (stageDef.client) {
+          await fetchDevStatus();
+          updateCounters();
+          setCommitStageState(stageDef.id, "done");
+          setCommitProgressPercent(100, false);
+          continue;
+        }
+
+        const onPushProgress = (gitPct) => {
+          stopCommitProgressAnimation();
+          const mapped = pushBasePct + (pushWeight * gitPct) / 100;
+          setCommitProgressPercent(mapped, false);
+        };
+
+        const data = await runCommitPushStep(stageDef, commitPushPendingMessage, onPushProgress);
+
+        if (data.nothingToCommit) {
+          stopCommitProgressAnimation();
+          setCommitStageState(stageDef.id, "done");
+          if (el.empty) el.empty.classList.remove("hidden");
+          setCommitProgressPercent(100, false);
+          showCommitProgressFoot("empty", data);
+          appendDevConsole(data.message || "No local changes to commit.");
+          setDevActionStatus(data.message || "No local changes to commit.", "success");
+          return;
+        }
+
+        if (!data.ok) {
+          fail(stageDef.id, data);
+          return;
+        }
+
+        if (data.filesChanged != null) filesChanged = data.filesChanged;
+        if (data.filesCommitted != null) filesCommitted = data.filesCommitted;
+        if (data.commitHash) commitHash = data.commitHash;
+        if (data.branch) branch = data.branch;
+        if (data.githubUrl) githubUrl = data.githubUrl;
+
+        stopCommitProgressAnimation();
+        setCommitStageState(stageDef.id, "done");
+        setCommitProgressPercent(next, false);
+      }
+
+      const duration = Date.now() - started;
+      const result = { commitHash, branch, filesCommitted, filesChanged, githubUrl, duration };
+
+      if (el.success) {
+        el.success.classList.remove("hidden");
+        document.getElementById("commitSummaryHash").textContent = commitHash || "—";
+        document.getElementById("commitSummaryBranch").textContent = branch || "main";
+        document.getElementById("commitSummaryFiles").textContent = String(filesCommitted || 0);
+        document.getElementById("commitSummaryChanged").textContent = String(filesChanged || 0);
+        document.getElementById("commitSummaryDuration").textContent = formatDuration(duration);
+      }
+
+      showCommitProgressFoot("success", result);
+      appendDevConsole(`Push completed · ${commitHash} · ${formatDuration(duration)}`);
+      setDevActionStatus("Push completed successfully.", "success");
+      showLiveNotice("Push completed successfully", false);
+    } catch (e) {
+      fail("push", { error: e.message || String(e), output: "" });
+    } finally {
+      devActionRunning = false;
+      setDevActionButtonsDisabled(false);
+    }
   }
 
   async function runRestartServer() {
@@ -1911,11 +2373,36 @@
   document.getElementById("commitMessageConfirm").addEventListener("click", () => {
     const message = commitMessageInput.value.trim();
     commitMessageModal.close();
-    runCommitPush(message);
+    runCommitPushWithProgress(message);
   });
 
   document.getElementById("commitMessageCancel").addEventListener("click", () => commitMessageModal.close());
   document.getElementById("commitMessageClose").addEventListener("click", () => commitMessageModal.close());
+
+  document.getElementById("commitProgressDone").addEventListener("click", closeCommitProgressModal);
+  document.getElementById("commitProgressCloseBtn").addEventListener("click", closeCommitProgressModal);
+
+  document.getElementById("commitProgressRetry").addEventListener("click", () => {
+    const el = getCommitProgressEls();
+    if (el.error) el.error.classList.add("hidden");
+    runCommitPushWithProgress(commitPushPendingMessage);
+  });
+
+  document.getElementById("commitProgressViewGitHub").addEventListener("click", () => {
+    if (commitPushLastResult?.githubUrl) {
+      window.open(commitPushLastResult.githubUrl, "_blank", "noopener,noreferrer");
+    }
+  });
+
+  document.getElementById("commitProgressCopyHash").addEventListener("click", () => {
+    if (commitPushLastResult?.commitHash) {
+      copyText(commitPushLastResult.commitHash).then(() => showLiveNotice("Commit hash copied", false));
+    }
+  });
+
+  document.getElementById("commitProgressModal").addEventListener("cancel", (e) => {
+    if (devActionRunning) e.preventDefault();
+  });
 
   document.getElementById("btnRestartServer").addEventListener("click", () => runRestartServer());
 
