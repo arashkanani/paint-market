@@ -424,6 +424,21 @@ const PaintApi = {
   adminShops() {
     return this.request("/admin/shops");
   },
+  adminPatchShop(id, body) {
+    return this.request(`/admin/shops/${id}`, { method: "PATCH", body });
+  },
+  adminShopDetails(id) {
+    return this.request(`/admin/shops/${id}/details`);
+  },
+  adminDeleteShop(id) {
+    return this.request(`/admin/shops/${id}`, { method: "DELETE" });
+  },
+  adminBusinessApplications() {
+    return this.request("/admin/business-applications");
+  },
+  adminPatchBusinessApplication(id, body) {
+    return this.request(`/admin/business-applications/${id}`, { method: "PATCH", body });
+  },
   adminUploadProductImage(file) {
     const fd = new FormData();
     fd.append("photo", file);
@@ -679,7 +694,7 @@ async function paintMarketUpdateAccountNavForSession() {
   }
   const user = me?.user;
   if (!user) return;
-  const isShop = user.role === "shop";
+  const isShop = ["shop", "wholesaler", "raw_supplier"].includes(user.role);
   const isAdmin = user.role === "admin";
   const href = isAdmin ? "/paint/admin.html" : isShop ? "/paint/dashboard.html" : "/paint/account.html";
   const labelKey = isShop ? "index_nav_dashboard" : isAdmin ? "index_nav_admin" : "index_nav_user_dashboard";

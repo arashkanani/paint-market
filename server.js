@@ -612,6 +612,7 @@ function buildProductListedExists(capacityLtr) {
     return {
       sql: `EXISTS (
         SELECT 1 FROM shop_listings sl
+        JOIN shops s_active ON s_active.id = sl.shop_id AND COALESCE(s_active.active, 1) = 1
         WHERE sl.master_product_id = mp.id AND sl.available = 1
       )`,
       params: []
@@ -620,6 +621,7 @@ function buildProductListedExists(capacityLtr) {
   return {
     sql: `EXISTS (
       SELECT 1 FROM shop_listings sl
+      JOIN shops s_active ON s_active.id = sl.shop_id AND COALESCE(s_active.active, 1) = 1
       WHERE sl.master_product_id = mp.id AND sl.available = 1
         AND ABS(sl.capacity_ltr - ?) < 0.001
     )`,
@@ -823,6 +825,9 @@ async function requireAuth(db, req) {
 
 async function requireRole(db, req, role) {
   const u = await requireAuth(db, req);
+  if (role === "shop" && ["shop", "wholesaler", "raw_supplier"].includes(u.role)) {
+    return u;
+  }
   if (u.role !== role) {
     const err = new Error("Forbidden");
     err.status = 403;
@@ -1157,12 +1162,28 @@ async function main() {
       const passHash = await hashPassword(password);
       await dbm.run(db, "BEGIN");
       try {
+        const slugBase = dbm.slugify(companyName) || `shop-${Date.now()}`;
+        let slug = slugBase;
+        for (let n = 0; n < 50; n += 1) {
+          const trySlug = n === 0 ? slugBase : `${slugBase}-${n}`;
+          const clash = await dbm.get(db, "SELECT id FROM shops WHERE slug = ?", [trySlug]);
+          if (!clash) {
+            slug = trySlug;
+            break;
+          }
+        }
+        const rShop = await dbm.run(
+          db,
+          "INSERT INTO shops (name, slug, location_text, address, phone, active) VALUES (?, ?, ?, '', ?, 0)",
+          [companyName, slug, locationText, phone]
+        );
         const rUser = await dbm.run(db, "INSERT INTO users (email, password_hash, role, phone) VALUES (?, ?, ?, ?)", [
           email,
           passHash,
           accountType,
           phone
         ]);
+        await dbm.run(db, "UPDATE users SET shop_id = ? WHERE id = ?", [rShop.lastID, rUser.lastID]);
         await dbm.run(
           db,
           `INSERT INTO business_applications
@@ -1361,10 +1382,11 @@ async function main() {
       }
       const q = String(req.query.q || "").trim();
       let sql = `SELECT id, name, slug, location_text, address, photo_url, last_catalog_update, lat, lng
-                 FROM shops`;
+                 FROM shops
+                 WHERE COALESCE(active, 1) = 1`;
       const params = [];
       if (q) {
-        sql += ` WHERE name LIKE ? OR location_text LIKE ? OR address LIKE ?`;
+        sql += ` AND (name LIKE ? OR location_text LIKE ? OR address LIKE ?)`;
         const like = `%${q}%`;
         params.push(like, like, like);
       }
@@ -1409,6 +1431,7 @@ async function main() {
            FROM brands b
            JOIN master_products mp ON mp.brand_id = b.id AND mp.category_id = ?
            JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+           JOIN shops s ON s.id = sl.shop_id AND COALESCE(s.active, 1) = 1
            ORDER BY b.sort_order ASC, b.name ASC`,
           [categoryId]
         );
@@ -1439,7 +1462,7 @@ async function main() {
                  FROM shops s
                  JOIN shop_listings sl ON sl.shop_id = s.id AND sl.available = 1
                  JOIN master_products mp ON mp.id = sl.master_product_id
-                 WHERE 1=1`;
+                 WHERE COALESCE(s.active, 1) = 1`;
       const params = [];
       if (hasCategory) {
         sql += ` AND mp.category_id = ?`;
@@ -1743,6 +1766,7 @@ async function main() {
         `SELECT DISTINCT s.id, s.name, s.slug, s.location_text, s.address, s.photo_url, s.lat, s.lng
          FROM shops s
          WHERE s.lat IS NOT NULL AND s.lng IS NOT NULL
+           AND COALESCE(s.active, 1) = 1
            ${shopQSql}
            ${shopCapExists}
          ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC
@@ -1780,6 +1804,7 @@ async function main() {
          WHERE EXISTS (
            SELECT 1 FROM master_products mp
            JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+           JOIN shops s ON s.id = sl.shop_id AND COALESCE(s.active, 1) = 1
            WHERE mp.brand_id = b.id
          )
          ORDER BY b.sort_order ASC, b.name ASC
@@ -1793,6 +1818,7 @@ async function main() {
          WHERE EXISTS (
            SELECT 1 FROM master_products mp
            JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+           JOIN shops s ON s.id = sl.shop_id AND COALESCE(s.active, 1) = 1
            WHERE mp.category_id = c.id
          )
          ORDER BY c.sort_order ASC, c.name ASC
@@ -1846,6 +1872,7 @@ async function main() {
            AND EXISTS (
              SELECT 1 FROM master_products mp
              JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+             JOIN shops s ON s.id = sl.shop_id AND COALESCE(s.active, 1) = 1
              WHERE mp.brand_id = b.id
            )
          ORDER BY b.sort_order ASC, b.name ASC
@@ -1861,6 +1888,7 @@ async function main() {
            AND EXISTS (
              SELECT 1 FROM master_products mp
              JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
+             JOIN shops s ON s.id = sl.shop_id AND COALESCE(s.active, 1) = 1
              WHERE mp.category_id = c.id
            )
          ORDER BY c.sort_order ASC, c.name ASC
@@ -1873,7 +1901,7 @@ async function main() {
         db,
         `SELECT s.name AS text, 'shop' AS kind, s.slug AS slug, s.id AS id, 0 AS score
          FROM shops s
-         WHERE 1=1
+         WHERE COALESCE(s.active, 1) = 1
            ${shopQSql}
          ORDER BY datetime(COALESCE(s.last_catalog_update, s.created_at)) DESC
          LIMIT 12`,
@@ -1885,6 +1913,7 @@ async function main() {
                 'place' AS kind, s.slug AS slug, s.id AS id, 0 AS score
          FROM shops s
          WHERE COALESCE(NULLIF(TRIM(s.location_text), ''), NULLIF(TRIM(s.address), '')) IS NOT NULL
+           AND COALESCE(s.active, 1) = 1
            ${shopQSql}
          ORDER BY text ASC
          LIMIT 8`,
@@ -1948,6 +1977,7 @@ async function main() {
          JOIN brands b ON b.id = mp.brand_id
          JOIN catalog_categories c ON c.id = mp.category_id
          WHERE sl.available = 1
+           AND COALESCE(s.active, 1) = 1
            AND sl.price_amount IS NOT NULL
            AND s.lat IS NOT NULL AND s.lng IS NOT NULL
            ${productFilter}
@@ -2062,7 +2092,7 @@ async function main() {
         return;
       }
       const slug = String(req.params.slug || "");
-      const shop = await dbm.get(db, "SELECT * FROM shops WHERE slug = ?", [slug]);
+      const shop = await dbm.get(db, "SELECT * FROM shops WHERE slug = ? AND COALESCE(active, 1) = 1", [slug]);
       if (!shop) {
         res.status(404).json({ error: "Shop not found" });
         return;
@@ -3091,13 +3121,227 @@ async function main() {
       await requireRole(db, req, "admin");
       const shops = await dbm.all(
         db,
-        `SELECT s.id, s.name, s.slug, s.location_text, s.last_catalog_update,
+        `SELECT s.id, s.name, s.slug, s.location_text, s.address, s.phone, s.active, s.last_catalog_update,
                 (SELECT COUNT(*) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS listing_count,
                 (SELECT COUNT(DISTINCT sl.master_product_id) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS product_count
          FROM shops s
          ORDER BY s.name ASC`
       );
       res.json({ shops });
+    })
+  );
+
+  app.patch(
+    "/paint/api/admin/shops/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const body = req.body || {};
+      const patches = [];
+      const params = [];
+      if (body.name !== undefined) {
+        const name = String(body.name || "").trim();
+        if (!name) {
+          res.status(400).json({ error: "name required" });
+          return;
+        }
+        patches.push("name = ?");
+        params.push(name);
+      }
+      if (body.locationText !== undefined) {
+        patches.push("location_text = ?");
+        params.push(String(body.locationText || "").trim());
+      }
+      if (body.address !== undefined) {
+        patches.push("address = ?");
+        params.push(String(body.address || "").trim());
+      }
+      if (body.phone !== undefined) {
+        patches.push("phone = ?");
+        params.push(String(body.phone || "").trim());
+      }
+      if (body.active !== undefined) {
+        patches.push("active = ?");
+        params.push(body.active ? 1 : 0);
+      }
+      if (!patches.length) {
+        res.status(400).json({ error: "No fields" });
+        return;
+      }
+      params.push(id);
+      await dbm.run(db, `UPDATE shops SET ${patches.join(", ")} WHERE id = ?`, params);
+      const shop = await dbm.get(db, "SELECT id, name, slug, location_text, address, phone, active, last_catalog_update FROM shops WHERE id = ?", [id]);
+      if (!shop) {
+        res.status(404).json({ error: "Shop not found" });
+        return;
+      }
+      res.json({ shop });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/shops/:id/details",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const shop = await dbm.get(db, "SELECT * FROM shops WHERE id = ?", [id]);
+      if (!shop) {
+        res.status(404).json({ error: "Shop not found" });
+        return;
+      }
+      const users = await dbm.all(
+        db,
+        "SELECT id, email, role, phone, created_at FROM users WHERE shop_id = ? ORDER BY id ASC",
+        [id]
+      );
+      const applications = await dbm.all(
+        db,
+        `SELECT ba.*
+         FROM business_applications ba
+         JOIN users u ON u.id = ba.user_id
+         WHERE u.shop_id = ?
+         ORDER BY datetime(ba.created_at) DESC`,
+        [id]
+      );
+      const listings = await dbm.all(
+        db,
+        `SELECT sl.id, sl.available, sl.price_amount, sl.currency, sl.capacity_ltr, sl.ral_code, sl.updated_at,
+                mp.name AS product_name, b.name AS brand_name, c.name AS category_name
+         FROM shop_listings sl
+         JOIN master_products mp ON mp.id = sl.master_product_id
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         WHERE sl.shop_id = ?
+         ORDER BY sl.available DESC, b.sort_order ASC, c.sort_order ASC, mp.name ASC
+         LIMIT 100`,
+        [id]
+      );
+      const listingSummary = await dbm.get(
+        db,
+        `SELECT COUNT(*) AS total,
+                SUM(CASE WHEN available = 1 THEN 1 ELSE 0 END) AS active
+         FROM shop_listings
+         WHERE shop_id = ?`,
+        [id]
+      );
+      res.json({ shop, users, applications, listings, listingSummary });
+    })
+  );
+
+  app.delete(
+    "/paint/api/admin/shops/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const shop = await dbm.get(db, "SELECT id FROM shops WHERE id = ?", [id]);
+      if (!shop) {
+        res.status(404).json({ error: "Shop not found" });
+        return;
+      }
+      await dbm.run(db, "BEGIN");
+      try {
+        await dbm.run(db, "UPDATE users SET shop_id = NULL, role = 'customer' WHERE shop_id = ?", [id]);
+        await dbm.run(db, "DELETE FROM shop_custom_colors WHERE shop_id = ?", [id]);
+        await dbm.run(db, "UPDATE master_products SET created_by_shop_id = NULL WHERE created_by_shop_id = ?", [id]);
+        await dbm.run(db, "DELETE FROM shop_listings WHERE shop_id = ?", [id]);
+        await dbm.run(db, "DELETE FROM shops WHERE id = ?", [id]);
+        await dbm.run(db, "COMMIT");
+        res.json({ ok: true });
+      } catch (e) {
+        await dbm.run(db, "ROLLBACK").catch(() => {});
+        throw e;
+      }
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/business-applications",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const applications = await dbm.all(
+        db,
+        `SELECT ba.id, ba.user_id, ba.account_type, ba.company_name, ba.contact_name, ba.phone,
+                ba.location_text, ba.document_url, ba.terms_signature, ba.status, ba.created_at,
+                u.email, u.role, u.shop_id,
+                s.name AS shop_name, s.slug AS shop_slug, s.active AS shop_active
+         FROM business_applications ba
+         JOIN users u ON u.id = ba.user_id
+         LEFT JOIN shops s ON s.id = u.shop_id
+         ORDER BY CASE ba.status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
+                  datetime(ba.created_at) DESC`
+      );
+      res.json({ applications });
+    })
+  );
+
+  app.patch(
+    "/paint/api/admin/business-applications/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      const action = String(req.body?.action || "").trim();
+      const appRow = await dbm.get(
+        db,
+        `SELECT ba.*, u.email, u.shop_id
+         FROM business_applications ba
+         JOIN users u ON u.id = ba.user_id
+         WHERE ba.id = ?`,
+        [id]
+      );
+      if (!appRow) {
+        res.status(404).json({ error: "Application not found" });
+        return;
+      }
+      if (action === "reject") {
+        await dbm.run(db, "UPDATE business_applications SET status = 'rejected' WHERE id = ?", [id]);
+        res.json({ ok: true, status: "rejected" });
+        return;
+      }
+      if (action !== "approve") {
+        res.status(400).json({ error: "action must be approve or reject" });
+        return;
+      }
+
+      await dbm.run(db, "BEGIN");
+      try {
+        let shopId = appRow.shop_id;
+        if (!shopId) {
+          const slugBase = dbm.slugify(appRow.company_name || appRow.email || `shop-${id}`) || `shop-${id}`;
+          let slug = slugBase;
+          for (let n = 0; n < 50; n += 1) {
+            const trySlug = n === 0 ? slugBase : `${slugBase}-${n}`;
+            const clash = await dbm.get(db, "SELECT id FROM shops WHERE slug = ?", [trySlug]);
+            if (!clash) {
+              slug = trySlug;
+              break;
+            }
+          }
+          const ins = await dbm.run(
+            db,
+            `INSERT INTO shops (name, slug, location_text, address, phone, active)
+             VALUES (?, ?, ?, '', ?, 1)`,
+            [appRow.company_name, slug, appRow.location_text || "", appRow.phone || ""]
+          );
+          shopId = ins.lastID;
+        } else {
+          await dbm.run(
+            db,
+            "UPDATE shops SET name = ?, location_text = ?, phone = ?, active = 1 WHERE id = ?",
+            [appRow.company_name, appRow.location_text || "", appRow.phone || "", shopId]
+          );
+        }
+        await dbm.run(db, "UPDATE users SET role = ?, shop_id = ? WHERE id = ?", [
+          appRow.account_type,
+          shopId,
+          appRow.user_id
+        ]);
+        await dbm.run(db, "UPDATE business_applications SET status = 'approved' WHERE id = ?", [id]);
+        await dbm.run(db, "COMMIT");
+        res.json({ ok: true, status: "approved", shopId });
+      } catch (e) {
+        await dbm.run(db, "ROLLBACK").catch(() => {});
+        throw e;
+      }
     })
   );
 

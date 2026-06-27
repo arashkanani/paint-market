@@ -103,6 +103,18 @@
       <p id="shopListLuToggleStatus" class="text-sm font-medium text-teal-800"></p>
     </section>
 
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
+      <div class="flex flex-wrap gap-3 items-start justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase text-teal-800" data-pm-t="admin_applications_tag">Business approvals</p>
+          <p class="text-lg font-semibold" data-pm-t="admin_applications_h">Uploaded documents & shop information</p>
+          <p class="text-sm text-slate-600 max-w-3xl" data-pm-t="admin_applications_p">Review pending business registrations, open uploaded documents, and approve shops to make them live.</p>
+        </div>
+        <button id="adminApplicationsRefresh" type="button" class="text-xs px-3 py-1.5 rounded-lg border bg-white" data-pm-t="admin_cat_refresh">Refresh</button>
+      </div>
+      <div id="adminApplicationsList" class="border border-slate-100 rounded-xl divide-y"></div>
+    </section>
+
     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">
       <div>
         <p class="text-xs font-semibold uppercase text-teal-800" data-pm-t="admin_cat_tag">Reference catalogue</p>
@@ -148,6 +160,26 @@
             <span data-pm-t="admin_cat_filter_search">Search name</span>
             <input id="catAdminFilterQ" type="search" class="block w-full mt-1 rounded-lg border px-3 py-2 text-sm" />
           </label>
+        </div>
+        <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-4 space-y-3">
+          <div class="flex flex-wrap gap-3 items-start justify-between">
+            <div>
+              <p class="text-sm font-semibold" data-pm-t="admin_cat_grouped_h">Categorized paint lists</p>
+              <p class="text-xs text-slate-500" data-pm-t="admin_cat_grouped_p">Review uploaded paints by category, brand, and photo before shops use them.</p>
+            </div>
+            <button id="catAdminGroupedRefresh" type="button" class="text-xs px-3 py-1.5 rounded-lg border bg-white" data-pm-t="admin_cat_refresh">Refresh</button>
+          </div>
+          <div id="catAdminGroupedLists" class="grid md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+        </div>
+        <div id="catAdminBulkBar" class="flex flex-wrap gap-3 items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3">
+          <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <input id="catAdminSelectAllProducts" type="checkbox" class="accent-teal-700" />
+            <span data-pm-t="admin_cat_select_all">Select all visible</span>
+          </label>
+          <div class="flex flex-wrap gap-2 items-center">
+            <span id="catAdminSelectedCount" class="text-xs text-slate-500">0 selected</span>
+            <button id="catAdminDeleteSelectedBtn" type="button" class="text-xs px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 disabled:opacity-40" disabled data-pm-t="admin_cat_delete_selected">Delete selected</button>
+          </div>
         </div>
         <div id="catAdminProductTable" class="border border-slate-100 rounded-xl divide-y"></div>
         <div id="catAdminProductPager" class="flex flex-wrap gap-3 items-center justify-between"></div>
@@ -210,6 +242,14 @@
       <div id="adTable" class="border border-slate-100 rounded-xl divide-y"></div>
     </section>
   </main>
+
+  <dialog id="adminShopDetailsDialog" class="rounded-2xl border border-slate-200 bg-white p-0 w-[min(94vw,52rem)] max-h-[84vh] shadow-2xl backdrop:bg-slate-950/60">
+    <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+      <h2 id="adminShopDetailsTitle" class="text-lg font-bold text-slate-950">Shop details</h2>
+      <button id="adminShopDetailsClose" type="button" class="rounded-full bg-slate-100 px-3 py-1 text-xl leading-none" aria-label="Close">×</button>
+    </div>
+    <div id="adminShopDetailsBody" class="max-h-[calc(84vh-4rem)] overflow-auto p-5 text-sm"></div>
+  </dialog>
 
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>

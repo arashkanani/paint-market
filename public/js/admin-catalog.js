@@ -24,6 +24,11 @@
   const productFilterQ = document.getElementById("catAdminFilterQ");
   const productTable = document.getElementById("catAdminProductTable");
   const productPager = document.getElementById("catAdminProductPager");
+  const selectAllProductsEl = document.getElementById("catAdminSelectAllProducts");
+  const selectedCountEl = document.getElementById("catAdminSelectedCount");
+  const deleteSelectedBtn = document.getElementById("catAdminDeleteSelectedBtn");
+  const groupedListsEl = document.getElementById("catAdminGroupedLists");
+  const groupedRefreshBtn = document.getElementById("catAdminGroupedRefresh");
   const addProductBtn = document.getElementById("catAdminAddProductBtn");
   const productFormWrap = document.getElementById("catAdminProductForm");
   const categoryListEl = document.getElementById("catAdminCategoryList");
@@ -31,6 +36,11 @@
   const addBrandBtn = document.getElementById("catAdminAddBrandBtn");
   const brandManageList = document.getElementById("catAdminBrandManage");
   const shopsTable = document.getElementById("catAdminShopsTable");
+  const applicationsList = document.getElementById("adminApplicationsList");
+  const applicationsRefreshBtn = document.getElementById("adminApplicationsRefresh");
+  const shopDetailsDialog = document.getElementById("adminShopDetailsDialog");
+  const shopDetailsTitle = document.getElementById("adminShopDetailsTitle");
+  const shopDetailsBody = document.getElementById("adminShopDetailsBody");
 
   if (!statsEl) return;
 
@@ -40,6 +50,8 @@
   let productTotal = 0;
   const productLimit = 50;
   let editingProductId = null;
+  let visibleProductIds = [];
+  const selectedProductIds = new Set();
 
   function formatApiError(e) {
     let msg = (e && e.data && e.data.error) || (e && e.message) || String(e);
@@ -73,6 +85,24 @@
       opt.textContent = item.name || item.slug;
       el.appendChild(opt);
     }
+  }
+
+  function updateBulkSelectionUi() {
+    const selectedVisible = visibleProductIds.filter((id) => selectedProductIds.has(id));
+    if (selectedCountEl) {
+      selectedCountEl.textContent = `${selectedVisible.length} ${t("admin_cat_selected")}`;
+    }
+    if (deleteSelectedBtn) deleteSelectedBtn.disabled = selectedVisible.length === 0;
+    if (selectAllProductsEl) {
+      selectAllProductsEl.disabled = visibleProductIds.length === 0;
+      selectAllProductsEl.checked = visibleProductIds.length > 0 && selectedVisible.length === visibleProductIds.length;
+      selectAllProductsEl.indeterminate = selectedVisible.length > 0 && selectedVisible.length < visibleProductIds.length;
+    }
+  }
+
+  function clearProductSelection() {
+    selectedProductIds.clear();
+    updateBulkSelectionUi();
   }
 
   async function loadStats() {
@@ -111,6 +141,64 @@
     fillSelect(productFilterCategory, categories, t("admin_cat_filter_all"));
     renderCategories();
     renderBrandManage();
+  }
+
+  async function loadGroupedLists() {
+    if (!groupedListsEl) return;
+    groupedListsEl.innerHTML = `<p class="text-sm text-slate-500">…</p>`;
+    const data = await PaintApi.adminProducts({ page: 1, limit: 200, referenceOnly: true });
+    const products = data.products || [];
+    const byCategory = new Map(categories.map((cat) => [cat.id, { category: cat, products: [] }]));
+    for (const product of products) {
+      const catId = Number(product.categoryId);
+      if (!byCategory.has(catId)) {
+        byCategory.set(catId, {
+          category: { id: catId, name: product.categoryName || "—", slug: product.categorySlug || "" },
+          products: []
+        });
+      }
+      byCategory.get(catId).products.push(product);
+    }
+    const groups = [...byCategory.values()].sort((a, b) => String(a.category.name).localeCompare(String(b.category.name)));
+    if (!groups.length) {
+      groupedListsEl.innerHTML = `<p class="text-sm text-slate-500">${esc(t("admin_cat_no_products"))}</p>`;
+      return;
+    }
+    groupedListsEl.innerHTML = groups
+      .map(({ category, products: rows }) => {
+        const brandNames = [...new Set(rows.map((p) => p.brandName).filter(Boolean))].slice(0, 5);
+        const photos = rows
+          .filter((p) => p.defaultImageUrl)
+          .slice(0, 4)
+          .map((p) => `<img src="${esc(p.defaultImageUrl)}" alt="" class="w-10 h-10 rounded-lg object-cover border border-slate-200 bg-white" />`)
+          .join("");
+        return `
+          <article class="rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-semibold text-sm text-slate-900">${esc(category.name)}</p>
+                <p class="text-xs text-slate-500">${esc(rows.length)} ${esc(t("admin_cat_products_h"))}</p>
+              </div>
+              <button type="button" data-category-id="${esc(category.id)}" class="cat-group-filter text-xs px-2 py-1 rounded border bg-slate-50">${esc(t("admin_cat_view_category"))}</button>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-1.5">
+              ${
+                brandNames.length
+                  ? brandNames.map((name) => `<span class="rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-800">${esc(name)}</span>`).join("")
+                  : `<span class="text-xs text-slate-400">—</span>`
+              }
+            </div>
+            <div class="mt-3 flex gap-1.5">${photos || `<span class="text-xs text-slate-400">${esc(t("admin_cat_no_photos"))}</span>`}</div>
+          </article>`;
+      })
+      .join("");
+    groupedListsEl.querySelectorAll(".cat-group-filter").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (productFilterCategory) productFilterCategory.value = btn.getAttribute("data-category-id") || "";
+        productPage = 1;
+        loadProducts();
+      });
+    });
   }
 
   function renderCategories() {
@@ -262,6 +350,7 @@
       productFormWrap.hidden = true;
       editingProductId = null;
       await loadProducts();
+      await loadGroupedLists();
       await loadStats();
     };
   }
@@ -280,9 +369,12 @@
     });
     productTotal = data.total || 0;
     const products = data.products || [];
+    selectedProductIds.clear();
+    visibleProductIds = products.map((p) => Number(p.id)).filter((id) => Number.isFinite(id));
     productTable.innerHTML = "";
     if (!products.length) {
       productTable.innerHTML = `<p class="p-4 text-sm text-slate-500">${esc(t("admin_cat_no_products"))}</p>`;
+      updateBulkSelectionUi();
     } else {
       for (const p of products) {
         const row = document.createElement("div");
@@ -292,6 +384,7 @@
           : `<span class="w-10 h-10 rounded bg-slate-100 inline-block"></span>`;
         row.innerHTML = `
           <div class="flex gap-3 flex-1 min-w-[200px]">
+            <input type="checkbox" class="cat-product-select mt-3 accent-teal-700" data-id="${esc(p.id)}" aria-label="${esc(t("admin_cat_select_item"))}" />
             ${img}
             <div>
               <p class="font-semibold">${esc(p.name)}</p>
@@ -305,6 +398,15 @@
           </div>`;
         productTable.appendChild(row);
       }
+      productTable.querySelectorAll(".cat-product-select").forEach((box) =>
+        box.addEventListener("change", () => {
+          const id = Number(box.getAttribute("data-id"));
+          if (!Number.isFinite(id)) return;
+          if (box.checked) selectedProductIds.add(id);
+          else selectedProductIds.delete(id);
+          updateBulkSelectionUi();
+        })
+      );
       productTable.querySelectorAll(".cat-edit-prod").forEach((btn) =>
         btn.addEventListener("click", () => {
           const p = products.find((x) => x.id === Number(btn.dataset.id));
@@ -315,10 +417,13 @@
         btn.addEventListener("click", async () => {
           if (!confirm(t("admin_cat_delete_confirm"))) return;
           await PaintApi.adminDeleteProduct(Number(btn.dataset.id));
+          selectedProductIds.delete(Number(btn.dataset.id));
           await loadProducts();
+          await loadGroupedLists();
           await loadStats();
         })
       );
+      updateBulkSelectionUi();
     }
     const pages = Math.max(1, Math.ceil(productTotal / productLimit));
     productPager.innerHTML = `
@@ -341,6 +446,34 @@
     });
   }
 
+  selectAllProductsEl?.addEventListener("change", () => {
+    if (selectAllProductsEl.checked) visibleProductIds.forEach((id) => selectedProductIds.add(id));
+    else visibleProductIds.forEach((id) => selectedProductIds.delete(id));
+    productTable?.querySelectorAll(".cat-product-select").forEach((box) => {
+      box.checked = selectAllProductsEl.checked;
+    });
+    updateBulkSelectionUi();
+  });
+
+  deleteSelectedBtn?.addEventListener("click", async () => {
+    const ids = visibleProductIds.filter((id) => selectedProductIds.has(id));
+    if (!ids.length) return;
+    if (!confirm(t("admin_cat_delete_selected_confirm"))) return;
+    deleteSelectedBtn.disabled = true;
+    try {
+      for (const id of ids) {
+        await PaintApi.adminDeleteProduct(id);
+      }
+      clearProductSelection();
+      await loadProducts();
+      await loadGroupedLists();
+      await loadStats();
+    } catch (e) {
+      alert(formatApiError(e));
+      updateBulkSelectionUi();
+    }
+  });
+
   async function loadShops() {
     if (!shopsTable) return;
     const { shops } = await PaintApi.adminShops();
@@ -351,19 +484,210 @@
     }
     for (const s of shops) {
       const row = document.createElement("div");
-      row.className = "p-3 flex flex-wrap gap-2 justify-between text-sm border-b border-slate-50";
+      const isActive = s.active !== 0;
+      row.className = "p-3 flex flex-wrap gap-3 justify-between text-sm border-b border-slate-50";
       row.innerHTML = `
         <div>
-          <p class="font-semibold">${esc(s.name)}</p>
+          <div class="flex flex-wrap gap-2 items-center">
+            <p class="font-semibold">${esc(s.name)}</p>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-bold ${isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}">${esc(isActive ? t("admin_shop_active") : t("admin_shop_inactive"))}</span>
+          </div>
           <p class="text-xs text-slate-500">${esc(s.location_text || s.slug)}</p>
+          <p class="text-xs text-slate-400">${esc(s.phone || s.address || "")}</p>
         </div>
-        <div class="text-xs text-slate-600 text-right">
+        <div class="text-xs text-slate-600 text-right space-y-1">
           <p>${esc(t("admin_cat_shops_listings"))}: ${esc(s.listing_count ?? 0)}</p>
           <p>${esc(t("admin_cat_shops_products"))}: ${esc(s.product_count ?? 0)}</p>
           <p>${esc(t("admin_cat_shops_updated"))}: ${esc(s.last_catalog_update || "—")}</p>
+          <div class="flex flex-wrap gap-2 justify-end pt-1">
+            <button type="button" class="cat-view-shop text-xs px-2 py-1 rounded border bg-white" data-id="${esc(s.id)}">${esc(t("admin_shop_view_details"))}</button>
+            <button type="button" class="cat-edit-shop text-xs px-2 py-1 rounded border" data-id="${esc(s.id)}">${esc(t("admin_cat_edit"))}</button>
+            <button type="button" class="cat-toggle-shop text-xs px-2 py-1 rounded border ${isActive ? "border-amber-200 text-amber-700" : "border-emerald-200 text-emerald-700"}" data-id="${esc(s.id)}" data-active="${isActive ? "0" : "1"}">${esc(isActive ? t("admin_shop_deactivate") : t("admin_shop_activate"))}</button>
+            <button type="button" class="cat-delete-shop text-xs px-2 py-1 rounded border border-rose-200 text-rose-700" data-id="${esc(s.id)}">${esc(t("admin_cat_delete"))}</button>
+          </div>
         </div>`;
       shopsTable.appendChild(row);
     }
+    shopsTable.querySelectorAll(".cat-view-shop").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.getAttribute("data-id"));
+        await openShopDetails(id);
+      })
+    );
+    shopsTable.querySelectorAll(".cat-delete-shop").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.getAttribute("data-id"));
+        const shop = shops.find((s) => Number(s.id) === id);
+        if (!confirm(`${t("admin_shop_delete_confirm")}\n\n${shop?.name || ""}`)) return;
+        await PaintApi.adminDeleteShop(id);
+        await loadShops();
+        await loadStats();
+      })
+    );
+    shopsTable.querySelectorAll(".cat-toggle-shop").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.getAttribute("data-id"));
+        const active = btn.getAttribute("data-active") === "1";
+        await PaintApi.adminPatchShop(id, { active });
+        await loadShops();
+      })
+    );
+    shopsTable.querySelectorAll(".cat-edit-shop").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.getAttribute("data-id"));
+        const shop = shops.find((s) => Number(s.id) === id);
+        if (!shop) return;
+        const name = prompt(t("admin_shop_name"), shop.name || "");
+        if (name == null) return;
+        const locationText = prompt(t("admin_shop_location"), shop.location_text || "");
+        if (locationText == null) return;
+        const phone = prompt(t("admin_shop_phone"), shop.phone || "");
+        if (phone == null) return;
+        await PaintApi.adminPatchShop(id, {
+          name: name.trim(),
+          locationText: locationText.trim(),
+          phone: phone.trim()
+        });
+        await loadShops();
+      })
+    );
+  }
+
+  function detailRow(label, value) {
+    return `
+      <div class="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">${esc(label)}</p>
+        <p class="mt-1 break-words text-slate-900">${esc(value || "—")}</p>
+      </div>`;
+  }
+
+  async function openShopDetails(id) {
+    if (!shopDetailsDialog || !shopDetailsBody) return;
+    const data = await PaintApi.adminShopDetails(id);
+    const shop = data.shop || {};
+    const users = data.users || [];
+    const applications = data.applications || [];
+    const listings = data.listings || [];
+    const summary = data.listingSummary || {};
+    if (shopDetailsTitle) shopDetailsTitle.textContent = shop.name || t("admin_shop_view_details");
+    const appRows = applications.length
+      ? applications
+          .map(
+            (app) => `
+            <div class="rounded-lg border border-slate-100 p-3">
+              <div class="flex flex-wrap gap-2 items-center">
+                <span class="font-semibold">${esc(app.company_name)}</span>
+                <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">${esc(app.status)}</span>
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">${esc(app.account_type)}</span>
+              </div>
+              <p class="mt-1 text-xs text-slate-500">${esc(t("business_contact_name"))}: ${esc(app.contact_name || "—")}</p>
+              <p class="text-xs text-slate-500">${esc(t("business_terms_signature"))}: ${esc(app.terms_signature || "—")}</p>
+              <a class="mt-2 inline-flex text-xs font-semibold text-teal-700" href="${esc(app.document_url)}" target="_blank" rel="noopener">${esc(t("admin_application_open_doc"))}</a>
+            </div>`
+          )
+          .join("")
+      : `<p class="text-sm text-slate-500">—</p>`;
+    const userRows = users.length
+      ? users
+          .map((u) => `<p class="text-sm text-slate-700">${esc(u.email)} · ${esc(u.role)} · ${esc(u.phone || "—")}</p>`)
+          .join("")
+      : `<p class="text-sm text-slate-500">—</p>`;
+    const listingRows = listings.length
+      ? listings
+          .slice(0, 20)
+          .map(
+            (l) => `
+            <div class="flex flex-wrap gap-2 justify-between border-t border-slate-100 py-2">
+              <span>${esc(l.product_name)} · ${esc(l.brand_name)} · ${esc(l.category_name)}</span>
+              <span class="text-slate-500">${esc(l.capacity_ltr)}L · ${esc(l.price_amount ?? "—")} ${esc(l.currency || "")}</span>
+            </div>`
+          )
+          .join("")
+      : `<p class="text-sm text-slate-500">—</p>`;
+    shopDetailsBody.innerHTML = `
+      <div class="grid md:grid-cols-2 gap-3">
+        ${detailRow(t("admin_shop_name"), shop.name)}
+        ${detailRow("Slug", shop.slug)}
+        ${detailRow(t("admin_shop_active"), shop.active !== 0 ? t("admin_shop_active") : t("admin_shop_inactive"))}
+        ${detailRow(t("admin_shop_phone"), shop.phone)}
+        ${detailRow(t("admin_shop_location"), shop.location_text)}
+        ${detailRow("Address", shop.address)}
+        ${detailRow("Latitude", shop.lat)}
+        ${detailRow("Longitude", shop.lng)}
+        ${detailRow(t("admin_cat_shops_updated"), shop.last_catalog_update)}
+        ${detailRow(t("admin_cat_shops_listings"), `${summary.active || 0} active / ${summary.total || 0} total`)}
+      </div>
+      <section class="mt-5">
+        <h3 class="font-bold text-slate-900">${esc(t("admin_shop_users"))}</h3>
+        <div class="mt-2 rounded-xl border border-slate-100 p-3">${userRows}</div>
+      </section>
+      <section class="mt-5">
+        <h3 class="font-bold text-slate-900">${esc(t("admin_applications_h"))}</h3>
+        <div class="mt-2 grid gap-2">${appRows}</div>
+      </section>
+      <section class="mt-5">
+        <h3 class="font-bold text-slate-900">${esc(t("admin_shop_listings_preview"))}</h3>
+        <div class="mt-2 rounded-xl border border-slate-100 p-3">${listingRows}</div>
+      </section>`;
+    if (typeof shopDetailsDialog.showModal === "function") shopDetailsDialog.showModal();
+    else shopDetailsDialog.setAttribute("open", "");
+  }
+
+  async function loadApplications() {
+    if (!applicationsList) return;
+    const { applications } = await PaintApi.adminBusinessApplications();
+    applicationsList.innerHTML = "";
+    if (!applications?.length) {
+      applicationsList.innerHTML = `<p class="p-4 text-sm text-slate-500">—</p>`;
+      return;
+    }
+    for (const app of applications) {
+      const status = String(app.status || "pending");
+      const isPending = status === "pending";
+      const badgeClass =
+        status === "approved"
+          ? "bg-emerald-50 text-emerald-700"
+          : status === "rejected"
+            ? "bg-rose-50 text-rose-700"
+            : "bg-amber-50 text-amber-700";
+      const row = document.createElement("div");
+      row.className = "p-4 flex flex-wrap gap-4 items-start justify-between text-sm";
+      row.innerHTML = `
+        <div class="min-w-[220px] flex-1">
+          <div class="flex flex-wrap gap-2 items-center">
+            <p class="font-semibold text-slate-900">${esc(app.company_name)}</p>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-bold ${badgeClass}">${esc(t(`admin_application_status_${status}`))}</span>
+            <span class="rounded-full px-2 py-0.5 text-[11px] font-bold bg-slate-100 text-slate-600">${esc(app.account_type)}</span>
+          </div>
+          <p class="text-xs text-slate-500">${esc(app.email || "")}</p>
+          <p class="text-xs text-slate-500">${esc(t("business_contact_name"))}: ${esc(app.contact_name || "—")}</p>
+          <p class="text-xs text-slate-500">${esc(t("register_phone"))}: ${esc(app.phone || "—")}</p>
+          <p class="text-xs text-slate-500">${esc(t("register_city_label"))}: ${esc(app.location_text || "—")}</p>
+          <p class="text-xs text-slate-400">${esc(t("business_terms_signature"))}: ${esc(app.terms_signature || "—")}</p>
+          ${app.shop_name ? `<p class="mt-1 text-xs text-emerald-700">${esc(t("admin_application_live_shop"))}: ${esc(app.shop_name)} (${esc(app.shop_slug || "")})</p>` : ""}
+        </div>
+        <div class="flex flex-col gap-2 items-stretch min-w-[9rem]">
+          <a href="${esc(app.document_url)}" target="_blank" rel="noopener" class="text-center text-xs px-3 py-1.5 rounded-lg border bg-white text-teal-700 font-semibold">${esc(t("admin_application_open_doc"))}</a>
+          <button type="button" class="app-approve text-xs px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-40" data-id="${esc(app.id)}" ${isPending ? "" : "disabled"}>${esc(t("admin_application_approve"))}</button>
+          <button type="button" class="app-reject text-xs px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 disabled:opacity-40" data-id="${esc(app.id)}" ${isPending ? "" : "disabled"}>${esc(t("admin_application_reject"))}</button>
+        </div>`;
+      applicationsList.appendChild(row);
+    }
+    applicationsList.querySelectorAll(".app-approve").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        if (!confirm(t("admin_application_approve_confirm"))) return;
+        await PaintApi.adminPatchBusinessApplication(Number(btn.getAttribute("data-id")), { action: "approve" });
+        await loadApplications();
+        await loadShops();
+      })
+    );
+    applicationsList.querySelectorAll(".app-reject").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        if (!confirm(t("admin_application_reject_confirm"))) return;
+        await PaintApi.adminPatchBusinessApplication(Number(btn.getAttribute("data-id")), { action: "reject" });
+        await loadApplications();
+      })
+    );
   }
 
   if (importBtn) {
@@ -384,6 +708,7 @@
         importResultEl.textContent = `${t("admin_cat_import_result")}: +${result.created} new, ${result.updated} updated, ${result.skipped} skipped${result.brand ? ` (${result.brand.name})` : ""}${errLines ? `. Errors: ${errLines}` : ""}`;
         await loadMeta();
         await loadProducts();
+        await loadGroupedLists();
         await loadStats();
         if (typeof window.adminCatalogRefreshBrands === "function") window.adminCatalogRefreshBrands();
       } catch (e) {
@@ -403,6 +728,7 @@
       const slug = prompt("Slug (optional)", name.trim().toLowerCase().replace(/\s+/g, "_"));
       await PaintApi.adminCreateCategory({ name: name.trim(), slug: slug?.trim() || undefined });
       await loadMeta();
+      await loadGroupedLists();
     });
   }
   if (addBrandBtn) {
@@ -412,9 +738,16 @@
       const slug = prompt("Slug (optional)", name.trim().toLowerCase().replace(/\s+/g, "-"));
       await PaintApi.adminCreateBrand({ name: name.trim(), slug: slug?.trim() || undefined });
       await loadMeta();
+      await loadGroupedLists();
       if (typeof window.adminCatalogRefreshBrands === "function") window.adminCatalogRefreshBrands();
     });
   }
+  groupedRefreshBtn?.addEventListener("click", () => loadGroupedLists().catch((e) => alert(formatApiError(e))));
+  applicationsRefreshBtn?.addEventListener("click", () => loadApplications().catch((e) => alert(formatApiError(e))));
+  document.getElementById("adminShopDetailsClose")?.addEventListener("click", () => shopDetailsDialog?.close());
+  shopDetailsDialog?.addEventListener("click", (e) => {
+    if (e.target === shopDetailsDialog) shopDetailsDialog.close();
+  });
 
   const debouncedSearch = typeof debounce === "function" ? debounce(() => {
     productPage = 1;
@@ -437,8 +770,10 @@
     try {
       await loadStats();
       await loadMeta();
+      await loadGroupedLists();
       await loadProducts();
       await loadShops();
+      await loadApplications();
     } catch (e) {
       console.error(e);
       showApiWarn(true);
@@ -447,6 +782,7 @@
 
   document.addEventListener("paint-market-lang-change", () => {
     loadStats().catch(() => {});
+    loadGroupedLists().catch(() => {});
     loadProducts().catch(() => {});
   });
 })();

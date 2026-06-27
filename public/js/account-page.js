@@ -120,7 +120,7 @@
       if (user.role === "admin") {
         dashLink.href = "/paint/admin.html";
         dashLink.textContent = "Admin dashboard";
-      } else if (user.role === "shop") {
+      } else if (["shop", "wholesaler", "raw_supplier"].includes(user.role)) {
         dashLink.href = "/paint/dashboard.html";
         dashLink.textContent = t("account_dashboard");
       } else {

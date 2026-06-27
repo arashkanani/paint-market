@@ -855,8 +855,7 @@ Commercial Registration (CR) Number: [CR Number]</pre>
         sessionStorage.removeItem("paint_register_email");
         sessionStorage.removeItem("paint_register_password");
         sessionStorage.removeItem("paint_register_account_type");
-        form.classList.add("hidden");
-        successEl.classList.remove("hidden");
+        window.location.href = "/paint/dashboard.html";
       } catch (err) {
         showError(err.message || paintMarketT("register_err"));
       }

@@ -165,6 +165,7 @@ async function migrate(db) {
       phone TEXT NOT NULL DEFAULT '',
       photo_url TEXT,
       last_catalog_update TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`
   );
@@ -275,6 +276,9 @@ async function migrate(db) {
   }
   if (!shopCols.some((c) => c.name === "lng")) {
     await run(db, "ALTER TABLE shops ADD COLUMN lng REAL");
+  }
+  if (!shopCols.some((c) => c.name === "active")) {
+    await run(db, "ALTER TABLE shops ADD COLUMN active INTEGER NOT NULL DEFAULT 1");
   }
 
   const listingCols = await all(db, "PRAGMA table_info(shop_listings)");
