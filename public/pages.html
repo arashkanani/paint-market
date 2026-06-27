@@ -440,6 +440,87 @@
       justify-content: flex-end;
     }
 
+    .page-row__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.65rem;
+      grid-column: 1 / -1;
+    }
+
+    .page-row__dev-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .page-row__dev-actions .btn {
+      font-size: 0.72rem;
+      padding: 0.3rem 0.55rem;
+    }
+
+    .page-test-badges {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .test-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.2rem 0.45rem;
+      border-radius: 999px;
+      background: var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    .test-badge--ok { background: var(--done-bg); color: var(--done); }
+    .test-badge--bad { background: var(--todo-bg); color: var(--todo); }
+    .test-badge--na { background: var(--gray-100); color: var(--gray-500); }
+
+    .dev-actions-card h2 { margin-top: 0; }
+
+    .dev-action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .dev-action-status {
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .dev-action-status--running { background: var(--work-bg); color: var(--work); }
+    .dev-action-status--success { background: var(--done-bg); color: var(--done); }
+    .dev-action-status--error { background: var(--todo-bg); color: var(--todo); }
+
+    .dev-action-console {
+      margin: 0;
+      padding: 0.75rem;
+      background: #111;
+      color: #e8e8e8;
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      max-height: 16rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .dev-action-console:empty::before {
+      content: "Live output will appear here…";
+      color: #666;
+    }
+
     .status-select {
       padding: 0.35rem 0.5rem;
       font-size: 0.78rem;
@@ -689,6 +770,7 @@
     <button type="button" class="tab" data-panel="bugs" role="tab">Bugs</button>
     <button type="button" class="tab" data-panel="roadmap" role="tab">Roadmap</button>
     <button type="button" class="tab" data-panel="git" role="tab">Git Status</button>
+    <button type="button" class="tab" data-panel="dev-actions" role="tab">Developer Actions</button>
   </nav>
 
   <!-- Pages -->
@@ -766,6 +848,21 @@
       </div>
     </div>
   </section>
+
+  <!-- Developer Actions -->
+  <section id="panel-dev-actions" class="panel" role="tabpanel" hidden>
+    <div class="dev-actions-card card">
+      <h2>Developer Actions</h2>
+      <p class="git-hint" style="margin-top:0;">Local-only shortcuts for git, server restart, and deployment backup. Actions run on this machine only.</p>
+      <div class="dev-action-buttons">
+        <button type="button" class="btn btn--primary" id="btnPullLatest">Pull Latest</button>
+        <button type="button" class="btn btn--dark" id="btnCommitPush">Commit &amp; Push All</button>
+        <button type="button" class="btn btn--ghost" id="btnRestartServer">Restart Server</button>
+      </div>
+      <div id="devActionStatus" class="dev-action-status hidden" role="status" aria-live="polite"></div>
+      <pre id="devActionConsole" class="dev-action-console" aria-label="Action output"></pre>
+    </div>
+  </section>
 </div>
 
 <dialog id="notesModal" class="pm-modal">
@@ -782,17 +879,37 @@
   </div>
 </dialog>
 
+<dialog id="commitMessageModal" class="pm-modal">
+  <div class="pm-modal__head">
+    <h3>Commit &amp; Push All</h3>
+    <button type="button" class="btn btn--ghost" id="commitMessageClose" aria-label="Close">✕</button>
+  </div>
+  <div class="pm-modal__body">
+    <label for="commitMessageInput" style="display:block;font-size:0.82rem;margin-bottom:0.35rem;color:var(--gray-700);">Commit message</label>
+    <input type="text" id="commitMessageInput" placeholder="Full project backup update" style="width:100%;padding:0.55rem 0.65rem;border-radius:8px;border:1px solid var(--gray-200);" />
+    <p class="git-hint" style="margin:0.5rem 0 0;">Runs <code>git add -A</code>, commit, and <code>git push origin main</code> for all tracked changes.</p>
+  </div>
+  <div class="pm-modal__foot">
+    <button type="button" class="btn btn--ghost" id="commitMessageCancel">Cancel</button>
+    <button type="button" class="btn btn--primary" id="commitMessageConfirm">Commit &amp; Push</button>
+  </div>
+</dialog>
+
 <script>
 (function () {
   const STORAGE_KEY = "paint-market-pm-dashboard-v1";
-  const DEV_STATUS_PATHS = ["/paint/api/dev-status", "/api/dev-status"];
+  const DEV_STATUS_PATHS = ["/api/dev-status", "/paint/api/dev-status"];
+  const DEV_ACTION = "/api/dev-action";
   const POLL_MS = 5000;
+  const MOBILE_PREVIEW = "width=390,height=844,noopener,noreferrer";
 
-  /** Resolve dev-status URL against current origin (works under /paint/). */
+  /** Relative dev-status paths (same origin, any port). */
   function devStatusUrls() {
-    const origin = window.location.origin;
-    return DEV_STATUS_PATHS.map((p) => `${origin}${p}`);
+    return DEV_STATUS_PATHS.slice();
   }
+
+  let projectRoot = "";
+  let devActionRunning = false;
 
   const defaultRoadmap = [
     { id: "rm-1", title: "Customer marketplace launch", desc: "Hub, browse, search, shop showroom", status: "work", quarter: "Phase 1" },
@@ -930,6 +1047,217 @@
     showLiveNotice._t = setTimeout(() => liveNotice.classList.add("hidden"), 6000);
   }
 
+  function pageFullUrl(href) {
+    return `${window.location.origin}${pageHref(href)}`;
+  }
+
+  function setDevActionButtonsDisabled(disabled) {
+    ["btnPullLatest", "btnCommitPush", "btnRestartServer"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = disabled;
+    });
+  }
+
+  function appendDevConsole(text) {
+    const el = document.getElementById("devActionConsole");
+    if (!el) return;
+    const stamp = new Date().toLocaleTimeString();
+    el.textContent += (el.textContent ? "\n" : "") + `[${stamp}] ${text}`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearDevConsole() {
+    const el = document.getElementById("devActionConsole");
+    if (el) el.textContent = "";
+  }
+
+  function setDevActionStatus(message, state) {
+    const el = document.getElementById("devActionStatus");
+    if (!el) return;
+    el.textContent = message || "";
+    el.classList.remove("hidden", "dev-action-status--running", "dev-action-status--success", "dev-action-status--error");
+    if (!message) {
+      el.classList.add("hidden");
+      return;
+    }
+    el.classList.add(
+      state === "running" ? "dev-action-status--running" : state === "error" ? "dev-action-status--error" : "dev-action-status--success"
+    );
+  }
+
+  async function postDevAction(path, body) {
+    const res = await fetch(`${DEV_ACTION}${path}`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : "{}"
+    });
+    const ct = (res.headers.get("content-type") || "").toLowerCase();
+    if (!ct.includes("application/json")) {
+      throw new Error(`Unexpected response (${res.status})`);
+    }
+    return res.json();
+  }
+
+  async function withDevAction(label, fn) {
+    if (devActionRunning) return;
+    devActionRunning = true;
+    setDevActionButtonsDisabled(true);
+    clearDevConsole();
+    setDevActionStatus(`${label}…`, "running");
+    appendDevConsole(`Starting: ${label}`);
+    try {
+      await fn();
+    } finally {
+      devActionRunning = false;
+      setDevActionButtonsDisabled(false);
+    }
+  }
+
+  async function waitForServerOnline(maxMs) {
+    const deadline = Date.now() + (maxMs || 45000);
+    while (Date.now() < deadline) {
+      for (const url of devStatusUrls()) {
+        try {
+          const res = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.htmlPages)) return data;
+          }
+        } catch (_) { /* retry */ }
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    return null;
+  }
+
+  async function runPullLatest() {
+    await withDevAction("Pull Latest", async () => {
+      const data = await postDevAction("/pull");
+      appendDevConsole(data.output || data.message || "(no output)");
+      if (!data.ok) {
+        setDevActionStatus(data.error || "Pull failed", "error");
+        showLiveNotice(data.error || "Pull failed", true);
+        return;
+      }
+      setDevActionStatus(data.message || "Pull completed successfully.", "success");
+      showLiveNotice(data.message || "Pull completed", false);
+      await fetchDevStatus();
+    });
+  }
+
+  async function runCommitPush(message) {
+    await withDevAction("Commit & Push All", async () => {
+      const data = await postDevAction("/commit-push", { message });
+      appendDevConsole(data.output || data.message || "(no output)");
+      if (data.nothingToCommit) {
+        setDevActionStatus(data.message || "No local changes to commit.", "success");
+        showLiveNotice(data.message, false);
+        return;
+      }
+      if (!data.ok) {
+        setDevActionStatus(data.error || "Commit & push failed", "error");
+        showLiveNotice(data.error || "Commit & push failed", true);
+        return;
+      }
+      setDevActionStatus(data.message || "Commit and push completed successfully.", "success");
+      showLiveNotice(data.message || "Pushed to origin/main", false);
+      await fetchDevStatus();
+    });
+  }
+
+  async function runRestartServer() {
+    await withDevAction("Restart Server", async () => {
+      appendDevConsole("Sending restart request…");
+      let data;
+      try {
+        data = await postDevAction("/restart");
+      } catch (e) {
+        appendDevConsole("Connection dropped (expected during restart).");
+        data = { ok: true, message: "Server restarting..." };
+      }
+      if (data && data.output) appendDevConsole(data.output);
+      setDevActionStatus("Server restarting...", "running");
+      appendDevConsole("Waiting for server to come back online…");
+      const back = await waitForServerOnline(60000);
+      if (!back) {
+        setDevActionStatus("Server did not respond after restart. Check terminal.", "error");
+        showLiveNotice("Server offline after restart", true);
+        return;
+      }
+      applyDevStatus(back);
+      setDevActionStatus("Server online again.", "success");
+      appendDevConsole("Server online again.");
+      showLiveNotice("Server online again", false);
+    });
+  }
+
+  function renderTestBadges(container, badges) {
+    if (!container || !badges) return;
+    container.hidden = false;
+    container.className = "page-test-badges";
+    container.innerHTML = Object.values(badges)
+      .map((b) => {
+        const cls = b.ok === true ? "test-badge--ok" : b.ok === false ? "test-badge--bad" : "test-badge--na";
+        const suffix = b.note ? ` (${b.note})` : b.items?.length ? `: ${b.items.length}` : b.missing?.length ? `: ${b.missing.length} missing` : "";
+        return `<span class="test-badge ${cls}">${escapeHtml(b.label)}${escapeHtml(suffix)}</span>`;
+      })
+      .join("");
+  }
+
+  async function runPageTest(href, badgeEl) {
+    if (!badgeEl) return;
+    badgeEl.hidden = false;
+    badgeEl.className = "page-test-badges";
+    badgeEl.innerHTML = '<span class="test-badge test-badge--na">Testing…</span>';
+    try {
+      const data = await postDevAction("/page-test", { page: href });
+      if (!data.ok) {
+        badgeEl.innerHTML = `<span class="test-badge test-badge--bad">${escapeHtml(data.error || "Test failed")}</span>`;
+        return;
+      }
+      renderTestBadges(badgeEl, data.badges);
+    } catch (e) {
+      badgeEl.innerHTML = `<span class="test-badge test-badge--bad">${escapeHtml(e.message || "Test failed")}</span>`;
+    }
+  }
+
+  async function openPageEdit(href) {
+    const rel = `public/${href.replace(/^\.\//, "")}`;
+    try {
+      const data = await postDevAction("/page-test", { page: href });
+      const uri = data.cursorUri || data.vscodeUri;
+      const filePath = data.relativePath || rel;
+      if (uri) {
+        const a = document.createElement("a");
+        a.href = uri;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showLiveNotice("Opening in editor…", false);
+        return;
+      }
+      await copyText(`${projectRoot ? projectRoot + "/" : ""}${filePath}`);
+      showLiveNotice(`Copied path: ${filePath}`, false);
+    } catch (_) {
+      await copyText(`${projectRoot ? projectRoot + "/" : ""}${rel}`);
+      showLiveNotice(`Copied path: ${rel}`, false);
+    }
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+  }
+
   function updateProgressBar() {
     const total = liveHtmlPages.length;
     let done = 0;
@@ -978,7 +1306,7 @@
         gitEl.textContent = "Unknown";
         gitEl.className = "health-warn";
       }
-      set("healthPort", "3010");
+      set("healthPort", window.location.port || "3010");
     } else {
       if (runningEl) {
         runningEl.textContent = server.running ? "Yes" : "No";
@@ -1094,20 +1422,30 @@
         const row = document.createElement("div");
         row.className = "page-row";
         row.innerHTML = `
-          <div class="page-row__title">
-            ${escapeHtml(name)}
-            ${isNew ? '<span class="page-badge-new">New</span>' : ""}
-            <span style="display:block;font-size:0.72rem;font-weight:500;color:var(--gray-500);">${escapeHtml(href)}</span>
+          <div class="page-row__head">
+            <div class="page-row__title">
+              ${escapeHtml(name)}
+              ${isNew ? '<span class="page-badge-new">New</span>' : ""}
+              <span style="display:block;font-size:0.72rem;font-weight:500;color:var(--gray-500);">${escapeHtml(href)}</span>
+            </div>
+            <div class="page-row__actions">
+              <select class="status-select" data-page="${escapeAttr(href)}" aria-label="Status for ${escapeAttr(name)}">
+                <option value="done"${meta.status === "done" ? " selected" : ""}>Done</option>
+                <option value="work"${meta.status === "work" ? " selected" : ""}>Working</option>
+                <option value="todo"${meta.status === "todo" ? " selected" : ""}>Todo</option>
+              </select>
+              <button type="button" class="btn btn--ghost" data-notes-page="${escapeAttr(href)}" data-notes-label="${escapeAttr(name)}">Notes</button>
+              <a class="btn btn--primary" href="${escapeAttr(pageHref(href))}" target="_blank" rel="noopener noreferrer">Open</a>
+            </div>
           </div>
-          <div class="page-row__actions">
-            <select class="status-select" data-page="${escapeAttr(href)}" aria-label="Status for ${escapeAttr(name)}">
-              <option value="done"${meta.status === "done" ? " selected" : ""}>Done</option>
-              <option value="work"${meta.status === "work" ? " selected" : ""}>Working</option>
-              <option value="todo"${meta.status === "todo" ? " selected" : ""}>Todo</option>
-            </select>
-            <button type="button" class="btn btn--ghost" data-notes-page="${escapeAttr(href)}" data-notes-label="${escapeAttr(name)}">Notes</button>
-            <a class="btn btn--primary" href="${escapeAttr(pageHref(href))}" target="_blank" rel="noopener noreferrer">Open</a>
+          <div class="page-row__dev-actions">
+            <button type="button" class="btn btn--ghost" data-page-preview="${escapeAttr(href)}">Preview</button>
+            <button type="button" class="btn btn--ghost" data-page-edit="${escapeAttr(href)}">Edit</button>
+            <button type="button" class="btn btn--ghost" data-page-mobile="${escapeAttr(href)}">Mobile</button>
+            <button type="button" class="btn btn--ghost" data-page-test="${escapeAttr(href)}">Test</button>
+            <button type="button" class="btn btn--ghost" data-page-copy="${escapeAttr(href)}">Copy Link</button>
           </div>
+          <div class="page-test-badges" data-test-badges="${escapeAttr(href)}" hidden></div>
           <div class="page-row__meta">Updated: ${escapeHtml(formatDate(meta.updatedAt))}${meta.notes ? " · Has notes" : ""}</div>
         `;
         card.appendChild(row);
@@ -1191,6 +1529,7 @@
 
     lastApiError = "";
     setLiveApiStatus(true);
+    if (data.dev?.projectRoot) projectRoot = data.dev.projectRoot;
     const prevPages = new Set(liveHtmlPages);
     const nextPages = Array.isArray(data.htmlPages) ? data.htmlPages.slice().sort() : [];
     const fp = devStatusFingerprint(data);
@@ -1387,6 +1726,34 @@
   });
 
   pagesEl.addEventListener("click", (e) => {
+    const preview = e.target.closest("[data-page-preview]");
+    if (preview) {
+      window.open(pageFullUrl(preview.getAttribute("data-page-preview")), "_blank", "noopener,noreferrer");
+      return;
+    }
+    const mobile = e.target.closest("[data-page-mobile]");
+    if (mobile) {
+      window.open(pageFullUrl(mobile.getAttribute("data-page-mobile")), "_blank", MOBILE_PREVIEW);
+      return;
+    }
+    const edit = e.target.closest("[data-page-edit]");
+    if (edit) {
+      openPageEdit(edit.getAttribute("data-page-edit"));
+      return;
+    }
+    const testBtn = e.target.closest("[data-page-test]");
+    if (testBtn) {
+      const href = testBtn.getAttribute("data-page-test");
+      const badgeEl = testBtn.closest(".page-row")?.querySelector("[data-test-badges]");
+      runPageTest(href, badgeEl);
+      return;
+    }
+    const copyBtn = e.target.closest("[data-page-copy]");
+    if (copyBtn) {
+      const url = pageFullUrl(copyBtn.getAttribute("data-page-copy"));
+      copyText(url).then(() => showLiveNotice("Link copied to clipboard", false));
+      return;
+    }
     const btn = e.target.closest("[data-notes-page]");
     if (!btn) return;
     const href = btn.getAttribute("data-notes-page");
@@ -1529,6 +1896,28 @@
   document.getElementById("notesModalClose").addEventListener("click", closeNotes);
 
   document.getElementById("gitRefreshNow").addEventListener("click", () => fetchDevStatus());
+
+  const commitMessageModal = document.getElementById("commitMessageModal");
+  const commitMessageInput = document.getElementById("commitMessageInput");
+
+  document.getElementById("btnPullLatest").addEventListener("click", () => runPullLatest());
+
+  document.getElementById("btnCommitPush").addEventListener("click", () => {
+    if (devActionRunning) return;
+    commitMessageInput.value = "";
+    commitMessageModal.showModal();
+  });
+
+  document.getElementById("commitMessageConfirm").addEventListener("click", () => {
+    const message = commitMessageInput.value.trim();
+    commitMessageModal.close();
+    runCommitPush(message);
+  });
+
+  document.getElementById("commitMessageCancel").addEventListener("click", () => commitMessageModal.close());
+  document.getElementById("commitMessageClose").addEventListener("click", () => commitMessageModal.close());
+
+  document.getElementById("btnRestartServer").addEventListener("click", () => runRestartServer());
 
   /* Initial render + live polling (webhook-like: detects commits/pushes via git poll) */
   if (!state.roadmap || !state.roadmap.length) {

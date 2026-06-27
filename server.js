@@ -1,6 +1,6 @@
 const path = require("path");
 const fs = require("fs");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawn } = require("child_process");
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -1128,8 +1128,287 @@ function buildDevStatusPayload(publicDir, serverPort) {
       gitConnected: gitConnected && gitStatus !== "error",
       service: "paint-market"
     },
+    dev: process.env.NODE_ENV === "production" ? undefined : { projectRoot: ROOT.replace(/\\/g, "/") },
     error
   };
+}
+
+function isProductionEnv() {
+  return process.env.NODE_ENV === "production";
+}
+
+/** Allow dev-action APIs only from localhost in non-production. */
+function isDevLocalRequest(req) {
+  if (isProductionEnv()) return false;
+  const host = String(req.hostname || req.headers.host || "").split(":")[0].toLowerCase();
+  const ip = String(req.ip || req.socket?.remoteAddress || "").toLowerCase();
+  const local = new Set(["localhost", "127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+  return local.has(host) || local.has(ip);
+}
+
+function devActionForbidden(req, res) {
+  if (isProductionEnv()) {
+    res.status(403).json({ ok: false, error: "Dev actions are disabled in production." });
+    return true;
+  }
+  if (!isDevLocalRequest(req)) {
+    res.status(403).json({ ok: false, error: "Dev actions are only available on localhost." });
+    return true;
+  }
+  return false;
+}
+
+/** Run git with captured stdout/stderr (fixed argv only — no shell). */
+function runGitCommandDetailed(args, timeoutMs = 180000) {
+  const argv = Array.isArray(args) ? args : String(args).split(/\s+/);
+  try {
+    const stdout = execFileSync("git", argv, {
+      cwd: ROOT,
+      encoding: "utf8",
+      timeout: timeoutMs,
+      maxBuffer: 50 * 1024 * 1024
+    });
+    return { ok: true, stdout: String(stdout).trim(), stderr: "", code: 0, output: String(stdout).trim() };
+  } catch (e) {
+    const stdout = String(e.stdout || "").trim();
+    const stderr = String(e.stderr || "").trim();
+    const output = [stdout, stderr].filter(Boolean).join("\n");
+    return { ok: false, stdout, stderr, code: e.status ?? 1, output };
+  }
+}
+
+function classifyGitPushError(output) {
+  const text = String(output || "").toLowerCase();
+  if (
+    text.includes("authentication failed") ||
+    text.includes("could not read username") ||
+    text.includes("permission denied") ||
+    text.includes("invalid credentials") ||
+    text.includes("access denied") ||
+    (text.includes("fatal:") && text.includes("unable to access"))
+  ) {
+    return "GitHub authentication failed. Please login again or update credentials.";
+  }
+  if (
+    text.includes("exceeds github") ||
+    text.includes("large files detected") ||
+    text.includes("git-lfs") ||
+    text.includes("exceeds the limit") ||
+    text.includes("gh001") ||
+    text.includes("file size limit")
+  ) {
+    return "Git rejected a large file. Check file size or Git LFS requirement.";
+  }
+  return null;
+}
+
+function normalizePublicPagePath(pageRel) {
+  const normalized = String(pageRel || "")
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")
+    .replace(/^public\//, "");
+  if (!normalized || !normalized.endsWith(".html") || normalized.includes("..")) return null;
+  return normalized;
+}
+
+function resolvePublicAsset(publicDir, href) {
+  if (!href || /^https?:\/\//i.test(href) || href.startsWith("data:") || href.startsWith("#")) return null;
+  let ref = href.split("?")[0].split("#")[0];
+  if (ref.startsWith("/paint/")) ref = ref.slice("/paint/".length);
+  else if (ref.startsWith("/")) ref = ref.slice(1);
+  const abs = path.resolve(publicDir, ref);
+  const base = path.resolve(publicDir);
+  if (abs !== base && !abs.startsWith(base + path.sep)) return null;
+  return abs;
+}
+
+function extractAttrTags(html, tag, attr) {
+  const re = new RegExp(`<${tag}[^>]*\\s${attr}=["']([^"']+)["'][^>]*>`, "gi");
+  const reAlt = new RegExp(`<${tag}[^>]*\\s${attr}=([^\\s>]+)[^>]*>`, "gi");
+  const out = new Set();
+  let m;
+  while ((m = re.exec(html))) out.add(m[1]);
+  while ((m = reAlt.exec(html))) out.add(m[1].replace(/^["']|["']$/g, ""));
+  return [...out];
+}
+
+function extractStylesheetHrefs(html) {
+  const out = [];
+  const re = /<link\b[^>]*>/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const tag = m[0];
+    if (!/rel\s*=\s*["']?stylesheet["']?/i.test(tag)) continue;
+    const href = tag.match(/href\s*=\s*["']([^"']+)["']/i);
+    if (href) out.push(href[1]);
+  }
+  return out;
+}
+
+/** Quick static checks for a public HTML page. */
+function testPublicPage(publicDir, pageRel) {
+  const normalized = normalizePublicPagePath(pageRel);
+  if (!normalized) return { ok: false, error: "Invalid page path" };
+
+  const abs = path.join(publicDir, normalized);
+  if (!fs.existsSync(abs)) return { ok: false, error: "Page file not found" };
+
+  const html = fs.readFileSync(abs, "utf8");
+  const cssRefs = extractStylesheetHrefs(html);
+  const jsRefs = extractAttrTags(html, "script", "src");
+  const imgRefs = extractAttrTags(html, "img", "src");
+
+  const missingCss = cssRefs.filter((h) => {
+    const p = resolvePublicAsset(publicDir, h);
+    return p && !fs.existsSync(p);
+  });
+  const missingJs = jsRefs.filter((h) => {
+    const p = resolvePublicAsset(publicDir, h);
+    return p && !fs.existsSync(p);
+  });
+  const missingImages = imgRefs.filter((h) => {
+    const p = resolvePublicAsset(publicDir, h);
+    return p && !fs.existsSync(p);
+  });
+
+  const relFile = `public/${normalized}`.replace(/\\/g, "/");
+  const absFile = path.join(ROOT, "public", normalized);
+  const fileUriPath = absFile.replace(/\\/g, "/");
+
+  return {
+    ok: true,
+    page: normalized,
+    relativePath: relFile,
+    filePath: absFile,
+    cursorUri: `cursor://file/${fileUriPath}`,
+    vscodeUri: `vscode://file/${fileUriPath}`,
+    badges: {
+      htmlLoaded: { ok: true, label: "HTML loaded" },
+      cssLoaded: { ok: missingCss.length === 0, label: "CSS loaded", missing: missingCss },
+      jsLoaded: { ok: missingJs.length === 0, label: "JS loaded", missing: missingJs },
+      apiReachable: { ok: true, label: "API reachable" },
+      missingImages: { ok: missingImages.length === 0, label: "Missing images", items: missingImages },
+      consoleErrors: { ok: null, label: "Console errors", note: "Open page in browser DevTools to inspect" }
+    }
+  };
+}
+
+function registerDevActionRoutes(app, ctx) {
+  const { publicDir, getListeningPort } = ctx;
+
+  const mountPost = (route, handler) => {
+    app.post(route, handler);
+    app.post(`/paint${route}`, handler);
+  };
+
+  mountPost("/api/dev-action/pull", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const pull = runGitCommandDetailed(["pull", "origin", "main"], 180000);
+    if (!pull.ok) {
+      const hint = classifyGitPushError(pull.output);
+      res.json({
+        ok: false,
+        error: hint || pull.stderr || pull.stdout || "git pull failed",
+        output: pull.output
+      });
+      return;
+    }
+    res.json({ ok: true, message: "Pull completed successfully.", output: pull.output || "Already up to date." });
+  });
+
+  mountPost("/api/dev-action/commit-push", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const message = String(req.body?.message || "").trim() || "Full project backup update";
+
+    const add = runGitCommandDetailed(["add", "-A"]);
+    if (!add.ok) {
+      res.json({ ok: false, error: add.stderr || add.stdout || "git add failed", output: add.output });
+      return;
+    }
+
+    const status = runGitCommandDetailed(["status", "--short"]);
+    if (!status.ok) {
+      res.json({ ok: false, error: status.stderr || status.stdout || "git status failed", output: status.output });
+      return;
+    }
+    if (!status.stdout.trim()) {
+      res.json({
+        ok: true,
+        nothingToCommit: true,
+        message: "No local changes to commit.",
+        output: status.output || "(clean working tree)"
+      });
+      return;
+    }
+
+    const lines = [`$ git add -A`, status.stdout, `$ git commit -m "${message}"`];
+    const commit = runGitCommandDetailed(["commit", "-m", message]);
+    lines.push(commit.output || "(no commit output)");
+    if (!commit.ok) {
+      res.json({
+        ok: false,
+        error: commit.stderr || commit.stdout || "git commit failed",
+        output: lines.join("\n")
+      });
+      return;
+    }
+
+    lines.push("$ git push origin main");
+    const push = runGitCommandDetailed(["push", "origin", "main"], 300000);
+    lines.push(push.output || push.stderr || "(no push output)");
+    if (!push.ok) {
+      const hint = classifyGitPushError(push.output);
+      res.json({
+        ok: false,
+        error: hint || push.stderr || push.stdout || "git push failed",
+        output: lines.join("\n")
+      });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      message: "Commit and push completed successfully.",
+      output: lines.join("\n")
+    });
+  });
+
+  mountPost("/api/dev-action/restart", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const port = getListeningPort();
+    const script = path.join(ROOT, "scripts", "dev-restart-server.js");
+    if (!fs.existsSync(script)) {
+      res.status(500).json({ ok: false, error: "Restart script not found." });
+      return;
+    }
+
+    res.json({ ok: true, message: "Server restarting...", output: `Scheduling restart on port ${port}…` });
+
+    setImmediate(() => {
+      try {
+        const child = spawn(process.execPath, [script, `--port=${port}`, `--pid=${process.pid}`], {
+          cwd: ROOT,
+          detached: true,
+          stdio: "ignore",
+          env: process.env
+        });
+        child.unref();
+      } catch (e) {
+        console.error("Dev restart spawn failed:", e.message);
+      }
+    });
+  });
+
+  mountPost("/api/dev-action/page-test", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const page = req.body?.page;
+    const result = testPublicPage(publicDir, page);
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
 }
 
 /** Try preferred port, then preferred+1, +2, … until listen succeeds (no process killing). */
@@ -1208,6 +1487,11 @@ async function main() {
   };
   app.get("/paint/api/dev-status", devStatusHandler);
   app.get("/api/dev-status", devStatusHandler);
+
+  registerDevActionRoutes(app, {
+    publicDir: PUBLIC_DIR,
+    getListeningPort: () => listeningPort
+  });
 
   app.get("/paint/api/config", (_req, res) => {
     res.json({
