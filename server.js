@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs");
+const { execFileSync } = require("child_process");
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -962,6 +963,175 @@ function clearSessionCookie(res) {
   res.append("Set-Cookie", "paint_session=; Path=/paint; HttpOnly; SameSite=Lax; Max-Age=0");
 }
 
+/** Run a git command in the project root; returns trimmed stdout or null on failure. */
+function runGitCommand(args) {
+  const argv = Array.isArray(args) ? args : String(args).split(/\s+/);
+  try {
+    return execFileSync("git", argv, { cwd: ROOT, encoding: "utf8", timeout: 8000 }).trim();
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Recursively collect files under a directory matching an extension set. */
+function listFilesByExt(rootDir, exts, baseDir) {
+  const files = [];
+  const extSet = new Set(exts.map((e) => e.toLowerCase()));
+  function walk(dir, prefix) {
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const abs = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(abs, rel);
+      else {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (extSet.has(ext)) files.push(rel.replace(/\\/g, "/"));
+      }
+    }
+  }
+  walk(rootDir, "");
+  return files;
+}
+
+/** Recursively collect every .html file under public/ (relative paths). */
+function listPublicHtmlFiles(publicDir) {
+  return listFilesByExt(publicDir, [".html"], publicDir);
+}
+
+/** Classify a two-char git porcelain status code. */
+function classifyGitChangeCode(code) {
+  const c = String(code || "  ");
+  if (c.includes("U") || c === "AA" || c === "DD") return "conflict";
+  if (c === "??") return "untracked";
+  if (c[0] === "D" || c[1] === "D") return "deleted";
+  if (c[0] === "A" || c[1] === "A") return "added";
+  return "modified";
+}
+
+/** Parse `git status --porcelain` into typed file entries. */
+function parseGitChangedFilesDetailed(porcelain) {
+  if (!porcelain) return [];
+  return porcelain
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const code = line.slice(0, 2);
+      let file = line.length > 3 ? line.slice(3).trim() : line.trim();
+      if (file.includes(" -> ")) file = file.split(" -> ").pop().trim();
+      return { file, type: classifyGitChangeCode(code), code };
+    });
+}
+
+/** Last N commits for push history. */
+function getGitCommitHistory(limit = 10) {
+  const raw = runGitCommand(["log", `-${limit}`, "--format=%h\t%s\t%cI\t%an"]);
+  if (!raw) return [];
+  return raw
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [hash, message, date, author] = line.split("\t");
+      return {
+        hash: hash || "",
+        message: message || "",
+        date: date || "",
+        author: author || ""
+      };
+    });
+}
+
+/** Count project asset files under public/. */
+function countPublicAssets(publicDir) {
+  const imageExts = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".ico"];
+  return {
+    html: listFilesByExt(publicDir, [".html"], publicDir).length,
+    css: listFilesByExt(publicDir, [".css"], publicDir).length,
+    js: listFilesByExt(publicDir, [".js"], publicDir).length,
+    json: listFilesByExt(publicDir, [".json"], publicDir).length,
+    images: listFilesByExt(publicDir, imageExts, publicDir).length
+  };
+}
+
+/** Build live developer dashboard payload (git + HTML inventory). */
+function buildDevStatusPayload(publicDir, serverPort) {
+  const htmlPages = listPublicHtmlFiles(publicDir).sort();
+  const fileCounts = countPublicAssets(publicDir);
+  let branch = "";
+  let commitHash = "";
+  let commitMessage = "";
+  let commitDate = "";
+  let gitStatus = "unknown";
+  let changedFiles = [];
+  let changedFilesDetailed = [];
+  let commitHistory = [];
+  let gitConnected = false;
+  let error = null;
+
+  try {
+    branch = runGitCommand(["rev-parse", "--abbrev-ref", "HEAD"]) || "";
+    gitConnected = Boolean(runGitCommand(["rev-parse", "--git-dir"]));
+
+    const logLine = runGitCommand(["log", "-1", "--format=%h|%s|%cI"]);
+    if (logLine) {
+      const parts = logLine.split("|");
+      commitHash = parts[0] || "";
+      commitMessage = parts[1] || "";
+      commitDate = parts[2] || "";
+    } else {
+      commitHash = runGitCommand(["rev-parse", "--short", "HEAD"]) || "";
+    }
+
+    commitHistory = getGitCommitHistory(10);
+
+    const porcelain = runGitCommand(["status", "--porcelain"]);
+    if (porcelain === null) {
+      gitStatus = "error";
+      error = "git status unavailable";
+    } else if (porcelain === "") {
+      gitStatus = "clean";
+    } else {
+      changedFilesDetailed = parseGitChangedFilesDetailed(porcelain);
+      changedFiles = changedFilesDetailed.map((f) => f.file);
+      gitStatus = changedFilesDetailed.some((f) => f.type === "conflict") ? "conflict" : "dirty";
+    }
+  } catch (e) {
+    gitStatus = "error";
+    error = e.message || "git error";
+  }
+
+  const port = Number(serverPort) || 3010;
+
+  return {
+    ok: gitStatus !== "error",
+    branch,
+    commitHash,
+    commitMessage,
+    commitDate,
+    gitStatus,
+    changedFiles,
+    changedFilesDetailed,
+    commitHistory,
+    htmlPages,
+    totalHtmlPages: htmlPages.length,
+    fileCounts,
+    serverTime: new Date().toISOString(),
+    server: {
+      running: true,
+      port,
+      apiHealthy: true,
+      gitConnected: gitConnected && gitStatus !== "error",
+      service: "paint-market"
+    },
+    error
+  };
+}
+
 async function main() {
   const db = dbm.openDb();
   await dbm.migrate(db);
@@ -989,6 +1159,14 @@ async function main() {
   app.get("/paint/api/health", (_req, res) => {
     res.json({ ok: true, service: "paint-market", uiBuild: UI_BUILD });
   });
+
+  /** Live dev dashboard: git snapshot + HTML page inventory from /public */
+  const devStatusHandler = (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(buildDevStatusPayload(PUBLIC_DIR, PORT));
+  };
+  app.get("/paint/api/dev-status", devStatusHandler);
+  app.get("/api/dev-status", devStatusHandler);
 
   app.get("/paint/api/config", (_req, res) => {
     res.json({
