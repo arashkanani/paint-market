@@ -1009,6 +1009,7 @@ function classifyGitChangeCode(code) {
   const c = String(code || "  ");
   if (c.includes("U") || c === "AA" || c === "DD") return "conflict";
   if (c === "??") return "untracked";
+  if (c[0] === "R" || c[1] === "R") return "renamed";
   if (c[0] === "D" || c[1] === "D") return "deleted";
   if (c[0] === "A" || c[1] === "A") return "added";
   return "modified";
@@ -1238,6 +1239,59 @@ function countStatusLines(text) {
     .filter(Boolean).length;
 }
 
+function formatByteSize(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function estimateChangedFileBytes(relFile, type) {
+  if (type === "deleted") return 0;
+  const abs = path.resolve(ROOT, String(relFile || "").replace(/\\/g, "/"));
+  const root = path.resolve(ROOT);
+  if (abs !== root && !abs.startsWith(root + path.sep)) return 0;
+  try {
+    const st = fs.statSync(abs);
+    return st.isFile() ? st.size : 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function summarizeGitStatus(porcelain) {
+  const entries = parseGitChangedFilesDetailed(porcelain);
+  const summary = {
+    total: entries.length,
+    new: 0,
+    modified: 0,
+    deleted: 0,
+    renamed: 0,
+    untracked: 0,
+    estimatedSizeBytes: 0,
+    estimatedSizeLabel: "0 B"
+  };
+  for (const entry of entries) {
+    if (entry.type === "added") summary.new += 1;
+    else if (entry.type === "modified") summary.modified += 1;
+    else if (entry.type === "deleted") summary.deleted += 1;
+    else if (entry.type === "renamed") summary.renamed += 1;
+    else if (entry.type === "untracked") summary.untracked += 1;
+    summary.estimatedSizeBytes += estimateChangedFileBytes(entry.file, entry.type);
+  }
+  summary.estimatedSizeLabel = formatByteSize(summary.estimatedSizeBytes);
+  return summary;
+}
+
+function getRepoName() {
+  const remote = runGitCommandDetailed(["config", "--get", "remote.origin.url"]);
+  if (remote.ok && remote.stdout) {
+    const m = remote.stdout.trim().match(/[/:]([^/]+?)(?:\.git)?$/i);
+    if (m) return m[1];
+  }
+  return path.basename(ROOT);
+}
+
 function getGitHeadInfo() {
   const hash = runGitCommandDetailed(["rev-parse", "--short", "HEAD"]);
   const branch = runGitCommandDetailed(["rev-parse", "--abbrev-ref", "HEAD"]);
@@ -1262,6 +1316,36 @@ function handleCommitPushStep(req, res) {
   const step = String(req.body?.step || "full").toLowerCase();
   const message = String(req.body?.message || "").trim() || "Full project backup update";
   const lines = [];
+
+  if (step === "precheck") {
+    lines.push("$ git status --short");
+    const status = runGitCommandDetailed(["status", "--short"]);
+    lines.push(status.stdout || "(clean working tree)");
+    if (!status.ok) {
+      res.json({
+        ok: false,
+        step: "precheck",
+        output: lines.join("\n"),
+        error: status.stderr || status.stdout || "git status failed"
+      });
+      return;
+    }
+    const summary = summarizeGitStatus(status.stdout);
+    const head = getGitHeadInfo();
+    res.json({
+      ok: true,
+      step: "precheck",
+      nothingToCommit: summary.total === 0,
+      workingTreeClean: summary.total === 0,
+      summary,
+      commitHash: head.commitHash,
+      branch: head.branch,
+      repository: getRepoName(),
+      githubUrl: getGitHubCommitWebUrl(head.commitHash),
+      output: lines.join("\n")
+    });
+    return;
+  }
 
   if (step === "scan") {
     const status = runGitCommandDetailed(["status", "--short"]);
@@ -1347,6 +1431,7 @@ function handleCommitPushStep(req, res) {
       return;
     }
     const head = getGitHeadInfo();
+    const summary = summarizeGitStatus(pre.stdout);
     res.json({
       ok: true,
       step: "commit",
@@ -1354,6 +1439,8 @@ function handleCommitPushStep(req, res) {
       branch: head.branch,
       filesCommitted: head.filesCommitted,
       filesChanged: countStatusLines(pre.stdout),
+      summary,
+      repository: getRepoName(),
       output: lines.join("\n")
     });
     return;
@@ -1407,6 +1494,7 @@ async function handleCommitPushPushStep(req, res) {
       branch: head.branch,
       filesCommitted: head.filesCommitted,
       githubUrl: getGitHubCommitWebUrl(head.commitHash),
+      repository: getRepoName(),
       output: lines.join("\n"),
       pushProgress: push.lastProgress ?? 100
     });

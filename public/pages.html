@@ -545,7 +545,11 @@
       gap: 0.55rem;
       padding: 0.35rem 0;
       font-size: 0.82rem;
-      color: var(--gray-500);
+      color: var(--gray-400);
+    }
+
+    .commit-progress-stages li.is-pending {
+      color: var(--gray-400);
     }
 
     .commit-progress-stages li.is-active {
@@ -555,10 +559,49 @@
 
     .commit-progress-stages li.is-done {
       color: var(--done);
+      font-weight: 600;
     }
 
     .commit-progress-stages li.is-error {
       color: var(--todo);
+      font-weight: 700;
+    }
+
+    .commit-progress-bar.is-success .commit-progress-bar__fill {
+      background: linear-gradient(90deg, var(--done), #22c55e);
+    }
+
+    .commit-progress-bar.is-error .commit-progress-bar__fill {
+      background: var(--todo);
+    }
+
+    .commit-precheck-summary {
+      margin: 0 0 0.85rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 10px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+    }
+
+    .commit-precheck-summary h4 {
+      margin: 0 0 0.5rem;
+      font-size: 0.85rem;
+      color: var(--gray-700);
+    }
+
+    .commit-precheck-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+    }
+
+    .commit-precheck-grid span {
+      color: var(--gray-500);
+    }
+
+    .commit-precheck-grid b {
+      color: var(--black);
     }
 
     .commit-stage-icon {
@@ -1059,18 +1102,23 @@
       </div>
     </div>
     <pre id="commitProgressOutput" class="commit-progress-output" aria-label="Git output"></pre>
+    <div id="commitPrecheckSummary" class="commit-precheck-summary hidden">
+      <h4>Pre-commit summary</h4>
+      <div class="commit-precheck-grid">
+        <span>Total changed</span><b id="precheckTotal">0</b>
+        <span>New files</span><b id="precheckNew">0</b>
+        <span>Modified</span><b id="precheckModified">0</b>
+        <span>Deleted</span><b id="precheckDeleted">0</b>
+        <span>Renamed</span><b id="precheckRenamed">0</b>
+        <span>Untracked</span><b id="precheckUntracked">0</b>
+        <span>Est. upload size</span><b id="precheckSize">0 B</b>
+      </div>
+    </div>
     <div id="commitProgressSuccess" class="commit-progress-success hidden">
-      <h4>✅ Push completed successfully</h4>
-      <dl class="commit-progress-summary">
-        <dt>Commit</dt><dd id="commitSummaryHash">—</dd>
-        <dt>Branch</dt><dd id="commitSummaryBranch">main</dd>
-        <dt>Files committed</dt><dd id="commitSummaryFiles">—</dd>
-        <dt>Files changed</dt><dd id="commitSummaryChanged">—</dd>
-        <dt>Duration</dt><dd id="commitSummaryDuration">—</dd>
-      </dl>
+      <h4 id="commitSuccessTitle">✅ Push completed successfully</h4>
+      <dl id="commitSuccessSummary" class="commit-progress-summary"></dl>
     </div>
     <div id="commitProgressError" class="commit-progress-error hidden"></div>
-    <div id="commitProgressEmpty" class="commit-progress-empty hidden">No local changes to commit.</div>
   </div>
   <div class="pm-modal__foot" id="commitProgressFoot">
     <button type="button" class="btn btn--ghost hidden" id="commitProgressRetry">Retry</button>
@@ -1099,15 +1147,28 @@
   let commitPushLastResult = null;
   let commitPushAnimTimer = null;
 
-  const COMMIT_PUSH_STAGES = [
-    { id: "scan", label: "Scanning project files...", weight: 8, step: "scan" },
-    { id: "stage", label: "Staging all files with git add -A...", weight: 14, step: "stage" },
-    { id: "count", label: "Counting changes...", weight: 10, step: "count" },
-    { id: "commit", label: "Creating commit...", weight: 22, step: "commit" },
-    { id: "push", label: "Uploading to GitHub...", weight: 30, step: "push" },
-    { id: "verify", label: "Verifying push...", weight: 11, step: "verify" },
-    { id: "refresh", label: "Refreshing dashboard...", weight: 5, client: true }
+  const COMMIT_PUSH_STAGES_CLEAN = [
+    { id: "scan", label: "Scanning project files", weight: 20 },
+    { id: "precheck", label: "Checking changes", weight: 20 },
+    { id: "nochanges", label: "No changes detected", weight: 20 },
+    { id: "clean", label: "Working tree clean", weight: 20 },
+    { id: "finished", label: "Finished", weight: 20, client: true }
   ];
+
+  const COMMIT_PUSH_STAGES_CHANGE = [
+    { id: "scan", label: "Scanning project files", weight: 4, client: true },
+    { id: "precheck", label: "Checking changes", weight: 8, step: "precheck" },
+    { id: "review", label: "Reviewing change summary", weight: 4, client: true },
+    { id: "stage", label: "Staging all files with git add -A", weight: 12, step: "stage" },
+    { id: "count", label: "Counting changes", weight: 8, step: "count" },
+    { id: "commit", label: "Creating commit", weight: 18, step: "commit" },
+    { id: "push", label: "Uploading to GitHub", weight: 28, step: "push" },
+    { id: "verify", label: "Verifying push", weight: 10, step: "verify" },
+    { id: "refresh", label: "Refreshing dashboard", weight: 8, client: true }
+  ];
+
+  let commitPushActiveStages = COMMIT_PUSH_STAGES_CHANGE;
+  let commitPushChangeSummary = null;
 
   const defaultRoadmap = [
     { id: "rm-1", title: "Customer marketplace launch", desc: "Hub, browse, search, shop showroom", status: "work", quarter: "Phase 1" },
@@ -1382,9 +1443,11 @@
       fill: document.getElementById("commitProgressFill"),
       bar: document.getElementById("commitProgressBar"),
       pct: document.getElementById("commitProgressPct"),
+      precheck: document.getElementById("commitPrecheckSummary"),
       success: document.getElementById("commitProgressSuccess"),
+      successTitle: document.getElementById("commitSuccessTitle"),
+      successSummary: document.getElementById("commitSuccessSummary"),
       error: document.getElementById("commitProgressError"),
-      empty: document.getElementById("commitProgressEmpty"),
       retry: document.getElementById("commitProgressRetry"),
       viewGh: document.getElementById("commitProgressViewGitHub"),
       copyHash: document.getElementById("commitProgressCopyHash"),
@@ -1393,49 +1456,87 @@
     };
   }
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function renderStageList(stages) {
+    const el = getCommitProgressEls();
+    commitPushActiveStages = stages;
+    if (!el.stages) return;
+    el.stages.innerHTML = stages
+      .map(
+        (s) =>
+          `<li data-stage="${s.id}" class="is-pending"><span class="commit-stage-icon">○</span><span>${escapeHtml(s.label)}</span></li>`
+      )
+      .join("");
+  }
+
+  function renderSuccessSummary(rows) {
+    const dl = document.getElementById("commitSuccessSummary");
+    if (!dl) return;
+    dl.innerHTML = rows
+      .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(String(value ?? "—"))}</dd>`)
+      .join("");
+  }
+
+  function showPrecheckSummary(summary) {
+    const el = getCommitProgressEls();
+    if (!el.precheck || !summary) return;
+    el.precheck.classList.remove("hidden");
+    document.getElementById("precheckTotal").textContent = String(summary.total ?? 0);
+    document.getElementById("precheckNew").textContent = String(summary.new ?? 0);
+    document.getElementById("precheckModified").textContent = String(summary.modified ?? 0);
+    document.getElementById("precheckDeleted").textContent = String(summary.deleted ?? 0);
+    document.getElementById("precheckRenamed").textContent = String(summary.renamed ?? 0);
+    document.getElementById("precheckUntracked").textContent = String(summary.untracked ?? 0);
+    document.getElementById("precheckSize").textContent = summary.estimatedSizeLabel || "0 B";
+  }
+
   function resetCommitProgressModal() {
     const el = getCommitProgressEls();
     stopCommitProgressAnimation();
     if (el.output) el.output.textContent = "";
+    if (el.precheck) el.precheck.classList.add("hidden");
     if (el.success) el.success.classList.add("hidden");
     if (el.error) {
       el.error.classList.add("hidden");
       el.error.textContent = "";
     }
-    if (el.empty) el.empty.classList.add("hidden");
     [el.retry, el.viewGh, el.copyHash, el.done, el.closeBtn].forEach((b) => {
       if (b) b.classList.add("hidden");
     });
-    if (el.stages) {
-      el.stages.innerHTML = COMMIT_PUSH_STAGES.map(
-        (s) =>
-          `<li data-stage="${s.id}"><span class="commit-stage-icon">○</span><span>${escapeHtml(s.label)}</span></li>`
-      ).join("");
-    }
+    if (el.bar) el.bar.classList.remove("is-success", "is-error");
+    renderStageList(COMMIT_PUSH_STAGES_CHANGE);
     setCommitProgressPercent(0, false);
+    commitPushChangeSummary = null;
   }
 
   function setCommitStageState(stageId, state) {
     const el = getCommitProgressEls();
     const li = el.stages?.querySelector(`[data-stage="${stageId}"]`);
     if (!li) return;
-    li.classList.remove("is-active", "is-done", "is-error");
+    li.classList.remove("is-pending", "is-active", "is-done", "is-error");
     const icon = li.querySelector(".commit-stage-icon");
     if (state === "active") {
       li.classList.add("is-active");
       if (icon) icon.textContent = "◉";
     } else if (state === "done") {
       li.classList.add("is-done");
-      if (icon) icon.textContent = "✓";
+      if (icon) icon.textContent = "✔";
     } else if (state === "error") {
       li.classList.add("is-error");
       if (icon) icon.textContent = "✕";
-    } else if (icon) icon.textContent = "○";
+    } else {
+      li.classList.add("is-pending");
+      if (icon) icon.textContent = "○";
+    }
   }
 
-  function completedStageWeight(beforeStageId) {
+  function completedStageWeight(beforeStageId, stages) {
+    const list = stages || commitPushActiveStages;
     let total = 0;
-    for (const s of COMMIT_PUSH_STAGES) {
+    for (const s of list) {
       if (s.id === beforeStageId) break;
       total += s.weight;
     }
@@ -1513,7 +1614,7 @@
     [el.retry, el.viewGh, el.copyHash, el.done, el.closeBtn].forEach((b) => {
       if (b) b.classList.add("hidden");
     });
-    if (mode === "success") {
+    if (mode === "success" || mode === "uptodate") {
       if (el.viewGh && result?.githubUrl) el.viewGh.classList.remove("hidden");
       if (el.copyHash && result?.commitHash) el.copyHash.classList.remove("hidden");
       if (el.done) el.done.classList.remove("hidden");
@@ -1521,10 +1622,80 @@
     } else if (mode === "error") {
       if (el.retry) el.retry.classList.remove("hidden");
       if (el.done) el.done.classList.remove("hidden");
-    } else if (mode === "empty") {
-      if (el.done) el.done.classList.remove("hidden");
-      if (el.closeBtn) el.closeBtn.classList.remove("hidden");
     }
+  }
+
+  function showUpToDateSuccess(data) {
+    const el = getCommitProgressEls();
+    if (el.bar) {
+      el.bar.classList.add("is-success");
+      el.bar.classList.remove("is-error");
+    }
+    if (el.successTitle) {
+      el.successTitle.textContent = "✅ Repository is already up to date";
+    }
+    renderSuccessSummary([
+      ["", "Nothing to commit."],
+      ["", "Nothing to push."],
+      ["Latest commit", data.commitHash || "—"],
+      ["Branch", data.branch || "main"],
+      ["Working tree", "Clean"]
+    ]);
+    if (el.success) el.success.classList.remove("hidden");
+    showCommitProgressFoot("uptodate", data);
+    appendDevConsole("Repository up to date — nothing to commit or push.");
+    setDevActionStatus("Repository is already up to date.", "success");
+    showLiveNotice("Repository is already up to date", false);
+  }
+
+  function showBackupSuccess(result, summary) {
+    const el = getCommitProgressEls();
+    if (el.bar) {
+      el.bar.classList.add("is-success");
+      el.bar.classList.remove("is-error");
+    }
+    if (el.successTitle) el.successTitle.textContent = "✅ Backup completed";
+    renderSuccessSummary([
+      ["Commit", result.commitHash || "—"],
+      ["Branch", result.branch || "main"],
+      ["Files uploaded", result.filesCommitted ?? summary?.total ?? 0],
+      ["New", summary?.new ?? 0],
+      ["Modified", summary?.modified ?? 0],
+      ["Deleted", summary?.deleted ?? 0],
+      ["Duration", formatDuration(result.duration || 0)],
+      ["Repository", result.repository || "paint-market"]
+    ]);
+    if (el.success) el.success.classList.remove("hidden");
+    showCommitProgressFoot("success", result);
+    appendDevConsole(`Backup completed · ${result.commitHash} · ${formatDuration(result.duration || 0)}`);
+    setDevActionStatus("Backup completed successfully.", "success");
+    showLiveNotice("Backup completed successfully", false);
+  }
+
+  async function runCleanCommitPath(precheckData) {
+    const el = getCommitProgressEls();
+    renderStageList(COMMIT_PUSH_STAGES_CLEAN);
+    showPrecheckSummary(precheckData.summary || { total: 0 });
+
+    for (const stageDef of COMMIT_PUSH_STAGES_CLEAN) {
+      setCommitStageState(stageDef.id, "active");
+      const base = completedStageWeight(stageDef.id, COMMIT_PUSH_STAGES_CLEAN);
+      const next = base + stageDef.weight;
+      setCommitProgressPercent(base + 2, true);
+      startCommitProgressAnimation(base);
+      await sleep(stageDef.client ? 120 : 280);
+      if (stageDef.client) await fetchDevStatus();
+      stopCommitProgressAnimation();
+      setCommitStageState(stageDef.id, "done");
+      setCommitProgressPercent(next, false);
+    }
+
+    if (el.bar) {
+      el.bar.classList.add("is-success");
+      el.bar.classList.remove("is-error");
+    }
+    setCommitProgressPercent(100, false);
+    showUpToDateSuccess(precheckData);
   }
 
   function closeCommitProgressModal() {
@@ -1549,13 +1720,18 @@
     let commitHash = "";
     let branch = "main";
     let githubUrl = null;
-    let pushBasePct = completedStageWeight("push");
-    let pushWeight = COMMIT_PUSH_STAGES.find((s) => s.id === "push")?.weight || 30;
+    let repository = "paint-market";
+    let pushBasePct = 0;
+    let pushWeight = 28;
 
     const fail = (stageId, data) => {
       stopCommitProgressAnimation();
       setCommitStageState(stageId, "error");
       setCommitProgressPercent(completedStageWeight(stageId), false);
+      if (el.bar) {
+        el.bar.classList.add("is-error");
+        el.bar.classList.remove("is-success");
+      }
       const errText = formatPushError(data);
       if (el.error) {
         el.error.classList.remove("hidden");
@@ -1568,18 +1744,61 @@
     };
 
     try {
-      for (const stageDef of COMMIT_PUSH_STAGES) {
+      /* Pre-check: git status --short (before any commit/push) */
+      renderStageList([{ id: "precheck", label: "Checking changes", weight: 100, step: "precheck" }]);
+      setCommitStageState("precheck", "active");
+      setCommitProgressPercent(5, true);
+      startCommitProgressAnimation(0);
+
+      const precheck = await runCommitPushStep({ step: "precheck" }, commitPushPendingMessage);
+      if (!precheck.ok) {
+        fail("precheck", precheck);
+        return;
+      }
+
+      commitPushChangeSummary = precheck.summary || null;
+      showPrecheckSummary(precheck.summary);
+      if (precheck.output) appendCommitProgressOutput(precheck.output);
+      setCommitStageState("precheck", "done");
+      setCommitProgressPercent(12, false);
+
+      if (precheck.nothingToCommit || precheck.summary?.total === 0) {
+        await runCleanCommitPath(precheck);
+        return;
+      }
+
+      /* Has changes — continue full backup flow */
+      renderStageList(COMMIT_PUSH_STAGES_CHANGE);
+      setCommitStageState("scan", "done");
+      setCommitStageState("precheck", "done");
+      showPrecheckSummary(precheck.summary);
+
+      pushBasePct = completedStageWeight("push", COMMIT_PUSH_STAGES_CHANGE);
+      pushWeight = COMMIT_PUSH_STAGES_CHANGE.find((s) => s.id === "push")?.weight || 28;
+
+      for (const stageDef of COMMIT_PUSH_STAGES_CHANGE) {
+        if (stageDef.id === "scan" || stageDef.id === "precheck") continue;
+
         setCommitStageState(stageDef.id, "active");
-        const base = completedStageWeight(stageDef.id);
+        const base = completedStageWeight(stageDef.id, COMMIT_PUSH_STAGES_CHANGE);
         const next = base + stageDef.weight;
         setCommitProgressPercent(base + 2, true);
         startCommitProgressAnimation(base);
 
+        if (stageDef.id === "review") {
+          await sleep(450);
+          stopCommitProgressAnimation();
+          setCommitStageState(stageDef.id, "done");
+          setCommitProgressPercent(next, false);
+          continue;
+        }
+
         if (stageDef.client) {
           await fetchDevStatus();
           updateCounters();
+          stopCommitProgressAnimation();
           setCommitStageState(stageDef.id, "done");
-          setCommitProgressPercent(100, false);
+          setCommitProgressPercent(next, false);
           continue;
         }
 
@@ -1592,13 +1811,11 @@
         const data = await runCommitPushStep(stageDef, commitPushPendingMessage, onPushProgress);
 
         if (data.nothingToCommit) {
-          stopCommitProgressAnimation();
-          setCommitStageState(stageDef.id, "done");
-          if (el.empty) el.empty.classList.remove("hidden");
-          setCommitProgressPercent(100, false);
-          showCommitProgressFoot("empty", data);
-          appendDevConsole(data.message || "No local changes to commit.");
-          setDevActionStatus(data.message || "No local changes to commit.", "success");
+          await runCleanCommitPath({
+            ...precheck,
+            commitHash: data.commitHash || precheck.commitHash,
+            branch: data.branch || precheck.branch
+          });
           return;
         }
 
@@ -1607,11 +1824,13 @@
           return;
         }
 
+        if (data.summary) commitPushChangeSummary = data.summary;
         if (data.filesChanged != null) filesChanged = data.filesChanged;
         if (data.filesCommitted != null) filesCommitted = data.filesCommitted;
         if (data.commitHash) commitHash = data.commitHash;
         if (data.branch) branch = data.branch;
         if (data.githubUrl) githubUrl = data.githubUrl;
+        if (data.repository) repository = data.repository;
 
         stopCommitProgressAnimation();
         setCommitStageState(stageDef.id, "done");
@@ -1619,21 +1838,18 @@
       }
 
       const duration = Date.now() - started;
-      const result = { commitHash, branch, filesCommitted, filesChanged, githubUrl, duration };
+      const result = {
+        commitHash,
+        branch,
+        filesCommitted,
+        filesChanged,
+        githubUrl,
+        repository,
+        duration
+      };
 
-      if (el.success) {
-        el.success.classList.remove("hidden");
-        document.getElementById("commitSummaryHash").textContent = commitHash || "—";
-        document.getElementById("commitSummaryBranch").textContent = branch || "main";
-        document.getElementById("commitSummaryFiles").textContent = String(filesCommitted || 0);
-        document.getElementById("commitSummaryChanged").textContent = String(filesChanged || 0);
-        document.getElementById("commitSummaryDuration").textContent = formatDuration(duration);
-      }
-
-      showCommitProgressFoot("success", result);
-      appendDevConsole(`Push completed · ${commitHash} · ${formatDuration(duration)}`);
-      setDevActionStatus("Push completed successfully.", "success");
-      showLiveNotice("Push completed successfully", false);
+      setCommitProgressPercent(100, false);
+      showBackupSuccess(result, commitPushChangeSummary);
     } catch (e) {
       fail("push", {
         step: "push",
