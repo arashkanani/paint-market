@@ -13,17 +13,16 @@
   let selectedHref = null;
 
   function getTreeNodes(navigationTree) {
-    if (Array.isArray(navigationTree)) return navigationTree;
-    return navigationTree?.tree || [];
+    return Core().getNavGroups(navigationTree);
   }
 
   function normalizeNavigationTree(navigationTree) {
     if (Array.isArray(navigationTree)) {
-      return { fallbackGroup: "Uncategorized Pages", tree: navigationTree };
+      return { fallbackGroup: Core().normalizeFallbackGroup(null), groups: navigationTree };
     }
     return {
-      fallbackGroup: navigationTree?.fallbackGroup || "Uncategorized Pages",
-      tree: navigationTree?.tree || []
+      fallbackGroup: Core().normalizeFallbackGroup(navigationTree?.fallbackGroup),
+      groups: Core().getNavGroups(navigationTree)
     };
   }
 
@@ -68,7 +67,7 @@
   }
 
   function expandAll(tree) {
-    for (const id of Core().collectExpandableIds(tree.tree || tree)) expanded.add(id);
+    for (const id of Core().collectExpandableIds(Core().getNavGroups(tree))) expanded.add(id);
     saveExpanded();
   }
 
@@ -86,9 +85,10 @@
 
   function renderTreeNode(node, depth, pathNodes, filterActive) {
     const hasChildren = node.children && node.children.length;
-    const isPage = Boolean(node.href);
+    const pageFile = Core().nodePageFile(node);
+    const isPage = Boolean(pageFile);
     const onPath = pathNodes.some((p) => p.id === node.id);
-    const isSelected = node.href && node.href === selectedHref;
+    const isSelected = pageFile && pageFile === selectedHref;
     const open = hasChildren && (isExpanded(node.id) || filterActive);
 
     let html = `<li class="nav-tree__item${onPath ? " is-on-path" : ""}${isSelected ? " is-selected" : ""}" data-depth="${depth}">`;
@@ -101,7 +101,7 @@
     }
 
     if (isPage) {
-      html += `<button type="button" class="nav-tree__label nav-tree__label--page" data-nav-select="${escapeAttr(node.href)}">${escapeHtml(node.label)}</button>`;
+      html += `<button type="button" class="nav-tree__label nav-tree__label--page" data-nav-select="${escapeAttr(pageFile)}">${escapeHtml(node.label)}</button>`;
     } else {
       html += `<span class="nav-tree__label nav-tree__label--folder">${escapeHtml(node.label)}</span>`;
     }
@@ -202,15 +202,15 @@
     const filterActive = Boolean(q || statusFilter !== "all");
     const annotated = {
       ...navigationTree,
-      tree: Core().annotateWithStatus(navigationTree.tree || [], (h) => api.getPageMeta(h, "todo"))
+      groups: Core().annotateWithStatus(navigationTree.groups || [], (h) => api.getPageMeta(h, "todo"))
     };
-    const filtered = Core().filterTree(annotated.tree || [], q, statusFilter, (h) => api.getPageMeta(h, "todo"));
+    const filtered = Core().filterTree(annotated.groups || [], q, statusFilter, (h) => api.getPageMeta(h, "todo"));
 
     if (filterActive) {
       for (const id of Core().collectExpandableIds(filtered)) expanded.add(id);
     }
 
-    const path = selectedHref ? Core().findPathToHref(annotated.tree, selectedHref) || [] : [];
+    const path = selectedHref ? Core().findPathToHref(annotated.groups, selectedHref) || [] : [];
 
     if (!filtered.length) {
       els.treeRoot.innerHTML = '<p class="empty">No pages match your search.</p>';
@@ -218,7 +218,7 @@
       els.treeRoot.innerHTML = `<ul class="nav-tree">${filtered.map((n) => renderTreeNode(n, 0, path, filterActive)).join("")}</ul>`;
     }
 
-    if (selectedHref && !Core().findNodeByHref(annotated.tree, selectedHref)) {
+    if (selectedHref && !Core().findNodeByHref(annotated.groups, selectedHref)) {
       selectedHref = null;
     }
     renderDetailPanel(selectedHref);

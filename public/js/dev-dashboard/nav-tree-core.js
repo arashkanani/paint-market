@@ -4,6 +4,87 @@
 (function (global) {
   "use strict";
 
+  function nodePageFile(node) {
+    if (!node || typeof node !== "object") return null;
+    const raw = node.href || node.file;
+    if (!raw || typeof raw !== "string") return null;
+    return raw.replace(/\\/g, "/").replace(/^\.\//, "");
+  }
+
+  function getNavGroups(navTree) {
+    if (Array.isArray(navTree)) return navTree;
+    if (!navTree || typeof navTree !== "object") return [];
+    if (Array.isArray(navTree.groups)) return navTree.groups;
+    if (Array.isArray(navTree.tree)) return navTree.tree;
+    return [];
+  }
+
+  function normalizeFallbackGroup(fallbackGroup) {
+    if (fallbackGroup && typeof fallbackGroup === "object") {
+      return {
+        id: fallbackGroup.id || "fallback-uncategorized",
+        label: fallbackGroup.label || "Uncategorized Pages"
+      };
+    }
+    const label = typeof fallbackGroup === "string" ? fallbackGroup : "Uncategorized Pages";
+    return { id: "fallback-uncategorized", label };
+  }
+
+  function collectMappedFiles(nodes, out) {
+    out = out || new Set();
+    for (const n of nodes || []) {
+      const file = nodePageFile(n);
+      if (file) out.add(file);
+      if (n.children && n.children.length) collectMappedFiles(n.children, out);
+    }
+    return out;
+  }
+
+  function normalizeNavigationTree(raw, htmlFiles, pageDisplayName) {
+    const fallbackGroup = normalizeFallbackGroup(raw?.fallbackGroup);
+    let groups = getNavGroups(raw).map((n) => ({ ...n }));
+
+    if (!groups.length && Array.isArray(htmlFiles) && htmlFiles.length) {
+      groups = [{
+        id: fallbackGroup.id,
+        label: fallbackGroup.label,
+        children: htmlFiles.map((file) => ({
+          id: `page-${file.replace(/[^\w]+/g, "-")}`,
+          label: pageDisplayName ? pageDisplayName(file) : file,
+          href: file,
+          file,
+          children: []
+        }))
+      }];
+    }
+
+    const mapped = collectMappedFiles(groups);
+    const unmapped = (htmlFiles || []).filter((f) => !mapped.has(f)).sort();
+
+    if (unmapped.length) {
+      let fallbackNode = groups.find((n) => n.id === fallbackGroup.id);
+      if (!fallbackNode) {
+        fallbackNode = { id: fallbackGroup.id, label: fallbackGroup.label, children: [] };
+        groups.push(fallbackNode);
+      }
+      fallbackNode.children = fallbackNode.children || [];
+      const existing = collectMappedFiles(fallbackNode.children);
+      for (const file of unmapped) {
+        if (!existing.has(file)) {
+          fallbackNode.children.push({
+            id: `page-${file.replace(/[^\w]+/g, "-")}`,
+            label: pageDisplayName ? pageDisplayName(file) : file,
+            href: file,
+            file,
+            children: []
+          });
+        }
+      }
+    }
+
+    return { groups, fallbackGroup };
+  }
+
   function walkNodes(nodes, fn, path) {
     path = path || [];
     if (!Array.isArray(nodes)) return;
@@ -17,7 +98,7 @@
   function findPathToHref(tree, href) {
     let found = null;
     walkNodes(tree, (node, path) => {
-      if (node.href === href) found = path;
+      if (nodePageFile(node) === href) found = path;
     });
     return found;
   }
@@ -25,7 +106,7 @@
   function findNodeByHref(tree, href) {
     let found = null;
     walkNodes(tree, (node) => {
-      if (node.href === href) found = node;
+      if (nodePageFile(node) === href) found = node;
     });
     return found;
   }
@@ -43,10 +124,11 @@
 
   function nodeMatchesSearch(node, q, getPageMeta) {
     if (!q) return true;
-    const hay = [node.label, node.href || ""].join(" ").toLowerCase();
+    const file = nodePageFile(node) || "";
+    const hay = [node.label, file].join(" ").toLowerCase();
     if (hay.includes(q)) return true;
-    if (node.href && getPageMeta) {
-      const notes = (getPageMeta(node.href).notes || "").toLowerCase();
+    if (file && getPageMeta) {
+      const notes = (getPageMeta(file).notes || "").toLowerCase();
       if (notes.includes(q)) return true;
     }
     return false;
@@ -56,9 +138,10 @@
     const out = [];
     for (const node of nodes || []) {
       const children = filterTree(node.children || [], q, statusFilter, getPageMeta);
+      const file = nodePageFile(node);
       const selfMatch =
         nodeMatchesSearch(node, q, getPageMeta) &&
-        (!node.href || statusFilter === "all" || (getPageMeta(node.href).status || "todo") === statusFilter);
+        (!file || statusFilter === "all" || (getPageMeta(file).status || "todo") === statusFilter);
 
       if (selfMatch || children.length) {
         out.push({ ...node, children });
@@ -89,9 +172,10 @@
       const children = annotateWithStatus(node.children || [], getPageMeta);
       let pageCount = 0;
       let doneCount = 0;
-      if (node.href) {
+      const file = nodePageFile(node);
+      if (file) {
         pageCount = 1;
-        if ((getPageMeta(node.href).status || "todo") === "done") doneCount = 1;
+        if ((getPageMeta(file).status || "todo") === "done") doneCount = 1;
       }
       for (const c of children) {
         pageCount += c.pageCount || 0;
@@ -109,6 +193,11 @@
 
   global.PaintDevNav = global.PaintDevNav || {};
   global.PaintDevNav.Core = {
+    nodePageFile,
+    getNavGroups,
+    normalizeFallbackGroup,
+    collectMappedFiles,
+    normalizeNavigationTree,
     walkNodes,
     findPathToHref,
     findNodeByHref,

@@ -13,6 +13,8 @@ const {
 } = require("./catalog-import");
 const ralColors = require("./public/js/ral-colors");
 const { compressImageFile } = require("./lib/image-compress");
+const { buildNavigationTreePayload } = require("./lib/nav-tree-normalize");
+const { registerGitControlRoutes } = require("./lib/git-control");
 
 async function loadShopCustomColors(db, shopId) {
   return dbm.all(
@@ -1060,13 +1062,14 @@ function countPublicAssets(publicDir) {
 }
 
 /** Load navigation tree config from public/dev/navigation-tree.json. */
-function loadDevNavigationTree(publicDir) {
-  const fallback = { fallbackGroup: "Uncategorized Pages", tree: [] };
+function loadDevNavigationTree(publicDir, htmlPages) {
+  const fallback = { fallbackGroup: { id: "fallback-uncategorized", label: "Uncategorized Pages" }, groups: [] };
   try {
     const configPath = path.join(publicDir, "dev", "navigation-tree.json");
-    return JSON.parse(fs.readFileSync(configPath, "utf8"));
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    return buildNavigationTreePayload(config, htmlPages);
   } catch (_) {
-    return fallback;
+    return buildNavigationTreePayload(fallback, htmlPages);
   }
 }
 
@@ -1133,7 +1136,7 @@ function buildDevStatusPayload(publicDir, serverPort) {
     file,
     title: file.replace(/\.html$/i, "").replace(/-/g, " ")
   }));
-  const navigationTree = loadDevNavigationTree(publicDir);
+  const navigationTree = loadDevNavigationTree(publicDir, htmlPages);
   const { incomingLinks, outgoingLinks, missingTargets } = buildDevLinkMaps(htmlPages);
 
   return {
@@ -1871,6 +1874,8 @@ async function main() {
     publicDir: PUBLIC_DIR,
     getListeningPort: () => listeningPort
   });
+
+  registerGitControlRoutes(app, ROOT, runGitCommandDetailed, devActionForbidden);
 
   app.get("/paint/api/config", (_req, res) => {
     res.json({

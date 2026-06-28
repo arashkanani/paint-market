@@ -394,260 +394,6 @@
       gap: 1rem;
     }
 
-    .pages-layout {
-      display: grid;
-      grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
-      gap: 1rem;
-      align-items: start;
-    }
-
-    @media (max-width: 900px) {
-      .pages-layout {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .pages-tree-card,
-    .pages-detail-card {
-      min-width: 0;
-    }
-
-    .pages-tree-toolbar {
-      display: flex;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.65rem;
-    }
-
-    .pages-tree-toolbar .btn {
-      font-size: 0.72rem;
-      padding: 0.28rem 0.55rem;
-    }
-
-    .nav-tree {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .nav-tree__children {
-      list-style: none;
-      margin: 0;
-      padding: 0 0 0 1.15rem;
-      border-left: 1px solid var(--gray-200);
-    }
-
-    .nav-tree__item.is-on-path > .nav-tree__row {
-      background: rgba(255, 122, 0, 0.06);
-    }
-
-    .nav-tree__item.is-selected > .nav-tree__row,
-    .nav-tree__row.is-selected {
-      background: rgba(255, 122, 0, 0.12);
-      border-radius: 8px;
-    }
-
-    .nav-tree__row {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.28rem 0.35rem;
-      min-height: 1.85rem;
-    }
-
-    .nav-tree__toggle {
-      width: 1.25rem;
-      height: 1.25rem;
-      border: none;
-      background: transparent;
-      color: var(--gray-500);
-      cursor: pointer;
-      font-size: 0.75rem;
-      padding: 0;
-      flex-shrink: 0;
-    }
-
-    .nav-tree__toggle--spacer {
-      display: inline-block;
-    }
-
-    .nav-tree__label {
-      flex: 1;
-      min-width: 0;
-      text-align: left;
-      font-size: 0.82rem;
-      color: var(--black);
-    }
-
-    .nav-tree__label--page {
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-weight: 600;
-      padding: 0;
-    }
-
-    .nav-tree__label--page:hover {
-      color: var(--orange-dark);
-    }
-
-    .nav-tree__label--folder {
-      font-weight: 700;
-      color: var(--gray-700);
-    }
-
-    .nav-tree__meta {
-      font-size: 0.68rem;
-      font-weight: 700;
-      white-space: nowrap;
-      color: var(--gray-500);
-    }
-
-    .nav-tree__meta--done { color: var(--done); }
-    .nav-tree__meta--work { color: var(--work); }
-    .nav-tree__meta--todo { color: var(--todo); }
-
-    .nav-breadcrumb {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.25rem;
-      margin-bottom: 0.65rem;
-      font-size: 0.78rem;
-    }
-
-    .nav-breadcrumb__sep {
-      color: var(--gray-400);
-    }
-
-    .nav-breadcrumb__link,
-    .nav-breadcrumb__folder {
-      border: none;
-      background: transparent;
-      padding: 0;
-      font: inherit;
-      cursor: pointer;
-    }
-
-    .nav-breadcrumb__link {
-      color: var(--orange-dark);
-      font-weight: 600;
-    }
-
-    .nav-breadcrumb__folder {
-      color: var(--gray-600);
-      font-weight: 700;
-    }
-
-    .nav-flow {
-      margin-bottom: 0.75rem;
-    }
-
-    .nav-flow__step {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      width: 100%;
-      text-align: left;
-      border: 1px solid var(--gray-100);
-      border-radius: 10px;
-      padding: 0.45rem 0.65rem;
-      background: var(--white);
-      font: inherit;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .nav-flow__step:hover {
-      border-color: var(--orange);
-      color: var(--orange-dark);
-    }
-
-    .nav-flow__arrow {
-      text-align: center;
-      color: var(--gray-400);
-      font-size: 0.85rem;
-      margin: 0.15rem 0;
-    }
-
-    .nav-link-analysis {
-      margin-bottom: 0.85rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid var(--gray-100);
-    }
-
-    .nav-link-block h4 {
-      margin: 0 0 0.35rem;
-      font-size: 0.75rem;
-      color: var(--gray-600);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .nav-link-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-    }
-
-    .nav-link-chip {
-      border: 1px solid var(--gray-200);
-      border-radius: 999px;
-      padding: 0.2rem 0.55rem;
-      font-size: 0.72rem;
-      font-weight: 600;
-      background: var(--gray-50);
-      cursor: pointer;
-    }
-
-    .nav-link-chip:hover {
-      border-color: var(--orange);
-      color: var(--orange-dark);
-    }
-
-    .nav-link-chip--missing {
-      border-color: var(--todo);
-      color: var(--todo);
-      cursor: default;
-    }
-
-    .nav-link-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      margin-bottom: 0.55rem;
-    }
-
-    .nav-warn-badge {
-      font-size: 0.68rem;
-      font-weight: 700;
-      padding: 0.15rem 0.45rem;
-      border-radius: 999px;
-    }
-
-    .nav-warn-badge--orphan {
-      background: rgba(255, 193, 7, 0.15);
-      color: #9a7200;
-    }
-
-    .nav-warn-badge--dead {
-      background: rgba(108, 117, 125, 0.12);
-      color: var(--gray-700);
-    }
-
-    .nav-warn-badge--missing {
-      background: rgba(220, 53, 69, 0.12);
-      color: var(--todo);
-    }
-
-    .nav-panel-hint,
-    .nav-panel-empty {
-      font-size: 0.78rem;
-      color: var(--gray-500);
-      margin: 0;
-    }
-
     .card {
       background: var(--white);
       border-radius: 16px;
@@ -780,6 +526,118 @@
     .dev-action-console:empty::before {
       content: "Live output will appear here…";
       color: #666;
+    }
+
+    .git-section-title {
+      margin: 1.25rem 0 0.5rem;
+      font-size: 0.88rem;
+      color: var(--orange);
+      border-bottom: 2px solid var(--gray-100);
+      padding-bottom: 0.35rem;
+    }
+
+    .git-section-title:first-of-type { margin-top: 0.75rem; }
+
+    .git-subtitle {
+      margin: 0.65rem 0 0.35rem;
+      font-size: 0.78rem;
+      color: var(--gray-700);
+    }
+
+    .git-center-dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 0.75rem;
+      font-size: 0.78rem;
+      margin: 0;
+    }
+
+    .git-center-dl dt { color: var(--gray-500); font-weight: 600; }
+    .git-center-dl dd { margin: 0; color: var(--black); }
+
+    .git-table-wrap {
+      overflow-x: auto;
+      margin-bottom: 0.65rem;
+    }
+
+    .git-center-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+    }
+
+    .git-center-table th,
+    .git-center-table td {
+      padding: 0.35rem 0.45rem;
+      border-bottom: 1px solid var(--gray-100);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .git-center-table th {
+      color: var(--gray-600);
+      font-weight: 700;
+    }
+
+    .git-actions-cell {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+
+    .git-actions-cell .btn {
+      font-size: 0.65rem;
+      padding: 0.2rem 0.4rem;
+    }
+
+    .git-tag {
+      font-size: 0.62rem;
+      background: var(--done-bg);
+      color: var(--done);
+      padding: 0.1rem 0.35rem;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .git-mini-list {
+      margin: 0.25rem 0 0.5rem;
+      padding-left: 1.1rem;
+      font-size: 0.72rem;
+      color: var(--gray-700);
+    }
+
+    .git-file-details summary {
+      cursor: pointer;
+      font-size: 0.72rem;
+      color: var(--gray-700);
+      margin-bottom: 0.25rem;
+    }
+
+    .git-compare-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .git-diff-preview {
+      margin: 0;
+      padding: 0.65rem;
+      background: #111;
+      color: #e8e8e8;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      max-height: 14rem;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    .git-diff-stat {
+      color: var(--gray-500);
+      font-size: 0.68rem;
     }
 
     .pm-modal--wide {
@@ -1231,23 +1089,7 @@
         <option value="todo">Todo</option>
       </select>
     </div>
-    <div class="pages-layout">
-      <div class="card pages-tree-card">
-        <h2>Pages</h2>
-        <div class="pages-tree-toolbar">
-          <button type="button" class="btn btn--ghost" id="treeExpandAll">Expand All</button>
-          <button type="button" class="btn btn--ghost" id="treeCollapseAll">Collapse All</button>
-        </div>
-        <div id="pagesTreeRoot"></div>
-      </div>
-      <div class="card pages-detail-card" id="pageDetailPanel">
-        <h2>Page Details</h2>
-        <div id="pageBreadcrumb" class="nav-breadcrumb" hidden></div>
-        <div id="pageNavFlow" class="nav-flow"></div>
-        <div id="pageLinkAnalysis" class="nav-link-analysis"></div>
-        <div id="pageDetailBody"></div>
-      </div>
-    </div>
+    <div class="grid" id="pagesGrid"></div>
   </section>
 
   <!-- Features -->
@@ -1316,12 +1158,31 @@
   <section id="panel-dev-actions" class="panel" role="tabpanel" hidden>
     <div class="dev-actions-card card">
       <h2>Developer Actions</h2>
-      <p class="git-hint" style="margin-top:0;">Local-only shortcuts for git, server restart, and deployment backup. Actions run on this machine only.</p>
+      <p class="git-hint" style="margin-top:0;">Local-only Git Control Center — git, server restart, and deployment backup. Actions run on this machine only.</p>
+
+      <h3 class="git-section-title">Quick Actions</h3>
       <div class="dev-action-buttons">
-        <button type="button" class="btn btn--primary" id="btnPullLatest">Pull Latest</button>
-        <button type="button" class="btn btn--dark" id="btnCommitPush">Commit &amp; Push All</button>
-        <button type="button" class="btn btn--ghost" id="btnRestartServer">Restart Server</button>
+        <button type="button" class="btn btn--primary git-action-btn" id="btnPullLatest">Pull Latest</button>
+        <button type="button" class="btn btn--dark git-action-btn" id="btnCommitPush">Commit &amp; Push All</button>
+        <button type="button" class="btn btn--ghost git-action-btn" id="btnRestartServer">Restart Server</button>
+        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitFetch">Fetch Remote</button>
+        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitCreateBranchTop">Create Branch</button>
+        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitMergeBranch">Merge Branch</button>
+        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitStash">Stash Changes</button>
+        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitStashApply">Apply Stash</button>
+        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitOpenFolder">Open Repository Folder</button>
       </div>
+
+      <h3 class="git-section-title">Live Git Status</h3>
+      <div id="gitCenterStatus"><p class="git-hint">Loading git status…</p></div>
+
+      <h3 class="git-section-title">Branch Manager</h3>
+      <div id="gitBranchManager"><p class="git-hint">Loading branches…</p></div>
+
+      <h3 class="git-section-title">Git History</h3>
+      <div id="gitHistoryTableWrap"><p class="git-hint">Loading history…</p></div>
+
+      <h3 class="git-section-title">Terminal Output</h3>
       <div id="devActionStatus" class="dev-action-status hidden" role="status" aria-live="polite"></div>
       <pre id="devActionConsole" class="dev-action-console" aria-label="Action output"></pre>
     </div>
@@ -1398,9 +1259,38 @@
   </div>
 </dialog>
 
-<script src="/paint/js/dev-dashboard/nav-tree-core.js"></script>
-<script src="/paint/js/dev-dashboard/nav-panels.js"></script>
-<script src="/paint/js/dev-dashboard/nav-tree-ui.js"></script>
+<dialog id="gitCommitDetailModal" class="pm-modal pm-modal--wide">
+  <div class="pm-modal__head">
+    <h3>Commit Details</h3>
+    <button type="button" class="btn btn--ghost" id="gitCommitDetailClose" aria-label="Close">✕</button>
+  </div>
+  <div class="pm-modal__body" id="gitCommitDetailBody"></div>
+</dialog>
+
+<dialog id="gitCompareModal" class="pm-modal pm-modal--wide">
+  <div class="pm-modal__head">
+    <h3>Compare Commits</h3>
+    <button type="button" class="btn btn--ghost" id="gitCompareClose" aria-label="Close">✕</button>
+  </div>
+  <div class="pm-modal__body" id="gitCompareBody"></div>
+</dialog>
+
+<dialog id="gitPromptModal" class="pm-modal">
+  <div class="pm-modal__head">
+    <h3 id="gitPromptTitle">Input</h3>
+    <button type="button" class="btn btn--ghost" id="gitPromptCancel" aria-label="Close">✕</button>
+  </div>
+  <div class="pm-modal__body">
+    <label id="gitPromptLabel" for="gitPromptInput" style="display:block;font-size:0.82rem;margin-bottom:0.35rem;color:var(--gray-700);"></label>
+    <input type="text" id="gitPromptInput" style="width:100%;padding:0.55rem 0.65rem;border-radius:8px;border:1px solid var(--gray-200);" />
+  </div>
+  <div class="pm-modal__foot">
+    <button type="button" class="btn btn--ghost" id="gitPromptCancelFoot">Cancel</button>
+    <button type="button" class="btn btn--primary" id="gitPromptConfirm">OK</button>
+  </div>
+</dialog>
+
+<script src="/paint/js/dev-dashboard/git-control.js"></script>
 <script>
 (function () {
   const STORAGE_KEY = "paint-market-pm-dashboard-v1";
@@ -1462,14 +1352,8 @@
   let pollTimer = null;
   let lastClientRefresh = "";
   let lastApiError = "";
-  let navigationTree = { tree: [], fallbackGroup: "Uncategorized Pages" };
-  let incomingLinks = {};
-  let outgoingLinks = {};
-  let missingTargets = [];
-  let navTreeReady = false;
 
-  const pagesTreeRoot = document.getElementById("pagesTreeRoot");
-  const pagesPanel = document.getElementById("panel-pages");
+  const pagesEl = document.getElementById("pagesGrid");
   const searchEl = document.getElementById("search");
   const filterEl = document.getElementById("filter");
   const notesModal = document.getElementById("notesModal");
@@ -1591,9 +1475,8 @@
   }
 
   function setDevActionButtonsDisabled(disabled) {
-    ["btnPullLatest", "btnCommitPush", "btnRestartServer"].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.disabled = disabled;
+    document.querySelectorAll(".git-action-btn, #btnPullLatest, #btnCommitPush, #btnRestartServer").forEach((el) => {
+      el.disabled = disabled;
     });
   }
 
@@ -1705,7 +1588,9 @@
       }
       setDevActionStatus(data.message || "Pull completed successfully.", "success");
       showLiveNotice(data.message || "Pull completed", false);
+      sessionStorage.setItem("git-last-pull", new Date().toLocaleString());
       await fetchDevStatus();
+      if (window.PaintDevGit) await PaintDevGit.refreshAll();
     });
   }
 
@@ -1950,6 +1835,8 @@
     appendDevConsole(`Backup completed · ${result.commitHash} · ${formatDuration(result.duration || 0)}`);
     setDevActionStatus("Backup completed successfully.", "success");
     showLiveNotice("Backup completed successfully", false);
+    sessionStorage.setItem("git-last-push", new Date().toLocaleString());
+    if (window.PaintDevGit) window.PaintDevGit.refreshAll();
   }
 
   async function runCleanCommitPath(precheckData) {
@@ -2371,129 +2258,81 @@
     return [];
   }
 
-  function collectMappedHrefs(nodes, out) {
-    out = out || new Set();
-    for (const n of nodes || []) {
-      if (n.href) out.add(n.href);
-      if (n.children && n.children.length) collectMappedHrefs(n.children, out);
-    }
-    return out;
-  }
-
-  /** Read navigationTree.tree, raw tree array, or build fallback from page list. */
-  function resolveNavigationTree(data, htmlFiles) {
-    const raw = data?.navigationTree;
-    let base = { fallbackGroup: "Uncategorized Pages", tree: [] };
-
-    if (Array.isArray(raw)) {
-      base.tree = raw;
-    } else if (raw && typeof raw === "object") {
-      base = {
-        fallbackGroup: raw.fallbackGroup || "Uncategorized Pages",
-        tree: Array.isArray(raw.tree) ? raw.tree : []
-      };
-    }
-
-    const mapped = collectMappedHrefs(base.tree);
-    const unmapped = (htmlFiles || []).filter((f) => !mapped.has(f)).sort();
-    const tree = base.tree.slice();
-
-    if (unmapped.length) {
-      const existing = tree.find((n) => n.id === "fallback-uncategorized");
-      if (existing) {
-        const existingHrefs = collectMappedHrefs(existing.children || []);
-        for (const href of unmapped) {
-          if (!existingHrefs.has(href)) {
-            existing.children = existing.children || [];
-            existing.children.push({
-              id: `page-${href.replace(/[^\w]+/g, "-")}`,
-              label: pageDisplayName(href),
-              href,
-              children: []
-            });
-          }
-        }
-      } else {
-        tree.push({
-          id: "fallback-uncategorized",
-          label: base.fallbackGroup,
-          children: unmapped.map((href) => ({
-            id: `page-${href.replace(/[^\w]+/g, "-")}`,
-            label: pageDisplayName(href),
-            href,
-            children: []
-          }))
-        });
-      }
-    }
-
-    if (!tree.length && htmlFiles && htmlFiles.length) {
-      tree.push({
-        id: "fallback-uncategorized",
-        label: base.fallbackGroup,
-        children: htmlFiles.map((href) => ({
-          id: `page-${href.replace(/[^\w]+/g, "-")}`,
-          label: pageDisplayName(href),
-          href,
-          children: []
-        }))
-      });
-    }
-
-    return { fallbackGroup: base.fallbackGroup, tree };
-  }
-
-  function treeContext() {
-    const nav = window.PaintDevNav;
-    const annotatedTree = nav?.Core
-      ? nav.Core.annotateWithStatus(navigationTree.tree || [], (h) => getPageMeta(h, "todo"))
-      : navigationTree.tree || [];
-    return {
-      navigationTree: { ...navigationTree, tree: annotatedTree },
-      incomingLinks,
-      outgoingLinks,
-      missingTargets,
-      liveHtmlPages,
-      lastApiError,
-      newlyAddedPages,
-      els: {
-        treeRoot: pagesTreeRoot,
-        searchEl,
-        filterEl,
-        breadcrumb: document.getElementById("pageBreadcrumb"),
-        flow: document.getElementById("pageNavFlow"),
-        links: document.getElementById("pageLinkAnalysis"),
-        detail: document.getElementById("pageDetailBody")
-      },
-      api: {
-        getPageMeta,
-        pageDisplayName,
-        pageHref,
-        formatDate,
-        newlyAddedPages
-      }
-    };
-  }
-
   function renderPages() {
-    if (!window.PaintDevNav?.TreeUI) {
-      if (pagesTreeRoot && lastApiError) {
-        pagesTreeRoot.innerHTML = `<p class="empty" style="color:var(--todo);">${escapeHtml(lastApiError)}</p>`;
-      }
-      return;
-    }
-    if (!navTreeReady) {
-      window.PaintDevNav.TreeUI.init(treeContext());
-      navTreeReady = true;
-      return;
-    }
-    window.PaintDevNav.TreeUI.updateContext(treeContext());
-  }
+    if (!pagesEl) return;
+    pagesEl.innerHTML = "";
+    const q = searchEl.value.toLowerCase();
+    const f = filterEl.value;
 
-  function initNavTree() {
-    if (!window.PaintDevNav?.TreeUI) return;
-    window.PaintDevNav.TreeUI.init(treeContext());
-    navTreeReady = true;
+    if (lastApiError && !liveHtmlPages.length) {
+      pagesEl.innerHTML = `<p class="empty" style="color:var(--todo);">Could not load pages: ${escapeHtml(lastApiError)}<br><small>Run <code>npm start</code> and refresh.</small></p>`;
+      return;
+    }
+
+    if (!liveHtmlPages.length) {
+      pagesEl.innerHTML = '<p class="empty">Loading pages from server…</p>';
+      return;
+    }
+
+    const groups = groupHtmlPages(liveHtmlPages);
+
+    groups.forEach((group) => {
+      const visible = group.items.filter((href) => {
+        const name = pageDisplayName(href);
+        const meta = getPageMeta(href, "todo");
+        return (
+          (name.toLowerCase().includes(q) || href.toLowerCase().includes(q)) &&
+          (f === "all" || meta.status === f)
+        );
+      });
+      if (!visible.length) return;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `<h2>${escapeHtml(group.title)}</h2>`;
+
+      visible.forEach((href) => {
+        const name = pageDisplayName(href);
+        const meta = getPageMeta(href, "todo");
+        const isNew = newlyAddedPages.has(href);
+        const row = document.createElement("div");
+        row.className = "page-row";
+        row.innerHTML = `
+          <div class="page-row__head">
+            <div class="page-row__title">
+              ${escapeHtml(name)}
+              ${isNew ? '<span class="page-badge-new">New</span>' : ""}
+              <span style="display:block;font-size:0.72rem;font-weight:500;color:var(--gray-500);">${escapeHtml(href)}</span>
+            </div>
+            <div class="page-row__actions">
+              <select class="status-select" data-page="${escapeAttr(href)}" aria-label="Status for ${escapeAttr(name)}">
+                <option value="done"${meta.status === "done" ? " selected" : ""}>Done</option>
+                <option value="work"${meta.status === "work" ? " selected" : ""}>Working</option>
+                <option value="todo"${meta.status === "todo" ? " selected" : ""}>Todo</option>
+              </select>
+              <button type="button" class="btn btn--ghost" data-notes-page="${escapeAttr(href)}" data-notes-label="${escapeAttr(name)}">Notes</button>
+              <a class="btn btn--primary" href="${escapeAttr(pageHref(href))}" target="_blank" rel="noopener noreferrer">Open</a>
+            </div>
+          </div>
+          <div class="page-row__dev-actions">
+            <button type="button" class="btn btn--ghost" data-page-preview="${escapeAttr(href)}">Preview</button>
+            <button type="button" class="btn btn--ghost" data-page-edit="${escapeAttr(href)}">Edit</button>
+            <button type="button" class="btn btn--ghost" data-page-mobile="${escapeAttr(href)}">Mobile</button>
+            <button type="button" class="btn btn--ghost" data-page-test="${escapeAttr(href)}">Test</button>
+            <button type="button" class="btn btn--ghost" data-page-copy="${escapeAttr(href)}">Copy Link</button>
+          </div>
+          <div class="page-test-badges" data-test-badges="${escapeAttr(href)}" hidden></div>
+          <div class="page-row__meta">Updated: ${escapeHtml(formatDate(meta.updatedAt))}${meta.notes ? " · Has notes" : ""}</div>
+        `;
+        card.appendChild(row);
+      });
+
+      pagesEl.appendChild(card);
+    });
+
+    if (!pagesEl.children.length) {
+      pagesEl.innerHTML = '<p class="empty">No pages match your search.</p>';
+    }
   }
 
   function renderGitLive(data, clientError) {
@@ -2588,21 +2427,13 @@
 
     newlyAddedPages = new Set(added);
     liveHtmlPages = nextPages;
-    navigationTree = resolveNavigationTree(data, nextPages);
-    incomingLinks = data.incomingLinks || {};
-    outgoingLinks = data.outgoingLinks || {};
-    missingTargets = data.missingTargets || [];
     lastDevFingerprint = fp;
     firstDevLoad = false;
     lastClientRefresh = nowIso();
 
     renderGitLive(data, null);
     renderSummary(data, null);
-    if (!navTreeReady) {
-      initNavTree();
-    } else {
-      renderPages();
-    }
+    renderPages();
     updateCounters();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
@@ -2637,6 +2468,7 @@
   }
 
   function startLivePolling() {
+    renderPages();
     updateCounters();
     renderSummary(null, "loading");
     fetchDevStatus();
@@ -2758,19 +2590,7 @@
   searchEl.addEventListener("input", renderPages);
   filterEl.addEventListener("change", renderPages);
 
-  document.getElementById("treeExpandAll")?.addEventListener("click", () => {
-    if (!window.PaintDevNav?.TreeUI) return;
-    window.PaintDevNav.TreeUI.expandAll(navigationTree);
-    window.PaintDevNav.TreeUI.render();
-  });
-
-  document.getElementById("treeCollapseAll")?.addEventListener("click", () => {
-    if (!window.PaintDevNav?.TreeUI) return;
-    window.PaintDevNav.TreeUI.collapseAll();
-    window.PaintDevNav.TreeUI.render();
-  });
-
-  pagesPanel.addEventListener("change", (e) => {
+  pagesEl.addEventListener("change", (e) => {
     const sel = e.target.closest("[data-page]");
     if (!sel) return;
     const key = sel.getAttribute("data-page");
@@ -2781,9 +2601,7 @@
     renderPages();
   });
 
-  pagesPanel.addEventListener("click", (e) => {
-    if (window.PaintDevNav?.TreeUI?.handleClick(e)) return;
-
+  pagesEl.addEventListener("click", (e) => {
     const preview = e.target.closest("[data-page-preview]");
     if (preview) {
       window.open(pageFullUrl(preview.getAttribute("data-page-preview")), "_blank", "noopener,noreferrer");
@@ -3010,6 +2828,24 @@
   renderBugs();
   renderRoadmap();
   startLivePolling();
+
+  if (window.PaintDevGit) {
+    window.PaintDevGit.init({
+      appendConsole: appendDevConsole,
+      clearConsole: clearDevConsole,
+      setStatus: setDevActionStatus,
+      onRefresh: () => fetchDevStatus(),
+      isBusy: () => devActionRunning,
+      onStart: () => {
+        devActionRunning = true;
+        setDevActionButtonsDisabled(true);
+      },
+      onEnd: () => {
+        devActionRunning = false;
+        setDevActionButtonsDisabled(false);
+      }
+    });
+  }
 })();
 </script>
 

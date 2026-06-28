@@ -1,6 +1,9 @@
 {
-  "fallbackGroup": "Uncategorized Pages",
-  "tree": [
+  "fallbackGroup": {
+    "id": "fallback-uncategorized",
+    "label": "Uncategorized Pages"
+  },
+  "groups": [
     {
       "id": "public-website",
       "label": "Public Website",
