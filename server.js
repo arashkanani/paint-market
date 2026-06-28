@@ -1059,6 +1059,28 @@ function countPublicAssets(publicDir) {
   };
 }
 
+/** Load navigation tree config from public/dev/navigation-tree.json. */
+function loadDevNavigationTree(publicDir) {
+  const fallback = { fallbackGroup: "Uncategorized Pages", tree: [] };
+  try {
+    const configPath = path.join(publicDir, "dev", "navigation-tree.json");
+    return JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch (_) {
+    return fallback;
+  }
+}
+
+/** Build per-page link maps (empty arrays until link scan is wired). */
+function buildDevLinkMaps(htmlPages) {
+  const incomingLinks = {};
+  const outgoingLinks = {};
+  for (const file of htmlPages) {
+    incomingLinks[file] = [];
+    outgoingLinks[file] = [];
+  }
+  return { incomingLinks, outgoingLinks, missingTargets: [] };
+}
+
 /** Build live developer dashboard payload (git + HTML inventory). */
 function buildDevStatusPayload(publicDir, serverPort) {
   const htmlPages = listPublicHtmlFiles(publicDir).sort();
@@ -1107,6 +1129,12 @@ function buildDevStatusPayload(publicDir, serverPort) {
   }
 
   const port = Number(serverPort) || 3010;
+  const pages = htmlPages.map((file) => ({
+    file,
+    title: file.replace(/\.html$/i, "").replace(/-/g, " ")
+  }));
+  const navigationTree = loadDevNavigationTree(publicDir);
+  const { incomingLinks, outgoingLinks, missingTargets } = buildDevLinkMaps(htmlPages);
 
   return {
     ok: gitStatus !== "error",
@@ -1120,6 +1148,11 @@ function buildDevStatusPayload(publicDir, serverPort) {
     commitHistory,
     htmlPages,
     totalHtmlPages: htmlPages.length,
+    pages,
+    navigationTree,
+    incomingLinks,
+    outgoingLinks,
+    missingTargets,
     fileCounts,
     serverTime: new Date().toISOString(),
     server: {
