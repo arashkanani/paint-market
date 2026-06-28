@@ -684,7 +684,7 @@ function paintMarketTf(key, vars) {
 
 async function paintMarketUpdateAccountNavForSession() {
   if (typeof document === "undefined" || typeof PaintApi === "undefined") return;
-  const links = [...document.querySelectorAll('.pm-pfinder-bottom-nav__item[href="/paint/account.html"]')];
+  const links = [...document.querySelectorAll('[data-pm-bottom-nav="account"]')];
   if (!links.length) return;
   let me;
   try {
@@ -1928,9 +1928,26 @@ window.paintMarketRecentSearchAdd = paintMarketRecentSearchAdd;
 window.paintMarketRecentSearchesClear = paintMarketRecentSearchesClear;
 
 if (typeof document !== "undefined") {
+  function paintMarketBootBottomNav() {
+    if (typeof paintMarketInitBottomNav === "function") {
+      paintMarketInitBottomNav();
+      return;
+    }
+    const src = "/paint/js/pm-bottom-nav.js";
+    if (document.querySelector(`script[src="${src}"]`)) return;
+    const el = document.createElement("script");
+    el.src = src;
+    el.onload = () => {
+      if (typeof paintMarketInitBottomNav === "function") paintMarketInitBottomNav();
+    };
+    (document.head || document.documentElement).appendChild(el);
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", paintMarketGeoInit);
+    document.addEventListener("DOMContentLoaded", paintMarketBootBottomNav);
   } else {
     paintMarketGeoInit();
+    paintMarketBootBottomNav();
   }
 }

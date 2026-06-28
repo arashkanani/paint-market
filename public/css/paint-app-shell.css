@@ -122,7 +122,7 @@ body.pm-account-page .pm-pfinder-bottom-nav {
 body.pm-shop-page,
 body.pm-dash-page,
 body.pm-account-page {
-  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(5.7rem + env(safe-area-inset-bottom, 0px));
 }
 
 html.pm-app-standalone .pm-pfinder-bottom-nav,

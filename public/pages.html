@@ -1313,6 +1313,8 @@
   let notesContext = null;
   /** HTML paths from last successful API response (not hardcoded). */
   let liveHtmlPages = [];
+  /** Navigation groups from /api/dev-status (linked flow). */
+  let liveNavigationTree = null;
   /** Pages newly seen since previous poll. */
   let newlyAddedPages = new Set();
   let lastDevFingerprint = "";
@@ -1390,21 +1392,62 @@
       .join(" ");
   }
 
-  /** Group API HTML paths by top-level folder. */
-  function groupHtmlPages(pages) {
-    const map = new Map();
-    pages.forEach((file) => {
-      const parts = file.split("/");
-      const groupKey = parts.length > 1 ? parts[0] : "Root";
-      if (!map.has(groupKey)) map.set(groupKey, []);
-      map.get(groupKey).push(file);
+  function navNodeFile(node) {
+    if (!node || typeof node !== "object") return null;
+    const raw = node.href || node.file;
+    if (!raw || typeof raw !== "string") return null;
+    return raw.replace(/\\/g, "/").replace(/^\.\//, "");
+  }
+
+  /** Collect page files from a nav group in tree order (depth-first). */
+  function collectNavGroupPages(node) {
+    const items = [];
+    const seen = new Set();
+    function walk(n) {
+      const file = navNodeFile(n);
+      if (file && !seen.has(file)) {
+        seen.add(file);
+        items.push(file);
+      }
+      (n.children || []).forEach(walk);
+    }
+    walk(node);
+    return items;
+  }
+
+  /** Group pages by navigation flow (Public Website, Account Flow, etc.). */
+  function groupPagesByNavigation(pages, navigationTree) {
+    const normalized = pages.map((p) => String(p).replace(/\\/g, "/"));
+    const pageSet = new Set(normalized);
+    const navGroups = navigationTree?.groups || navigationTree?.tree || [];
+    const fallbackLabel =
+      navigationTree?.fallbackGroup?.label ||
+      (typeof navigationTree?.fallbackGroup === "string" ? navigationTree.fallbackGroup : null) ||
+      "Support Files / Other";
+
+    if (!navGroups.length) {
+      return [{ title: fallbackLabel, items: normalized.slice().sort() }];
+    }
+
+    const groups = [];
+    const assigned = new Set();
+
+    navGroups.forEach((group) => {
+      const title = group.label || group.id || "Pages";
+      const items = collectNavGroupPages(group).filter((file) => {
+        if (!pageSet.has(file) || assigned.has(file)) return false;
+        assigned.add(file);
+        return true;
+      });
+      if (items.length) groups.push({ title, items });
     });
-    return [...map.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, items]) => ({
-        title: key === "Root" ? "Root Pages" : key,
-        items: items.sort()
-      }));
+
+    const unassigned = normalized.filter((file) => !assigned.has(file)).sort();
+    if (unassigned.length) {
+      groups.push({ title: fallbackLabel, items: unassigned });
+    }
+
+    return groups;
   }
 
   function devStatusFingerprint(data) {
@@ -2242,7 +2285,7 @@
       return;
     }
 
-    const groups = groupHtmlPages(liveHtmlPages);
+    const groups = groupPagesByNavigation(liveHtmlPages, liveNavigationTree);
 
     groups.forEach((group) => {
       const visible = group.items.filter((href) => {
@@ -2395,6 +2438,7 @@
 
     newlyAddedPages = new Set(added);
     liveHtmlPages = nextPages;
+    liveNavigationTree = data.navigationTree || null;
     lastDevFingerprint = fp;
     firstDevLoad = false;
     lastClientRefresh = nowIso();

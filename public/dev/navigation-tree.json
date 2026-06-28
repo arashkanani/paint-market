@@ -1,66 +1,38 @@
 {
   "fallbackGroup": {
-    "id": "fallback-uncategorized",
-    "label": "Uncategorized Pages"
+    "id": "fallback-support-other",
+    "label": "Support Files / Other"
   },
   "groups": [
     {
       "id": "public-website",
       "label": "Public Website",
       "children": [
-        { "id": "home", "label": "Home", "href": "index.html" },
-        {
-          "id": "browse-group",
-          "label": "Browse",
-          "children": [
-            { "id": "search", "label": "Search", "href": "search.html" },
-            { "id": "search-results", "label": "Search Results", "href": "search-results.html" },
-            {
-              "id": "shop-group",
-              "label": "Shop",
-              "children": [
-                { "id": "shop", "label": "Shop", "href": "shop.html" },
-                { "id": "product-detail", "label": "Product Detail", "href": "product-detail.html" },
-                { "id": "price-on-map", "label": "Price on Map", "href": "price-on-map.html" },
-                { "id": "favorites", "label": "Favorites", "href": "favorites.html" },
-                { "id": "alerts", "label": "Alerts", "href": "alerts.html" }
-              ]
-            },
-            {
-              "id": "account-group",
-              "label": "Account",
-              "children": [
-                { "id": "login", "label": "Login", "href": "login.html" },
-                { "id": "register", "label": "Register", "href": "register.html" },
-                { "id": "account-type", "label": "Account Type", "href": "account-type.html" },
-                { "id": "business-register", "label": "Business Register", "href": "business-register.html" },
-                { "id": "business-plan", "label": "Business Plan", "href": "business-plan.html" },
-                { "id": "account", "label": "Account", "href": "account.html" }
-              ]
-            }
-          ]
-        }
+        { "id": "home", "label": "Index / Home", "href": "index.html" },
+        { "id": "browse", "label": "Browse", "href": "browse.html" },
+        { "id": "search", "label": "Search", "href": "search.html" },
+        { "id": "search-results", "label": "Search Results", "href": "search-results.html" },
+        { "id": "shop", "label": "Shop", "href": "shop.html" }
       ]
     },
     {
-      "id": "dashboard-group",
-      "label": "Dashboard",
+      "id": "account-flow",
+      "label": "Account Flow",
+      "children": [
+        { "id": "login", "label": "Login", "href": "login.html" },
+        { "id": "register", "label": "Register", "href": "register.html" },
+        { "id": "account-type", "label": "Account Type", "href": "account-type.html" },
+        { "id": "business-register", "label": "Business Register", "href": "business-register.html" },
+        { "id": "business-plan", "label": "Business Plan", "href": "business-plan.html" },
+        { "id": "account", "label": "Account", "href": "account.html" }
+      ]
+    },
+    {
+      "id": "dashboard-admin",
+      "label": "Dashboard / Admin",
       "children": [
         { "id": "dashboard", "label": "Dashboard", "href": "dashboard.html" },
-        { "id": "orders", "label": "Orders", "href": "orders.html" },
-        { "id": "inventory", "label": "Inventory", "href": "inventory.html" },
-        { "id": "add-product", "label": "Add Product", "href": "add-product.html" }
-      ]
-    },
-    {
-      "id": "admin-group",
-      "label": "Admin",
-      "children": [
-        { "id": "admin", "label": "Admin", "href": "admin.html" },
-        { "id": "users", "label": "Users", "href": "users.html" },
-        { "id": "categories", "label": "Categories", "href": "categories.html" },
-        { "id": "brands", "label": "Brands", "href": "brands.html" },
-        { "id": "reports", "label": "Reports", "href": "reports.html" }
+        { "id": "admin", "label": "Admin", "href": "admin.html" }
       ]
     }
   ]
