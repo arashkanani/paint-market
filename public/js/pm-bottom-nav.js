@@ -15,6 +15,7 @@
   ]);
 
   const VOID_HREF = "javascript:void(0)";
+  const ACCOUNT_HREF = "/paint/account.html";
   const INDEX_NAV_SCROLL_DELTA = 10;
   const INDEX_NAV_TOP_SHOW = 20;
 
@@ -62,6 +63,16 @@
     return null;
   }
 
+  function accountLinkEnabled() {
+    const file = currentPageFile();
+    return file === "" || file === "index.html" || file === "browse.html";
+  }
+
+  function resolveNavHref(tab) {
+    if (tab === "account" && accountLinkEnabled()) return ACCOUNT_HREF;
+    return VOID_HREF;
+  }
+
   function iconHome() {
     return `<svg class="pm-pfinder-bottom-nav__svg pm-pfinder-bottom-nav__svg--home" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.6 3.5 9.8c-.28.22-.45.55-.45.92V20c0 .83.67 1.5 1.5 1.5H10v-6h4v6h5.5c.83 0 1.5-.67 1.5-1.5v-9.3c0-.37-.17-.7-.45-.92L12 2.6z"/></svg>`;
   }
@@ -100,10 +111,13 @@
   }
 
   function navItem(tab, label, labelKey, active) {
+    const href = resolveNavHref(tab);
     const activeClass = active ? " is-active" : "";
     const ariaCurrent = active ? ' aria-current="page"' : "";
     const labelAttr = labelKey ? ` data-pm-t="${labelKey}"` : "";
-    return `<a href="${VOID_HREF}" class="pm-pfinder-bottom-nav__item${activeClass}" data-pm-bottom-nav-tab="${tab}"${ariaCurrent}>
+    const accountAttr =
+      tab === "account" && href === VOID_HREF ? ' data-pm-bottom-nav="account"' : "";
+    return `<a href="${href}" class="pm-pfinder-bottom-nav__item${activeClass}" data-pm-bottom-nav-tab="${tab}"${accountAttr}${ariaCurrent}>
       <span class="pm-pfinder-bottom-nav__icon">${iconSvg(tab, active)}</span>
       <span class="pm-pfinder-bottom-nav__label"${labelAttr}>${label}</span>
     </a>`;
@@ -124,9 +138,12 @@
 
   function bindPlaceholderLinks(nav) {
     nav.querySelectorAll(".pm-pfinder-bottom-nav__item").forEach((el) => {
-      el.addEventListener("click", (e) => {
-        e.preventDefault();
-      });
+      const href = (el.getAttribute("href") || "").trim();
+      if (!href || href === VOID_HREF || href.startsWith("javascript:")) {
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+        });
+      }
     });
   }
 
