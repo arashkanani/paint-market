@@ -1158,26 +1158,17 @@
   <section id="panel-dev-actions" class="panel" role="tabpanel" hidden>
     <div class="dev-actions-card card">
       <h2>Developer Actions</h2>
-      <p class="git-hint" style="margin-top:0;">Local-only Git Control Center — git, server restart, and deployment backup. Actions run on this machine only.</p>
+      <p class="git-hint" style="margin-top:0;">Local git tools for solo development — pull, backup, and restore. Actions run on this machine only.</p>
 
       <h3 class="git-section-title">Quick Actions</h3>
       <div class="dev-action-buttons">
         <button type="button" class="btn btn--primary git-action-btn" id="btnPullLatest">Pull Latest</button>
         <button type="button" class="btn btn--dark git-action-btn" id="btnCommitPush">Commit &amp; Push All</button>
         <button type="button" class="btn btn--ghost git-action-btn" id="btnRestartServer">Restart Server</button>
-        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitFetch">Fetch Remote</button>
-        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitCreateBranchTop">Create Branch</button>
-        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitMergeBranch">Merge Branch</button>
-        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitStash">Stash Changes</button>
-        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitStashApply">Apply Stash</button>
-        <button type="button" class="btn btn--ghost git-action-btn" id="btnGitOpenFolder">Open Repository Folder</button>
       </div>
 
       <h3 class="git-section-title">Live Git Status</h3>
       <div id="gitCenterStatus"><p class="git-hint">Loading git status…</p></div>
-
-      <h3 class="git-section-title">Branch Manager</h3>
-      <div id="gitBranchManager"><p class="git-hint">Loading branches…</p></div>
 
       <h3 class="git-section-title">Git History</h3>
       <div id="gitHistoryTableWrap"><p class="git-hint">Loading history…</p></div>
@@ -1265,29 +1256,6 @@
     <button type="button" class="btn btn--ghost" id="gitCommitDetailClose" aria-label="Close">✕</button>
   </div>
   <div class="pm-modal__body" id="gitCommitDetailBody"></div>
-</dialog>
-
-<dialog id="gitCompareModal" class="pm-modal pm-modal--wide">
-  <div class="pm-modal__head">
-    <h3>Compare Commits</h3>
-    <button type="button" class="btn btn--ghost" id="gitCompareClose" aria-label="Close">✕</button>
-  </div>
-  <div class="pm-modal__body" id="gitCompareBody"></div>
-</dialog>
-
-<dialog id="gitPromptModal" class="pm-modal">
-  <div class="pm-modal__head">
-    <h3 id="gitPromptTitle">Input</h3>
-    <button type="button" class="btn btn--ghost" id="gitPromptCancel" aria-label="Close">✕</button>
-  </div>
-  <div class="pm-modal__body">
-    <label id="gitPromptLabel" for="gitPromptInput" style="display:block;font-size:0.82rem;margin-bottom:0.35rem;color:var(--gray-700);"></label>
-    <input type="text" id="gitPromptInput" style="width:100%;padding:0.55rem 0.65rem;border-radius:8px;border:1px solid var(--gray-200);" />
-  </div>
-  <div class="pm-modal__foot">
-    <button type="button" class="btn btn--ghost" id="gitPromptCancelFoot">Cancel</button>
-    <button type="button" class="btn btn--primary" id="gitPromptConfirm">OK</button>
-  </div>
 </dialog>
 
 <script src="/paint/js/dev-dashboard/git-control.js"></script>
