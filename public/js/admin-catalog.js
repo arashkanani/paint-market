@@ -13,7 +13,9 @@
     return typeof paintMarketT === "function" ? paintMarketT(key) : key;
   }
 
-  const statsEl = document.getElementById("catAdminStats");
+  const overviewStatsEl = document.getElementById("adminOverviewStats");
+  const catalogStatsEl = document.getElementById("catAdminStats");
+  const statsEl = overviewStatsEl || catalogStatsEl;
   const apiWarnEl = document.getElementById("catAdminApiWarn");
   const importBrandEl = document.getElementById("catAdminImportBrand");
   const importFileEl = document.getElementById("catAdminImportFile");
@@ -42,7 +44,80 @@
   const shopDetailsTitle = document.getElementById("adminShopDetailsTitle");
   const shopDetailsBody = document.getElementById("adminShopDetailsBody");
 
-  if (!statsEl) return;
+  const hasAdminCatalogUi =
+    overviewStatsEl ||
+    catalogStatsEl ||
+    document.getElementById("catAdminProductTable") ||
+    document.getElementById("adminApplicationsList") ||
+    document.getElementById("catAdminShopsTable");
+  if (!hasAdminCatalogUi) return;
+
+  let pendingApplicationsCount = null;
+
+  function formatStatValue(val) {
+    if (val === null || val === undefined || val === "") return "—";
+    return esc(String(val));
+  }
+
+  function overviewStatCard(label, value, extraClass, dataKey) {
+    const dataAttr = dataKey ? ` data-overview-stat="${esc(dataKey)}"` : "";
+    return `
+      <div class="admin-stat pm-admin-stat${extraClass ? ` ${extraClass}` : ""}"${dataAttr}>
+        <p class="admin-stat__label pm-admin-stat__label">${esc(label)}</p>
+        <p class="admin-stat__value pm-admin-stat__value">${formatStatValue(value)}</p>
+      </div>`;
+  }
+
+  function catalogStatCard(label, value) {
+    return `
+      <div class="admin-catalog-stat rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+        <p class="admin-catalog-stat__label text-xs font-semibold uppercase text-slate-500">${esc(label)}</p>
+        <p class="admin-catalog-stat__value text-2xl font-bold text-slate-900">${formatStatValue(value)}</p>
+      </div>`;
+  }
+
+  function renderCatalogStats(stats) {
+    if (!catalogStatsEl) return;
+    if (!stats) {
+      catalogStatsEl.innerHTML = "";
+      return;
+    }
+    catalogStatsEl.innerHTML = [
+      catalogStatCard(t("admin_cat_stat_products"), stats.products_reference ?? stats.products_total),
+      catalogStatCard(t("admin_cat_stat_listings"), stats.listings_priced),
+      catalogStatCard(t("admin_cat_stat_shops"), stats.shops_total),
+      catalogStatCard(t("admin_cat_stat_brands"), stats.brands_total),
+      catalogStatCard(t("admin_cat_stat_categories"), stats.categories_total)
+    ].join("");
+  }
+
+  function updatePendingUi(count) {
+    pendingApplicationsCount = count;
+    const badge = document.getElementById("adminNavPendingBadge");
+    const actionBadge = document.getElementById("adminActionPendingBadge");
+    if (badge) {
+      if (typeof count === "number" && count > 0) {
+        badge.hidden = false;
+        badge.textContent = String(count);
+      } else {
+        badge.hidden = true;
+      }
+    }
+    if (actionBadge) {
+      if (typeof count === "number" && count > 0) {
+        actionBadge.hidden = false;
+        actionBadge.textContent = `${count} ${t("admin_application_status_pending").toLowerCase()}`;
+      } else {
+        actionBadge.hidden = true;
+      }
+    }
+    const pendingVal = overviewStatsEl?.querySelector('[data-overview-stat="pending"] .pm-admin-stat__value')
+      || overviewStatsEl?.querySelector('[data-overview-stat="pending"] .admin-stat__value');
+    if (pendingVal) {
+      pendingVal.textContent =
+        typeof count === "number" ? String(count) : "—";
+    }
+  }
 
   let brands = [];
   let categories = [];
@@ -109,25 +184,44 @@
     try {
       const { stats } = await PaintApi.adminStats();
       showApiWarn(false);
-      if (!stats) return;
-    statsEl.innerHTML = [
-      ["admin_cat_stat_products", stats.products_reference],
-      ["admin_cat_stat_listings", stats.listings_priced],
-      ["admin_cat_stat_shops", stats.shops_total],
-      ["admin_cat_stat_brands", stats.brands_total],
-      ["admin_cat_stat_categories", stats.categories_total]
-    ]
-      .map(
-        ([key, val]) => `
-        <div class="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
-          <p class="text-xs font-semibold uppercase text-slate-500">${esc(t(key))}</p>
-          <p class="text-2xl font-bold text-slate-900">${esc(val ?? 0)}</p>
-        </div>`
-      )
-      .join("");
+      if (overviewStatsEl) {
+        if (!stats) {
+          overviewStatsEl.innerHTML = [
+            overviewStatCard(t("admin_cat_stat_shops"), null),
+            overviewStatCard(t("admin_cat_stat_products"), null),
+            overviewStatCard(t("admin_cat_stat_categories"), null),
+            overviewStatCard(t("admin_cat_stat_brands"), null),
+            overviewStatCard(t("admin_application_status_pending"), pendingApplicationsCount, "pm-admin-stat--pending", "pending")
+          ].join("");
+        } else {
+          overviewStatsEl.innerHTML = [
+            overviewStatCard(t("admin_cat_stat_shops"), stats.shops_total),
+            overviewStatCard(t("admin_cat_stat_products"), stats.products_reference ?? stats.products_total),
+            overviewStatCard(t("admin_cat_stat_categories"), stats.categories_total),
+            overviewStatCard(t("admin_cat_stat_brands"), stats.brands_total),
+            overviewStatCard(
+              t("admin_application_status_pending"),
+              pendingApplicationsCount,
+              "pm-admin-stat--pending",
+              "pending"
+            )
+          ].join("");
+        }
+        if (typeof pendingApplicationsCount === "number") updatePendingUi(pendingApplicationsCount);
+      }
+      renderCatalogStats(stats);
     } catch (e) {
       showApiWarn(true);
-      if (statsEl) statsEl.innerHTML = "";
+      if (overviewStatsEl) {
+        overviewStatsEl.innerHTML = [
+          overviewStatCard(t("admin_cat_stat_shops"), null),
+          overviewStatCard(t("admin_cat_stat_products"), null),
+          overviewStatCard(t("admin_cat_stat_categories"), null),
+          overviewStatCard(t("admin_cat_stat_brands"), null),
+          overviewStatCard(t("admin_application_status_pending"), null, "pm-admin-stat--pending", "pending")
+        ].join("");
+      }
+      if (catalogStatsEl) catalogStatsEl.innerHTML = "";
       throw e;
     }
   }
@@ -636,6 +730,10 @@
   async function loadApplications() {
     if (!applicationsList) return;
     const { applications } = await PaintApi.adminBusinessApplications();
+    const pendingCount = (applications || []).filter(
+      (app) => String(app.status || "pending") === "pending"
+    ).length;
+    updatePendingUi(pendingCount);
     applicationsList.innerHTML = "";
     if (!applications?.length) {
       applicationsList.innerHTML = `<p class="p-4 text-sm text-slate-500">—</p>`;
