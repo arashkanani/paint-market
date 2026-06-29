@@ -53,6 +53,7 @@
   if (!hasAdminCatalogUi) return;
 
   let pendingApplicationsCount = null;
+  let openReportsCount = null;
 
   function formatStatValue(val) {
     if (val === null || val === undefined || val === "") return "—";
@@ -95,12 +96,17 @@
     pendingApplicationsCount = count;
     const badge = document.getElementById("adminNavPendingBadge");
     const actionBadge = document.getElementById("adminActionPendingBadge");
+    const headerBadge = document.getElementById("adminApprovalsPendingHeader");
+    const overviewPendingCard = document.getElementById("adminOverviewPendingCard");
+    const pendingEmptyEl = document.getElementById("adminOverviewPendingEmpty");
     if (badge) {
       if (typeof count === "number" && count > 0) {
         badge.hidden = false;
         badge.textContent = String(count);
+        badge.setAttribute("aria-label", `${count} pending approvals`);
       } else {
         badge.hidden = true;
+        badge.removeAttribute("aria-label");
       }
     }
     if (actionBadge) {
@@ -111,11 +117,82 @@
         actionBadge.hidden = true;
       }
     }
+    if (headerBadge) {
+      if (typeof count === "number" && count > 0) {
+        headerBadge.hidden = false;
+        headerBadge.textContent = `${count} ${t("admin_application_status_pending").toLowerCase()}`;
+      } else {
+        headerBadge.hidden = true;
+      }
+    }
+    if (overviewPendingCard) {
+      const valEl = overviewPendingCard.querySelector(".admin-overview-pending__value");
+      const hasCount = typeof count === "number";
+      if (valEl) {
+        valEl.textContent = hasCount ? String(count) : "—";
+        valEl.classList.toggle("admin-overview-pending__value--zero", hasCount && count === 0);
+      }
+      if (pendingEmptyEl) {
+        pendingEmptyEl.hidden = !(hasCount && count === 0);
+      }
+      overviewPendingCard.classList.toggle("admin-overview-card--pending-empty", hasCount && count === 0);
+    }
     const pendingVal = overviewStatsEl?.querySelector('[data-overview-stat="pending"] .pm-admin-stat__value')
       || overviewStatsEl?.querySelector('[data-overview-stat="pending"] .admin-stat__value');
     if (pendingVal) {
       pendingVal.textContent =
         typeof count === "number" ? String(count) : "—";
+    }
+  }
+
+  function updateModerationUi(count) {
+    openReportsCount = count;
+    const badge = document.getElementById("adminNavModerationBadge");
+    const overviewCard = document.getElementById("adminOverviewModerationCard");
+    const overviewEmpty = document.getElementById("adminOverviewModerationEmpty");
+    if (badge) {
+      if (typeof count === "number" && count > 0) {
+        badge.hidden = false;
+        badge.textContent = String(count);
+        badge.setAttribute("aria-label", `${count} open reports`);
+      } else {
+        badge.hidden = true;
+        badge.removeAttribute("aria-label");
+      }
+    }
+    const headerBadge = document.getElementById("adminModerationOpenHeader");
+    if (headerBadge) {
+      if (typeof count === "number" && count > 0) {
+        headerBadge.hidden = false;
+        headerBadge.textContent = `${count} open`;
+      } else {
+        headerBadge.hidden = true;
+      }
+    }
+    if (overviewCard) {
+      const valEl = overviewCard.querySelector(".admin-overview-moderation__value");
+      const hasCount = typeof count === "number";
+      if (valEl) {
+        valEl.textContent = hasCount ? String(count) : "—";
+        valEl.classList.toggle("admin-overview-moderation__value--zero", hasCount && count === 0);
+      }
+      if (overviewEmpty) overviewEmpty.hidden = !(hasCount && count === 0);
+      overviewCard.classList.toggle("admin-overview-card--moderation-empty", hasCount && count === 0);
+    }
+    const openVal =
+      overviewStatsEl?.querySelector('[data-overview-stat="open-reports"] .pm-admin-stat__value') ||
+      overviewStatsEl?.querySelector('[data-overview-stat="open-reports"] .admin-stat__value');
+    if (openVal) openVal.textContent = typeof count === "number" ? String(count) : "—";
+  }
+
+  window.updateModerationUi = updateModerationUi;
+
+  async function loadOpenReportsCount() {
+    try {
+      const data = await PaintApi.adminReportsOpenCount();
+      if (typeof data.openCount === "number") updateModerationUi(data.openCount);
+    } catch (_) {
+      /* optional on overview */
     }
   }
 
@@ -199,15 +276,20 @@
             overviewStatCard(t("admin_cat_stat_products"), stats.products_reference ?? stats.products_total),
             overviewStatCard(t("admin_cat_stat_categories"), stats.categories_total),
             overviewStatCard(t("admin_cat_stat_brands"), stats.brands_total),
+            overviewStatCard("Total users", stats.users_total),
+            overviewStatCard("Shop users", stats.shop_users_total),
+            overviewStatCard("Customers", stats.customer_users_total),
             overviewStatCard(
               t("admin_application_status_pending"),
-              pendingApplicationsCount,
-              "pm-admin-stat--pending",
+              pendingApplicationsCount ?? stats.pending_applications,
+              "pm-admin-stat--pending admin-overview-pending-stat",
               "pending"
-            )
+            ),
+            overviewStatCard("Open reports", openReportsCount, "pm-admin-stat--moderation", "open-reports")
           ].join("");
         }
         if (typeof pendingApplicationsCount === "number") updatePendingUi(pendingApplicationsCount);
+        else if (typeof stats.pending_applications === "number") updatePendingUi(stats.pending_applications);
       }
       renderCatalogStats(stats);
     } catch (e) {
@@ -570,10 +652,35 @@
 
   async function loadShops() {
     if (!shopsTable) return;
-    const { shops } = await PaintApi.adminShops();
+    const data = await PaintApi.adminShops();
+    const shops = data.shops || [];
+    window.adminShopsCache = shops;
+    if (typeof window.adminPopulateShopCityFilter === "function") {
+      window.adminPopulateShopCityFilter(shops);
+    }
+    if (typeof window.adminApplyShopFilters === "function") {
+      window.adminApplyShopFilters();
+      return;
+    }
+    renderShopsTable(shops, shops.length);
+  }
+
+  window.adminRenderShopsTable = function renderShopsTable(shops, totalCount) {
+    if (!shopsTable) return;
     shopsTable.innerHTML = "";
+    const total = totalCount ?? (window.adminShopsCache || []).length;
     if (!shops?.length) {
-      shopsTable.innerHTML = `<p class="p-4 text-sm text-slate-500">—</p>`;
+      const msg =
+        typeof window.adminShopMonitorEmptyMessage === "function"
+          ? window.adminShopMonitorEmptyMessage(total)
+          : total > 0
+            ? "No shops match your search or filters."
+            : "No shops in the directory yet.";
+      shopsTable.innerHTML = `<div class="admin-shops-empty"><p class="admin-shops-empty__title">${esc(msg)}</p>${
+        total > 0
+          ? `<p class="admin-shops-empty__hint">Try clearing search or resetting filters.</p>`
+          : ""
+      }</div>`;
       return;
     }
     for (const s of shops) {
@@ -588,6 +695,8 @@
           </div>
           <p class="text-xs text-slate-500">${esc(s.location_text || s.slug)}</p>
           <p class="text-xs text-slate-400">${esc(s.phone || s.address || "")}</p>
+          ${s.owner_email ? `<p class="text-xs text-slate-400">${esc(s.owner_email)}</p>` : ""}
+          ${s.owner_contact_name ? `<p class="text-xs text-slate-500">${esc(s.owner_contact_name)}</p>` : ""}
         </div>
         <div class="text-xs text-slate-600 text-right space-y-1">
           <p>${esc(t("admin_cat_shops_listings"))}: ${esc(s.listing_count ?? 0)}</p>
@@ -729,10 +838,12 @@
 
   async function loadApplications() {
     if (!applicationsList) return;
-    const { applications } = await PaintApi.adminBusinessApplications();
-    const pendingCount = (applications || []).filter(
-      (app) => String(app.status || "pending") === "pending"
-    ).length;
+    const data = await PaintApi.adminBusinessApplications();
+    const applications = data.applications || [];
+    const pendingCount =
+      typeof data.pendingCount === "number"
+        ? data.pendingCount
+        : applications.filter((app) => String(app.status || "pending") === "pending").length;
     updatePendingUi(pendingCount);
     applicationsList.innerHTML = "";
     if (!applications?.length) {
@@ -777,6 +888,8 @@
         await PaintApi.adminPatchBusinessApplication(Number(btn.getAttribute("data-id")), { action: "approve" });
         await loadApplications();
         await loadShops();
+        await loadStats();
+        if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
       })
     );
     applicationsList.querySelectorAll(".app-reject").forEach((btn) =>
@@ -784,6 +897,8 @@
         if (!confirm(t("admin_application_reject_confirm"))) return;
         await PaintApi.adminPatchBusinessApplication(Number(btn.getAttribute("data-id")), { action: "reject" });
         await loadApplications();
+        await loadStats();
+        if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
       })
     );
   }
@@ -809,6 +924,7 @@
         await loadGroupedLists();
         await loadStats();
         if (typeof window.adminCatalogRefreshBrands === "function") window.adminCatalogRefreshBrands();
+        if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
       } catch (e) {
         importResultEl.textContent = formatApiError(e);
         if (e && (e.status === 404 || String(e.message || "").includes("Not Found"))) showApiWarn(true);
@@ -867,6 +983,7 @@
   window.initAdminCatalog = async function initAdminCatalog() {
     try {
       await loadStats();
+      await loadOpenReportsCount();
       await loadMeta();
       await loadGroupedLists();
       await loadProducts();

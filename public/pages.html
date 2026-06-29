@@ -492,6 +492,103 @@
       margin-bottom: 0.85rem;
     }
 
+    .dev-db-panel {
+      margin: 1rem 0 1.25rem;
+      padding: 1rem 1.1rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      background: var(--gray-50, #f8fafc);
+    }
+
+    .dev-db-panel__grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .dev-db-panel__grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .dev-db-panel__block h4 {
+      margin: 0 0 0.35rem;
+      font-size: 0.85rem;
+    }
+
+    .dev-db-panel__block p {
+      margin: 0.2rem 0;
+      font-size: 0.78rem;
+      color: var(--gray-600);
+      line-height: 1.45;
+    }
+
+    .dev-db-panel__meta {
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem;
+      word-break: break-all;
+    }
+
+    .dev-db-last-backup {
+      margin: 0.75rem 0 1rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      font-size: 0.78rem;
+    }
+
+    .dev-db-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .dev-db-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+
+    .dev-db-table th,
+    .dev-db-table td {
+      padding: 0.55rem 0.65rem;
+      border-bottom: 1px solid var(--gray-100);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .dev-db-table th {
+      background: var(--gray-100);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .dev-db-table tr:last-child td { border-bottom: none; }
+
+    .dev-db-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .dev-db-actions .btn {
+      font-size: 0.68rem;
+      padding: 0.25rem 0.45rem;
+    }
+
+    .dev-restore-warning {
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
     .dev-action-buttons .btn:disabled {
       opacity: 0.55;
       cursor: not-allowed;
@@ -1157,14 +1254,52 @@
   <!-- Developer Actions -->
   <section id="panel-dev-actions" class="panel" role="tabpanel" hidden>
     <div class="dev-actions-card card">
-      <h2>Developer Actions</h2>
-      <p class="git-hint" style="margin-top:0;">Local git tools for solo development — pull, backup, and restore. Actions run on this machine only.</p>
+      <h2>Developer Control Panel</h2>
+      <p class="git-hint" style="margin-top:0;">Local-only tools for git, server, and SQLite backups. Runs on this machine only — never available in production.</p>
 
       <h3 class="git-section-title">Quick Actions</h3>
       <div class="dev-action-buttons">
-        <button type="button" class="btn btn--primary git-action-btn" id="btnPullLatest">Pull Latest</button>
-        <button type="button" class="btn btn--dark git-action-btn" id="btnCommitPush">Commit &amp; Push All</button>
-        <button type="button" class="btn btn--ghost git-action-btn" id="btnRestartServer">Restart Server</button>
+        <button type="button" class="btn btn--primary dev-action-btn git-action-btn" id="btnPullCode">Pull Code Latest</button>
+        <button type="button" class="btn btn--dark dev-action-btn git-action-btn" id="btnPushCode">Push Code Only</button>
+        <button type="button" class="btn btn--ghost dev-action-btn git-action-btn" id="btnRestartServer">Restart Server</button>
+        <button type="button" class="btn btn--ghost dev-action-btn git-action-btn" id="btnBackupDb">Backup Database to GitHub</button>
+      </div>
+
+      <div class="dev-db-panel" id="devDbPanel">
+        <h3 class="git-section-title" style="margin-top:0;">Database Backup Panel</h3>
+        <div class="dev-db-panel__grid">
+          <div class="dev-db-panel__block">
+            <h4>Live Database</h4>
+            <p>This is the active database used by the app.</p>
+            <p class="dev-db-panel__meta" id="devDbLivePath">—</p>
+            <p>Size: <span id="devDbLiveSize">—</span></p>
+            <p class="git-hint">This file is <strong>not</strong> pushed with normal code push.</p>
+          </div>
+          <div class="dev-db-panel__block">
+            <h4>Backup Database</h4>
+            <p>Timestamped copies stored in <code>db-backups/</code>.</p>
+            <p>Only backup snapshots are pushed to GitHub via <strong>Backup Database to GitHub</strong>.</p>
+            <p class="git-hint">Use <strong>Restore</strong> only if you intentionally want to replace the current live database.</p>
+          </div>
+        </div>
+        <div id="devDbLastBackup" class="dev-db-last-backup hidden" aria-live="polite"></div>
+        <div class="dev-db-table-wrap">
+          <table class="dev-db-table" id="devDbBackupTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Filename</th>
+                <th>Size</th>
+                <th>Local Path</th>
+                <th>GitHub Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="devDbBackupTableBody">
+              <tr><td colspan="6"><span class="git-hint">Loading backups…</span></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <h3 class="git-section-title">Live Git Status</h3>
@@ -1196,17 +1331,17 @@
 
 <dialog id="commitMessageModal" class="pm-modal">
   <div class="pm-modal__head">
-    <h3>Commit &amp; Push All</h3>
+    <h3>Push Code Only</h3>
     <button type="button" class="btn btn--ghost" id="commitMessageClose" aria-label="Close">✕</button>
   </div>
   <div class="pm-modal__body">
     <label for="commitMessageInput" style="display:block;font-size:0.82rem;margin-bottom:0.35rem;color:var(--gray-700);">Commit message</label>
-    <input type="text" id="commitMessageInput" placeholder="Full project backup update" style="width:100%;padding:0.55rem 0.65rem;border-radius:8px;border:1px solid var(--gray-200);" />
-    <p class="git-hint" style="margin:0.5rem 0 0;">Runs <code>git add -A</code>, commit, and <code>git push origin main</code> for all tracked changes.</p>
+    <input type="text" id="commitMessageInput" placeholder="Describe your code changes" style="width:100%;padding:0.55rem 0.65rem;border-radius:8px;border:1px solid var(--gray-200);" />
+    <p class="git-hint" style="margin:0.5rem 0 0;">Stages code only — excludes <code>.env</code>, live SQLite in <code>data/</code>, and <code>db-backups/</code>. Then commits and pushes to <code>origin main</code>.</p>
   </div>
   <div class="pm-modal__foot">
     <button type="button" class="btn btn--ghost" id="commitMessageCancel">Cancel</button>
-    <button type="button" class="btn btn--primary" id="commitMessageConfirm">Commit &amp; Push</button>
+    <button type="button" class="btn btn--primary" id="commitMessageConfirm">Push Code</button>
   </div>
 </dialog>
 
@@ -1250,6 +1385,24 @@
   </div>
 </dialog>
 
+<dialog id="restoreDbModal" class="pm-modal">
+  <div class="pm-modal__head">
+    <h3>Restore Database Backup</h3>
+    <button type="button" class="btn btn--ghost" id="restoreDbClose" aria-label="Close">✕</button>
+  </div>
+  <div class="pm-modal__body">
+    <div class="dev-restore-warning">
+      This will replace your current live database. A safety backup will be created in
+      <code>db-backups/safety/</code> before restore.
+    </div>
+    <p class="git-hint" style="margin-top:0.75rem;">Restore file: <strong id="restoreDbFilename">—</strong></p>
+  </div>
+  <div class="pm-modal__foot">
+    <button type="button" class="btn btn--ghost" id="restoreDbCancel">Cancel</button>
+    <button type="button" class="btn btn--primary" id="restoreDbConfirm">Restore Backup</button>
+  </div>
+</dialog>
+
 <dialog id="gitCommitDetailModal" class="pm-modal pm-modal--wide">
   <div class="pm-modal__head">
     <h3>Commit Details</h3>
@@ -1288,15 +1441,33 @@
 
   const COMMIT_PUSH_STAGES_CHANGE = [
     { id: "scan", label: "Scanning project files", weight: 4, client: true },
-    { id: "precheck", label: "Checking changes", weight: 8, step: "precheck" },
+    { id: "precheck", label: "Checking code changes", weight: 8, step: "precheck" },
     { id: "review", label: "Reviewing change summary", weight: 4, client: true },
-    { id: "stage", label: "Staging all files with git add -A", weight: 12, step: "stage" },
-    { id: "count", label: "Counting changes", weight: 8, step: "count" },
+    { id: "stage", label: "Staging code (excluding DB & .env)", weight: 12, step: "stage" },
+    { id: "count", label: "Counting code changes", weight: 8, step: "count" },
     { id: "commit", label: "Creating commit", weight: 18, step: "commit" },
     { id: "push", label: "Uploading to GitHub", weight: 28, step: "push" },
     { id: "verify", label: "Verifying push", weight: 10, step: "verify" },
     { id: "refresh", label: "Refreshing dashboard", weight: 8, client: true }
   ];
+
+  const PULL_CODE_STAGES = [
+    { id: "connect", label: "Connecting to GitHub", weight: 15, client: true },
+    { id: "pull", label: "Pulling origin main", weight: 55, step: "pull" },
+    { id: "refresh", label: "Refreshing git status", weight: 30, client: true }
+  ];
+
+  const BACKUP_DB_STAGES = [
+    { id: "check", label: "Check database file", weight: 12, step: "check" },
+    { id: "copy", label: "Create backup copy", weight: 18, step: "copy" },
+    { id: "stage", label: "Stage backup only", weight: 12, step: "stage" },
+    { id: "commit", label: "Commit backup", weight: 18, step: "commit" },
+    { id: "push", label: "Push to GitHub", weight: 28, step: "push" },
+    { id: "refresh", label: "Refresh backup list", weight: 12, client: true }
+  ];
+
+  let restoreDbPendingFilename = "";
+  let lastDbBackupMeta = null;
 
   let commitPushActiveStages = COMMIT_PUSH_STAGES_CHANGE;
   let commitPushChangeSummary = null;
@@ -1486,7 +1657,7 @@
   }
 
   function setDevActionButtonsDisabled(disabled) {
-    document.querySelectorAll(".git-action-btn, #btnPullLatest, #btnCommitPush, #btnRestartServer").forEach((el) => {
+    document.querySelectorAll(".dev-action-btn, .git-action-btn").forEach((el) => {
       el.disabled = disabled;
     });
   }
@@ -1521,6 +1692,117 @@
   function formatDevActionError(endpoint, status, body) {
     const snippet = String(body || "").trim().slice(0, 500) || "(empty)";
     return `Push failed:\nEndpoint: ${endpoint}\nStatus: ${status}\nResponse: ${snippet}`;
+  }
+
+  async function getDevAction(path) {
+    const endpoint = `${DEV_ACTION}${path}`;
+    const res = await fetch(endpoint, { headers: { Accept: "application/json" }, cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok && !data.error) data.error = `HTTP ${res.status}`;
+    return data;
+  }
+
+  async function deleteDevAction(path) {
+    const endpoint = `${DEV_ACTION}${path}`;
+    const res = await fetch(endpoint, { method: "DELETE", headers: { Accept: "application/json" } });
+    const data = await res.json();
+    if (!res.ok && !data.error) data.error = `HTTP ${res.status}`;
+    return data;
+  }
+
+  async function loadDbBackups() {
+    const tbody = document.getElementById("devDbBackupTableBody");
+    const livePathEl = document.getElementById("devDbLivePath");
+    const liveSizeEl = document.getElementById("devDbLiveSize");
+    if (!tbody) return;
+    try {
+      const data = await getDevAction("/db-backups");
+      if (livePathEl && data.liveDatabase) {
+        livePathEl.textContent = data.liveDatabase.path || "—";
+        if (liveSizeEl) liveSizeEl.textContent = data.liveDatabase.sizeHuman || "—";
+      }
+      const backups = data.backups || [];
+      if (!backups.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><span class="git-hint">No backups yet. Use “Backup Database to GitHub”.</span></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = backups
+        .map(
+          (b) => `
+        <tr data-backup="${escapeHtml(b.filename)}">
+          <td>${escapeHtml(formatDate(b.createdAt))}</td>
+          <td><code>${escapeHtml(b.filename)}</code></td>
+          <td>${escapeHtml(b.sizeHuman)}</td>
+          <td class="dev-db-panel__meta">${escapeHtml(b.localPath)}</td>
+          <td>${escapeHtml(b.githubStatus || "—")}</td>
+          <td>
+            <div class="dev-db-actions">
+              <button type="button" class="btn btn--ghost dev-db-restore" data-filename="${escapeHtml(b.filename)}">Restore</button>
+              <a class="btn btn--ghost" href="${DEV_ACTION}/db-backups/${encodeURIComponent(b.filename)}/download" download="${escapeHtml(b.filename)}">Download</a>
+              <button type="button" class="btn btn--ghost dev-db-delete" data-filename="${escapeHtml(b.filename)}">Delete</button>
+            </div>
+          </td>
+        </tr>`
+        )
+        .join("");
+      tbody.querySelectorAll(".dev-db-restore").forEach((btn) => {
+        btn.addEventListener("click", () => openRestoreDbModal(btn.getAttribute("data-filename")));
+      });
+      tbody.querySelectorAll(".dev-db-delete").forEach((btn) => {
+        btn.addEventListener("click", () => deleteDbBackup(btn.getAttribute("data-filename")));
+      });
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6"><span class="git-hint">${escapeHtml(e.message || "Could not load backups")}</span></td></tr>`;
+    }
+  }
+
+  function showLastDbBackup(meta, githubStatus) {
+    const el = document.getElementById("devDbLastBackup");
+    if (!el || !meta) return;
+    el.classList.remove("hidden");
+    el.innerHTML = `
+      <p><strong>Latest backup</strong></p>
+      <p>Filename: <code>${escapeHtml(meta.filename)}</code></p>
+      <p>Path: <span class="dev-db-panel__meta">${escapeHtml(meta.localPath)}</span></p>
+      <p>Date: ${escapeHtml(formatDate(meta.createdAt))} · Size: ${escapeHtml(meta.sizeHuman)}</p>
+      <p>GitHub: ${escapeHtml(githubStatus || meta.githubStatus || "—")}</p>`;
+  }
+
+  function openRestoreDbModal(filename) {
+    restoreDbPendingFilename = filename || "";
+    document.getElementById("restoreDbFilename").textContent = restoreDbPendingFilename || "—";
+    document.getElementById("restoreDbModal")?.showModal();
+  }
+
+  async function confirmRestoreDb() {
+    if (!restoreDbPendingFilename) return;
+    document.getElementById("restoreDbModal")?.close();
+    await withDevAction("Restore Database", async () => {
+      const data = await postDevAction("/restore-db", { filename: restoreDbPendingFilename });
+      appendDevConsole(data.output || data.message || JSON.stringify(data, null, 2));
+      if (!data.ok) {
+        setDevActionStatus(data.error || "Restore failed", "error");
+        return;
+      }
+      setDevActionStatus(data.message || "Database restored. Restart server is required.", "success");
+      showLiveNotice("Database restored — restart server required", false);
+      appendDevConsole(`Safety backup: ${data.safetyPath || "—"}`);
+      if (data.removedWalShm?.length) appendDevConsole(`Removed WAL/SHM: ${data.removedWalShm.join(", ")}`);
+      await loadDbBackups();
+    });
+  }
+
+  async function deleteDbBackup(filename) {
+    if (!filename || !confirm(`Delete local backup ${filename}?`)) return;
+    await withDevAction("Delete Backup", async () => {
+      const data = await deleteDevAction(`/db-backups/${encodeURIComponent(filename)}`);
+      if (!data.ok) {
+        setDevActionStatus(data.error || "Delete failed", "error");
+        return;
+      }
+      setDevActionStatus(`Deleted ${filename}`, "success");
+      await loadDbBackups();
+    });
   }
 
   async function postDevAction(path, body) {
@@ -1589,20 +1871,56 @@
   }
 
   async function runPullLatest() {
-    await withDevAction("Pull Latest", async () => {
-      const data = await postDevAction("/pull");
-      appendDevConsole(data.output || data.message || "(no output)");
-      if (!data.ok) {
-        setDevActionStatus(data.error || "Pull failed", "error");
-        showLiveNotice(data.error || "Pull failed", true);
-        return;
+    if (devActionRunning) return;
+    devActionRunning = true;
+    setDevActionButtonsDisabled(true);
+    resetCommitProgressModal();
+    const el = getCommitProgressEls();
+    const progressTitle = document.getElementById("commitProgressTitle");
+    if (progressTitle) progressTitle.textContent = "Pull Code Latest";
+    el.modal?.showModal();
+    renderStageList(PULL_CODE_STAGES);
+    clearDevConsole();
+    setDevActionStatus("Pulling code…", "running");
+    appendDevConsole("Starting: Pull Code Latest");
+
+    try {
+      for (const stageDef of PULL_CODE_STAGES) {
+        setCommitStageState(stageDef.id, "active");
+        const base = completedStageWeight(stageDef.id, PULL_CODE_STAGES);
+        setCommitProgressPercent(base + 2, true);
+        if (stageDef.client && stageDef.id === "connect") {
+          await sleep(300);
+        } else if (stageDef.step === "pull") {
+          const data = await postDevAction("/pull");
+          appendCommitProgressOutput(data.output || data.message || "");
+          if (!data.ok) {
+            setCommitStageState(stageDef.id, "error");
+            setDevActionStatus(data.error || "Pull failed", "error");
+            appendDevConsole(data.error || "Pull failed");
+            return;
+          }
+        } else if (stageDef.client) {
+          sessionStorage.setItem("git-last-pull", new Date().toLocaleString());
+          await fetchDevStatus();
+          if (window.PaintDevGit) await PaintDevGit.refreshAll();
+        }
+        setCommitStageState(stageDef.id, "done");
+        setCommitProgressPercent(base + stageDef.weight, false);
       }
-      setDevActionStatus(data.message || "Pull completed successfully.", "success");
-      showLiveNotice(data.message || "Pull completed", false);
-      sessionStorage.setItem("git-last-pull", new Date().toLocaleString());
-      await fetchDevStatus();
-      if (window.PaintDevGit) await PaintDevGit.refreshAll();
-    });
+      setCommitProgressPercent(100, false);
+      if (el.bar) el.bar.classList.add("is-success");
+      setDevActionStatus("Pull completed successfully.", "success");
+      appendDevConsole("Pull completed — database was not modified.");
+      showLiveNotice("Pull completed", false);
+    } catch (e) {
+      setDevActionStatus(e.message || "Pull failed", "error");
+    } finally {
+      devActionRunning = false;
+      setDevActionButtonsDisabled(false);
+      if (el.done) el.done.classList.remove("hidden");
+      if (el.closeBtn) el.closeBtn.classList.remove("hidden");
+    }
   }
 
   function formatDuration(ms) {
@@ -1808,29 +2126,29 @@
       el.bar.classList.remove("is-error");
     }
     if (el.successTitle) {
-      el.successTitle.textContent = "✅ Repository is already up to date";
+      el.successTitle.textContent = "✅ No code changes to push";
     }
     renderSuccessSummary([
-      ["", "Nothing to commit."],
-      ["", "Nothing to push."],
+      ["", "No code changes detected."],
+      ["", "Live database and backups were excluded."],
       ["Latest commit", data.commitHash || "—"],
       ["Branch", data.branch || "main"],
-      ["Working tree", "Clean"]
+      ["Working tree", "Clean (code only)"]
     ]);
     if (el.success) el.success.classList.remove("hidden");
     showCommitProgressFoot("uptodate", data);
-    appendDevConsole("Repository up to date — nothing to commit or push.");
-    setDevActionStatus("Repository is already up to date.", "success");
-    showLiveNotice("Repository is already up to date", false);
+    appendDevConsole("No code changes to push.");
+    setDevActionStatus("No code changes to push.", "success");
+    showLiveNotice("No code changes to push", false);
   }
 
-  function showBackupSuccess(result, summary) {
+  function showCodePushSuccess(result, summary) {
     const el = getCommitProgressEls();
     if (el.bar) {
       el.bar.classList.add("is-success");
       el.bar.classList.remove("is-error");
     }
-    if (el.successTitle) el.successTitle.textContent = "✅ Backup completed";
+    if (el.successTitle) el.successTitle.textContent = "✅ Code push completed";
     renderSuccessSummary([
       ["Commit", result.commitHash || "—"],
       ["Branch", result.branch || "main"],
@@ -1843,11 +2161,34 @@
     ]);
     if (el.success) el.success.classList.remove("hidden");
     showCommitProgressFoot("success", result);
-    appendDevConsole(`Backup completed · ${result.commitHash} · ${formatDuration(result.duration || 0)}`);
-    setDevActionStatus("Backup completed successfully.", "success");
-    showLiveNotice("Backup completed successfully", false);
+    appendDevConsole(`Code push completed · ${result.commitHash} · ${formatDuration(result.duration || 0)}`);
+    setDevActionStatus("Code push completed successfully.", "success");
+    showLiveNotice("Code push completed", false);
     sessionStorage.setItem("git-last-push", new Date().toLocaleString());
     if (window.PaintDevGit) window.PaintDevGit.refreshAll();
+  }
+
+  function showDbBackupPushSuccess(result, backup) {
+    const el = getCommitProgressEls();
+    if (el.bar) {
+      el.bar.classList.add("is-success");
+      el.bar.classList.remove("is-error");
+    }
+    if (el.successTitle) el.successTitle.textContent = "✅ Database backup pushed";
+    renderSuccessSummary([
+      ["Backup file", backup?.filename || "—"],
+      ["Commit", result.commitHash || "—"],
+      ["Branch", result.branch || "main"],
+      ["Size", backup?.sizeHuman || "—"],
+      ["GitHub", backup?.githubStatus || "on GitHub"],
+      ["Duration", formatDuration(result.duration || 0)]
+    ]);
+    if (el.success) el.success.classList.remove("hidden");
+    showCommitProgressFoot("success", result);
+    appendDevConsole(`Database backup pushed · ${backup?.filename}`);
+    setDevActionStatus("Database backup pushed to GitHub.", "success");
+    showLiveNotice("Database backup completed", false);
+    showLastDbBackup(backup, "on GitHub");
   }
 
   async function runCleanCommitPath(precheckData) {
@@ -1884,12 +2225,14 @@
 
   async function runCommitPushWithProgress(message) {
     if (devActionRunning) return;
-    commitPushPendingMessage = message || "Full project backup update";
+    commitPushPendingMessage = message || "Code update";
     devActionRunning = true;
     setDevActionButtonsDisabled(true);
 
     resetCommitProgressModal();
     const el = getCommitProgressEls();
+    const progressTitle = document.getElementById("commitProgressTitle");
+    if (progressTitle) progressTitle.textContent = "Push Code Only";
     el.modal?.showModal();
 
     const started = Date.now();
@@ -1918,7 +2261,7 @@
       showCommitProgressFoot("error", data);
       appendDevConsole(errText);
       appendCommitProgressOutput(errText);
-      setDevActionStatus(data.error || "Commit & push failed", "error");
+      setDevActionStatus(data.error || "Code push failed", "error");
     };
 
     try {
@@ -2027,7 +2370,7 @@
       };
 
       setCommitProgressPercent(100, false);
-      showBackupSuccess(result, commitPushChangeSummary);
+      showCodePushSuccess(result, commitPushChangeSummary);
     } catch (e) {
       fail("push", {
         step: "push",
@@ -2038,6 +2381,104 @@
     } finally {
       devActionRunning = false;
       setDevActionButtonsDisabled(false);
+    }
+  }
+
+  async function runBackupDbStep(stageDef, extraBody = {}, onPushProgress) {
+    const body = { step: stageDef.step, ...extraBody };
+    try {
+      const data = await postDevAction("/backup-db", body);
+      if (data.output) appendCommitProgressOutput(data.output);
+      if (stageDef.step === "push" && data.pushProgress != null && onPushProgress) {
+        onPushProgress(data.pushProgress);
+      }
+      return data;
+    } catch (err) {
+      return {
+        ok: false,
+        step: stageDef.step,
+        error: err.detail || err.message || "Request failed"
+      };
+    }
+  }
+
+  async function runBackupDbWithProgress() {
+    if (devActionRunning) return;
+    devActionRunning = true;
+    setDevActionButtonsDisabled(true);
+    resetCommitProgressModal();
+    const el = getCommitProgressEls();
+    const progressTitle = document.getElementById("commitProgressTitle");
+    if (progressTitle) progressTitle.textContent = "Backup Database to GitHub";
+    el.modal?.showModal();
+    renderStageList(BACKUP_DB_STAGES);
+    clearDevConsole();
+    setDevActionStatus("Creating database backup…", "running");
+    appendDevConsole("Starting: Backup Database to GitHub");
+
+    const started = Date.now();
+    let backupMeta = null;
+    let commitHash = "";
+    const pushBasePct = completedStageWeight("push", BACKUP_DB_STAGES);
+    const pushWeight = BACKUP_DB_STAGES.find((s) => s.id === "push")?.weight || 28;
+
+    const fail = (stageId, data) => {
+      setCommitStageState(stageId, "error");
+      if (el.bar) el.bar.classList.add("is-error");
+      if (el.error) {
+        el.error.classList.remove("hidden");
+        el.error.textContent = data.error || "Backup failed";
+      }
+      setDevActionStatus(data.error || "Backup failed", "error");
+      appendDevConsole(data.error || "Backup failed");
+    };
+
+    try {
+      for (const stageDef of BACKUP_DB_STAGES) {
+        setCommitStageState(stageDef.id, "active");
+        const base = completedStageWeight(stageDef.id, BACKUP_DB_STAGES);
+        setCommitProgressPercent(base + 2, true);
+
+        if (stageDef.client) {
+          await loadDbBackups();
+          if (window.PaintDevGit) await PaintDevGit.refreshAll();
+        } else {
+          const onPushProgress = (gitPct) => {
+            const mapped = pushBasePct + (pushWeight * gitPct) / 100;
+            setCommitProgressPercent(mapped, false);
+          };
+          const extra =
+            stageDef.step === "stage" || stageDef.step === "commit"
+              ? { relPath: backupMeta?.relPath, filename: backupMeta?.filename, message: `Database backup: ${backupMeta?.filename || ""}` }
+              : {};
+          const data = await runBackupDbStep(stageDef, extra, onPushProgress);
+          if (!data.ok) {
+            fail(stageDef.id, data);
+            return;
+          }
+          if (stageDef.step === "copy" && data.backup) {
+            backupMeta = data.backup;
+            lastDbBackupMeta = data.backup;
+          }
+          if (data.commitHash) commitHash = data.commitHash;
+        }
+
+        setCommitStageState(stageDef.id, "done");
+        setCommitProgressPercent(base + stageDef.weight, false);
+      }
+
+      setCommitProgressPercent(100, false);
+      if (el.bar) el.bar.classList.add("is-success");
+      showDbBackupPushSuccess(
+        { commitHash, duration: Date.now() - started, githubUrl: null },
+        { ...backupMeta, githubStatus: "on GitHub" }
+      );
+      await loadDbBackups();
+    } finally {
+      devActionRunning = false;
+      setDevActionButtonsDisabled(false);
+      if (el.done) el.done.classList.remove("hidden");
+      if (el.closeBtn) el.closeBtn.classList.remove("hidden");
     }
   }
 
@@ -2788,13 +3229,21 @@
   const commitMessageModal = document.getElementById("commitMessageModal");
   const commitMessageInput = document.getElementById("commitMessageInput");
 
-  document.getElementById("btnPullLatest").addEventListener("click", () => runPullLatest());
+  document.getElementById("btnPullCode").addEventListener("click", () => runPullLatest());
 
-  document.getElementById("btnCommitPush").addEventListener("click", () => {
+  document.getElementById("btnPushCode").addEventListener("click", () => {
     if (devActionRunning) return;
     commitMessageInput.value = "";
     commitMessageModal.showModal();
   });
+
+  document.getElementById("btnBackupDb").addEventListener("click", () => runBackupDbWithProgress());
+
+  document.getElementById("restoreDbConfirm").addEventListener("click", () => confirmRestoreDb());
+  document.getElementById("restoreDbCancel").addEventListener("click", () => document.getElementById("restoreDbModal")?.close());
+  document.getElementById("restoreDbClose").addEventListener("click", () => document.getElementById("restoreDbModal")?.close());
+
+  document.getElementById("btnRestartServer").addEventListener("click", () => runRestartServer());
 
   document.getElementById("commitMessageConfirm").addEventListener("click", () => {
     const message = commitMessageInput.value.trim();
@@ -2840,6 +3289,11 @@
   renderBugs();
   renderRoadmap();
   startLivePolling();
+  loadDbBackups().catch(() => {});
+
+  document.querySelectorAll(".tab[data-panel='dev-actions']").forEach((tab) => {
+    tab.addEventListener("click", () => loadDbBackups().catch(() => {}));
+  });
 
   if (window.PaintDevGit) {
     window.PaintDevGit.init({

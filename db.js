@@ -337,8 +337,18 @@ async function migrate(db) {
   if (!userColsAfterRoleMigration.some((c) => c.name === "oauth_subject")) {
     await run(db, "ALTER TABLE users ADD COLUMN oauth_subject TEXT");
   }
+  let userColsExtended = await all(db, "PRAGMA table_info(users)");
+  if (!userColsExtended.some((c) => c.name === "active")) {
+    await run(db, "ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1");
+  }
+  userColsExtended = await all(db, "PRAGMA table_info(users)");
+  if (!userColsExtended.some((c) => c.name === "last_login_at")) {
+    await run(db, "ALTER TABLE users ADD COLUMN last_login_at TEXT");
+  }
   await run(db, `CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone)`);
   await run(db, `CREATE INDEX IF NOT EXISTS idx_users_oauth ON users(oauth_provider, oauth_subject)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_users_active ON users(active)`);
 
   await run(
     db,
@@ -369,6 +379,52 @@ async function migrate(db) {
     )`
   );
   await run(db, `CREATE INDEX IF NOT EXISTS idx_shop_custom_colors_shop ON shop_custom_colors(shop_id)`);
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS admin_activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_user_id INTEGER,
+      admin_email TEXT NOT NULL DEFAULT '',
+      action TEXT NOT NULL,
+      target_type TEXT,
+      target_id INTEGER,
+      target_label TEXT,
+      metadata_json TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`
+  );
+  await run(
+    db,
+    `CREATE INDEX IF NOT EXISTS idx_admin_activity_created ON admin_activity_log(created_at DESC)`
+  );
+  await run(
+    db,
+    `CREATE INDEX IF NOT EXISTS idx_admin_activity_action ON admin_activity_log(action)`
+  );
+
+  await run(
+    db,
+    `CREATE TABLE IF NOT EXISTS moderation_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reporter_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      reporter_email TEXT,
+      report_type TEXT NOT NULL,
+      target_type TEXT NOT NULL CHECK (target_type IN ('shop','listing','product','other')),
+      target_id INTEGER,
+      target_label TEXT,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','reviewing','resolved','dismissed')),
+      admin_note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      resolved_at TEXT,
+      resolved_by_admin_id INTEGER
+    )`
+  );
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_moderation_status ON moderation_reports(status)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_moderation_created ON moderation_reports(created_at DESC)`);
+  await run(db, `CREATE INDEX IF NOT EXISTS idx_moderation_type ON moderation_reports(report_type)`);
 
   const setting = await get(db, "SELECT value FROM site_settings WHERE key = 'customer_access_enabled'");
   if (!setting) {

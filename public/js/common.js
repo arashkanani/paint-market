@@ -450,6 +450,94 @@ const PaintApi = {
     if (meta.brandId) fd.append("brandId", String(meta.brandId));
     if (meta.brandSlug) fd.append("brandSlug", meta.brandSlug);
     return this.request("/admin/import-catalog", { method: "POST", body: fd });
+  },
+  adminActivityLog(opts = {}) {
+    const q = new URLSearchParams();
+    if (opts.limit) q.set("limit", String(opts.limit));
+    if (opts.action) q.set("action", String(opts.action));
+    const qs = q.toString();
+    return this.request(`/admin/activity-log${qs ? `?${qs}` : ""}`);
+  },
+  adminUsers(opts = {}) {
+    const qs = new URLSearchParams();
+    if (opts.q) qs.set("q", String(opts.q).trim());
+    if (opts.role && opts.role !== "all") qs.set("role", opts.role);
+    if (opts.status && opts.status !== "all") qs.set("status", opts.status);
+    if (opts.hasShop && opts.hasShop !== "all") qs.set("has_shop", opts.hasShop);
+    if (opts.page) qs.set("page", String(opts.page));
+    if (opts.limit) qs.set("limit", String(opts.limit));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/admin/users${suffix}`);
+  },
+  adminUser(id) {
+    return this.request(`/admin/users/${id}`);
+  },
+  adminPatchUser(id, body) {
+    return this.request(`/admin/users/${id}`, { method: "PATCH", body });
+  },
+  async adminDownloadExport(type, queryParams = {}) {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(queryParams || {})) {
+      if (v != null && String(v).trim() !== "") qs.set(k, String(v));
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    const fullPath = paintMarketApiFullUrl(`/admin/export/${type}.csv${suffix}`);
+    const res = await fetch(fullPath, { credentials: "include" });
+    if (!res.ok) {
+      const text = await res.text();
+      let data = null;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text.slice(0, 200) || "Export failed" };
+      }
+      const err = new Error((data && data.error) || "Export failed");
+      err.status = res.status;
+      throw err;
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get("Content-Disposition") || "";
+    const fnMatch = cd.match(/filename="([^"]+)"/);
+    const filename = fnMatch ? fnMatch[1] : `${type}.csv`;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  },
+  submitReport(body) {
+    return this.request("/reports", { method: "POST", body });
+  },
+  adminReportsDashboard(opts = {}) {
+    const qs = new URLSearchParams();
+    if (opts.from) qs.set("from", String(opts.from));
+    if (opts.to) qs.set("to", String(opts.to));
+    if (opts.city && opts.city !== "all") qs.set("city", String(opts.city));
+    if (opts.role && opts.role !== "all") qs.set("role", String(opts.role));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/admin/reports/dashboard${suffix}`);
+  },
+  adminReportsOpenCount() {
+    return this.request("/admin/reports/open-count");
+  },
+  adminModerationReports(opts = {}) {
+    const qs = new URLSearchParams();
+    if (opts.q) qs.set("q", String(opts.q).trim());
+    if (opts.status && opts.status !== "all") qs.set("status", opts.status);
+    if (opts.reportType && opts.reportType !== "all") qs.set("report_type", opts.reportType);
+    if (opts.targetType && opts.targetType !== "all") qs.set("target_type", opts.targetType);
+    if (opts.page) qs.set("page", String(opts.page));
+    if (opts.limit) qs.set("limit", String(opts.limit));
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return this.request(`/admin/reports${suffix}`);
+  },
+  adminModerationReport(id) {
+    return this.request(`/admin/reports/${id}`);
+  },
+  adminPatchModerationReport(id, body) {
+    return this.request(`/admin/reports/${id}`, { method: "PATCH", body });
   }
 };
 

@@ -49,6 +49,11 @@
         >
           <span data-pm-t="shop_info_btn">Description</span>
         </button>
+        <button
+          type="button"
+          id="shopReportBtn"
+          class="pm-shop-hero-bar__btn pm-shop-hero-bar__btn--report hidden"
+        >Report issue</button>
         <a
           id="openDirectionsMap"
           href="#"
@@ -117,6 +122,7 @@
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/common.js"></script>
+  <script src="/paint/js/report-abuse.js"></script>
   <script src="/paint/js/theme.js"></script>
   <script>
     function esc(s) {
@@ -188,6 +194,7 @@
       });
     }
     let listings = [];
+    let currentShop = null;
     let shopCustomColors = [];
     let categoryFilter = "";
     let capacityFilter = "";
@@ -316,6 +323,28 @@
         if (opts.highlight) card.classList.add("pm-shop-amazon-card--search-focus");
         card.dataset.listingId = String(row.id);
         card.innerHTML = shopProductCardBodyHtml(row);
+        const reportWrap = document.createElement("div");
+        reportWrap.className = "pm-shop-card-report px-2 pb-2 flex justify-end";
+        const reportBtn = document.createElement("button");
+        reportBtn.type = "button";
+        reportBtn.className =
+          "text-[10px] font-semibold text-slate-400 hover:text-rose-600 underline-offset-2 hover:underline";
+        reportBtn.textContent = "Report listing";
+        reportBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (!currentShop || typeof PaintMarketReport === "undefined") return;
+          const productName = row.product_name || row.productName || "Listing";
+          PaintMarketReport.open({
+            shopId: currentShop.id,
+            listingId: row.id,
+            productId: listingMasterProductId(row),
+            targetType: "listing",
+            contextLabel: `${productName} · ${currentShop.name || ""}`
+          });
+        });
+        reportWrap.appendChild(reportBtn);
+        card.appendChild(reportWrap);
         card.addEventListener("click", () => activate(card, row.id));
         grid.appendChild(card);
       }
@@ -413,7 +442,20 @@
       try {
         const data = await PaintApi.shopPublic(slug);
         const shop = data.shop;
+        currentShop = shop;
         document.getElementById("shopName").textContent = shop.name;
+        const shopReportBtn = document.getElementById("shopReportBtn");
+        if (shopReportBtn) {
+          shopReportBtn.classList.remove("hidden");
+          shopReportBtn.onclick = () => {
+            if (typeof PaintMarketReport === "undefined") return;
+            PaintMarketReport.open({
+              shopId: shop.id,
+              targetType: "shop",
+              contextLabel: `Shop: ${shop.name || ""}`
+            });
+          };
+        }
         const shopFavBtn = document.getElementById("shopFavBtn");
         if (shopFavBtn && shop.slug) {
           shopFavBtn.classList.remove("hidden");

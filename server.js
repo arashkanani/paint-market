@@ -15,6 +15,24 @@ const ralColors = require("./public/js/ral-colors");
 const { compressImageFile } = require("./lib/image-compress");
 const { buildNavigationTreePayload } = require("./lib/nav-tree-normalize");
 const { registerGitControlRoutes } = require("./lib/git-control");
+const { logAdminActivity } = require("./lib/admin-activity");
+const { sendCsv } = require("./lib/csv-export");
+const {
+  ALLOWED_ROLES,
+  parseAdminUsersQuery,
+  buildUsersListSql,
+  normalizeAdminUserRow
+} = require("./lib/admin-users");
+const { parseReportsDashboardQuery, buildReportsDashboard } = require("./lib/admin-reports-dashboard");
+const {
+  STATUSES,
+  parseAdminModerationQuery,
+  buildModerationListSql,
+  normalizeModerationReport,
+  validatePublicReportBody
+} = require("./lib/moderation-reports");
+const { filterPorcelainForCodePush, runGitResetExcluded } = require("./lib/dev-git-code-push");
+const devDbBackup = require("./lib/dev-db-backup");
 
 async function loadShopCustomColors(db, shopId) {
   return dbm.all(
@@ -810,7 +828,7 @@ async function getSessionUser(db, req) {
      FROM sessions sess
      JOIN users u ON u.id = sess.user_id
      LEFT JOIN shops s ON s.id = u.shop_id
-     WHERE sess.token = ? AND sess.expires_at > datetime('now')`,
+     WHERE sess.token = ? AND sess.expires_at > datetime('now') AND COALESCE(u.active, 1) = 1`,
     [token]
   );
   return row || null;
@@ -851,6 +869,66 @@ async function readShopsListShowLastUpdate(db) {
 
 const PHONE_OTP_TTL_MS = 10 * 60 * 1000;
 const phoneOtpStore = new Map();
+const reportSubmitRateLimit = new Map();
+const REPORT_RATE_WINDOW_MS = 15 * 60 * 1000;
+const REPORT_RATE_MAX = 8;
+
+function clientIp(req) {
+  const fwd = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return fwd || req.socket?.remoteAddress || "unknown";
+}
+
+function checkReportRateLimit(ip) {
+  const now = Date.now();
+  let entry = reportSubmitRateLimit.get(ip);
+  if (!entry || entry.resetAt < now) {
+    entry = { count: 0, resetAt: now + REPORT_RATE_WINDOW_MS };
+    reportSubmitRateLimit.set(ip, entry);
+  }
+  entry.count += 1;
+  return entry.count <= REPORT_RATE_MAX;
+}
+
+async function resolveModerationTarget(db, payload) {
+  if (payload.listingId) {
+    const row = await dbm.get(
+      db,
+      `SELECT sl.id, mp.name AS product_name, mp.id AS product_id, s.id AS shop_id, s.name AS shop_name
+       FROM shop_listings sl
+       JOIN master_products mp ON mp.id = sl.master_product_id
+       JOIN shops s ON s.id = sl.shop_id
+       WHERE sl.id = ?`,
+      [payload.listingId]
+    );
+    if (row) {
+      return {
+        targetType: "listing",
+        targetId: row.id,
+        targetLabel: `${row.product_name} @ ${row.shop_name}`
+      };
+    }
+  }
+  if (payload.productId) {
+    const row = await dbm.get(db, "SELECT id, name FROM master_products WHERE id = ?", [payload.productId]);
+    if (row) {
+      return { targetType: "product", targetId: row.id, targetLabel: row.name || `Product #${row.id}` };
+    }
+  }
+  if (payload.shopId) {
+    const row = await dbm.get(db, "SELECT id, name FROM shops WHERE id = ?", [payload.shopId]);
+    if (row) {
+      return { targetType: "shop", targetId: row.id, targetLabel: row.name || `Shop #${row.id}` };
+    }
+  }
+  if (payload.targetType && payload.targetId) {
+    return {
+      targetType: payload.targetType,
+      targetId: payload.targetId,
+      targetLabel: payload.targetType === "other" ? "General report" : `${payload.targetType} #${payload.targetId}`
+    };
+  }
+  return { targetType: payload.targetType || "other", targetId: null, targetLabel: "General report" };
+}
 
 function normalizePhoneDigits(raw) {
   return String(raw || "").replace(/\D/g, "");
@@ -927,8 +1005,15 @@ async function loadAuthUserPayload(db, userId) {
 }
 
 async function issueUserSession(db, res, userId) {
+  const user = await dbm.get(db, "SELECT id, COALESCE(active, 1) AS active FROM users WHERE id = ?", [userId]);
+  if (!user || user.active === 0) {
+    const err = new Error("Account disabled");
+    err.status = 403;
+    throw err;
+  }
   const token = randomToken(24);
   const maxAge = 1000 * 60 * 60 * 24 * 30;
+  await dbm.run(db, "UPDATE users SET last_login_at = datetime('now') WHERE id = ?", [userId]);
   await dbm.run(db, "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+30 days'))", [
     token,
     userId
@@ -1356,7 +1441,8 @@ function handleCommitPushStep(req, res) {
   if (step === "precheck") {
     lines.push("$ git status --short");
     const status = runGitCommandDetailed(["status", "--short"]);
-    lines.push(status.stdout || "(clean working tree)");
+    const codePorcelain = filterPorcelainForCodePush(status.stdout || "");
+    lines.push(codePorcelain || status.stdout || "(clean working tree)");
     if (!status.ok) {
       res.json({
         ok: false,
@@ -1366,12 +1452,13 @@ function handleCommitPushStep(req, res) {
       });
       return;
     }
-    const summary = summarizeGitStatus(status.stdout);
+    const summary = summarizeGitStatus(codePorcelain);
     const head = getGitHeadInfo();
     res.json({
       ok: true,
       step: "precheck",
       nothingToCommit: summary.total === 0,
+      noCodeChanges: summary.total === 0,
       workingTreeClean: summary.total === 0,
       summary,
       commitHash: head.commitHash,
@@ -1399,11 +1486,22 @@ function handleCommitPushStep(req, res) {
     lines.push("$ git add -A");
     const add = runGitCommandDetailed(["add", "-A"]);
     if (add.output) lines.push(add.output);
+    if (!add.ok) {
+      res.json({
+        ok: false,
+        step: "stage",
+        output: lines.join("\n"),
+        error: add.stderr || add.stdout || "git add failed"
+      });
+      return;
+    }
+    const resetResult = runGitResetExcluded(runGitCommandDetailed, ROOT);
+    lines.push(resetResult.output);
     res.json({
-      ok: add.ok,
+      ok: resetResult.ok,
       step: "stage",
       output: lines.join("\n"),
-      error: add.ok ? undefined : add.stderr || add.stdout || "git add failed"
+      error: resetResult.ok ? undefined : resetResult.error || "git reset failed"
     });
     return;
   }
@@ -1427,7 +1525,8 @@ function handleCommitPushStep(req, res) {
         ok: true,
         step: "count",
         nothingToCommit: true,
-        message: "No local changes to commit.",
+        noCodeChanges: true,
+        message: "No code changes to push.",
         filesChanged: 0,
         output: lines.join("\n")
       });
@@ -1450,7 +1549,8 @@ function handleCommitPushStep(req, res) {
         ok: true,
         step: "commit",
         nothingToCommit: true,
-        message: "No local changes to commit.",
+        noCodeChanges: true,
+        message: "No code changes to push.",
         output: pre.stdout || "(clean working tree)"
       });
       return;
@@ -1551,6 +1651,11 @@ function handleCommitPushFull(message, res) {
     res.json({ ok: false, error: add.stderr || add.stdout || "git add failed", output: add.output });
     return;
   }
+  const resetResult = runGitResetExcluded(runGitCommandDetailed, ROOT);
+  if (!resetResult.ok) {
+    res.json({ ok: false, error: resetResult.error || "git reset failed", output: resetResult.output });
+    return;
+  }
 
   const status = runGitCommandDetailed(["status", "--short"]);
   if (!status.ok) {
@@ -1561,13 +1666,14 @@ function handleCommitPushFull(message, res) {
     res.json({
       ok: true,
       nothingToCommit: true,
-      message: "No local changes to commit.",
-      output: status.output || "(clean working tree)"
+      noCodeChanges: true,
+      message: "No code changes to push.",
+      output: [resetResult.output, status.output || "(clean working tree)"].filter(Boolean).join("\n")
     });
     return;
   }
 
-  const lines = [`$ git add -A`, status.stdout, `$ git commit -m "${message}"`];
+  const lines = [`$ git add -A`, resetResult.output, status.stdout, `$ git commit -m "${message}"`];
   const filesChanged = countStatusLines(status.stdout);
   const commit = runGitCommandDetailed(["commit", "-m", message]);
   lines.push(commit.output || "(no commit output)");
@@ -1722,6 +1828,114 @@ function testPublicPage(publicDir, pageRel) {
   };
 }
 
+function handleBackupDbStep(req, res) {
+  const step = String(req.body?.step || "full").toLowerCase();
+  const message =
+    String(req.body?.message || "").trim() ||
+    (req.body?.filename ? `Database backup: ${req.body.filename}` : "Database backup");
+
+  if (step === "check") {
+    const livePath = devDbBackup.getLiveDbPath(ROOT);
+    const exists = fs.existsSync(livePath);
+    res.json({
+      ok: exists,
+      step: "check",
+      livePath,
+      exists,
+      sizeHuman: exists ? devDbBackup.formatByteSize(fs.statSync(livePath).size) : null,
+      output: exists ? `Live database found: ${livePath}` : `Live database not found: ${livePath}`,
+      error: exists ? undefined : "Live database file not found"
+    });
+    return;
+  }
+
+  if (step === "copy") {
+    const result = devDbBackup.createBackupCopy(ROOT);
+    if (!result.ok) {
+      res.json({ ok: false, step: "copy", error: result.error, output: result.error });
+      return;
+    }
+    res.json({
+      ok: true,
+      step: "copy",
+      backup: result,
+      output: `Created backup: ${result.localPath} (${result.sizeHuman})`
+    });
+    return;
+  }
+
+  if (step === "stage") {
+    const rel = String(req.body?.relPath || req.body?.filename || "").trim();
+    if (!rel) {
+      res.status(400).json({ ok: false, error: "Backup path required for stage step" });
+      return;
+    }
+    const filename = path.basename(rel);
+    const resolved = devDbBackup.resolveBackupFile(ROOT, filename);
+    if (!resolved.ok) {
+      res.json({ ok: false, step: "stage", error: resolved.error });
+      return;
+    }
+    const lines = ["$ git reset", `$ git add ${resolved.relPath}`];
+    runGitCommandDetailed(["reset"]);
+    const add = runGitCommandDetailed(["add", "--", resolved.relPath]);
+    if (add.output) lines.push(add.output);
+    res.json({
+      ok: add.ok,
+      step: "stage",
+      relPath: resolved.relPath,
+      output: lines.join("\n"),
+      error: add.ok ? undefined : add.stderr || add.stdout || "git add failed"
+    });
+    return;
+  }
+
+  if (step === "commit") {
+    const rel = String(req.body?.relPath || "").trim();
+    const commitMsg = message || (rel ? `Database backup: ${path.basename(rel)}` : "Database backup");
+    const lines = [`$ git commit -m "${commitMsg}"`];
+    const pre = runGitCommandDetailed(["status", "--short"]);
+    if (!countStatusLines(pre.stdout)) {
+      res.json({
+        ok: true,
+        step: "commit",
+        nothingToCommit: true,
+        message: "No staged backup to commit.",
+        output: pre.stdout || "(clean working tree)"
+      });
+      return;
+    }
+    const commit = runGitCommandDetailed(["commit", "-m", commitMsg]);
+    lines.push(commit.output || "(no commit output)");
+    if (!commit.ok) {
+      res.json({
+        ok: false,
+        step: "commit",
+        output: lines.join("\n"),
+        error: commit.stderr || commit.stdout || "git commit failed"
+      });
+      return;
+    }
+    const head = getGitHeadInfo();
+    res.json({
+      ok: true,
+      step: "commit",
+      commitHash: head.commitHash,
+      branch: head.branch,
+      githubUrl: getGitHubCommitWebUrl(head.commitHash),
+      output: lines.join("\n")
+    });
+    return;
+  }
+
+  if (step === "push") {
+    handleCommitPushPushStep(req, res);
+    return;
+  }
+
+  res.status(400).json({ ok: false, error: `Unknown backup-db step: ${step}` });
+}
+
 function registerDevActionRoutes(app, ctx) {
   const { publicDir, getListeningPort } = ctx;
 
@@ -1729,6 +1943,58 @@ function registerDevActionRoutes(app, ctx) {
     app.post(route, handler);
     app.post(`/paint${route}`, handler);
   };
+
+  const mountGet = (route, handler) => {
+    app.get(route, handler);
+    app.get(`/paint${route}`, handler);
+  };
+
+  const mountDelete = (route, handler) => {
+    app.delete(route, handler);
+    app.delete(`/paint${route}`, handler);
+  };
+
+  mountGet("/api/dev-action/db-backups", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const data = devDbBackup.listDbBackups(ROOT, runGitCommandDetailed);
+    res.json({ ok: true, ...data });
+  });
+
+  mountPost("/api/dev-action/backup-db", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    handleBackupDbStep(req, res);
+  });
+
+  mountPost("/api/dev-action/restore-db", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const filename = req.body?.filename;
+    const result = devDbBackup.restoreBackup(ROOT, filename);
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  mountDelete("/api/dev-action/db-backups/:filename", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const result = devDbBackup.deleteLocalBackup(ROOT, req.params.filename);
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  mountGet("/api/dev-action/db-backups/:filename/download", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const resolved = devDbBackup.resolveBackupFile(ROOT, req.params.filename);
+    if (!resolved.ok) {
+      res.status(404).json(resolved);
+      return;
+    }
+    res.download(resolved.absPath, resolved.filename);
+  });
 
   mountPost("/api/dev-action/pull", (req, res) => {
     if (devActionForbidden(req, res)) return;
@@ -2105,6 +2371,11 @@ async function main() {
         res.status(401).json({ error: "Invalid credentials" });
         return;
       }
+      if (user.active === 0) {
+        res.status(403).json({ error: "Account disabled" });
+        return;
+      }
+      await dbm.run(db, "UPDATE users SET last_login_at = datetime('now') WHERE id = ?", [user.id]);
       const token = randomToken(24);
       await dbm.run(db, "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+30 days'))", [
         token,
@@ -2970,6 +3241,45 @@ async function main() {
     })
   );
 
+  app.post(
+    "/paint/api/reports",
+    asyncHandler(async (req, res) => {
+      const ip = clientIp(req);
+      if (!checkReportRateLimit(ip)) {
+        res.status(429).json({ error: "Too many reports. Please try again later." });
+        return;
+      }
+      const validated = validatePublicReportBody(req.body || {});
+      if (validated.error) {
+        res.status(400).json({ error: validated.error });
+        return;
+      }
+      const payload = validated.value;
+      const sessionUser = await getSessionUser(db, req);
+      const reporterUserId = sessionUser?.id ?? null;
+      let reporterEmail = payload.reporterEmail;
+      if (sessionUser?.email) reporterEmail = sessionUser.email;
+
+      const target = await resolveModerationTarget(db, payload);
+      const ins = await dbm.run(
+        db,
+        `INSERT INTO moderation_reports
+          (reporter_user_id, reporter_email, report_type, target_type, target_id, target_label, message, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'open')`,
+        [
+          reporterUserId,
+          reporterEmail,
+          payload.reportType,
+          target.targetType,
+          target.targetId,
+          target.targetLabel,
+          payload.message
+        ]
+      );
+      res.status(201).json({ ok: true, id: ins.lastID });
+    })
+  );
+
   app.get(
     "/paint/api/public/shop/:slug",
     asyncHandler(async (req, res) => {
@@ -3465,11 +3775,17 @@ async function main() {
   app.patch(
     "/paint/api/admin/customer-access",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const enabled = !!(req.body && req.body.enabled);
       await dbm.run(db, "UPDATE site_settings SET value = ? WHERE key = 'customer_access_enabled'", [
         enabled ? "1" : "0"
       ]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "customer_access_toggled",
+        targetType: "setting",
+        targetLabel: "customer_access",
+        metadata: { enabled }
+      }).catch(() => {});
       res.json({ customerAccessEnabled: enabled });
     })
   );
@@ -3477,7 +3793,7 @@ async function main() {
   app.patch(
     "/paint/api/admin/shops-list-show-last-update",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const show = !!(req.body && req.body.enabled);
       const val = show ? "1" : "0";
       const upd = await dbm.run(
@@ -3493,6 +3809,12 @@ async function main() {
         );
       }
       const shopsListShowLastUpdate = await readShopsListShowLastUpdate(db);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "shop_list_lu_toggled",
+        targetType: "setting",
+        targetLabel: "shops_list_show_last_update",
+        metadata: { enabled: shopsListShowLastUpdate }
+      }).catch(() => {});
       res.json({ shopsListShowLastUpdate });
     })
   );
@@ -3509,7 +3831,7 @@ async function main() {
   app.put(
     "/paint/api/admin/brands/order",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const ids = req.body && Array.isArray(req.body.orderedIds) ? req.body.orderedIds.map(Number) : [];
       if (!ids.length) {
         res.status(400).json({ error: "orderedIds[] required" });
@@ -3529,6 +3851,12 @@ async function main() {
         throw e;
       }
       const brands = await dbm.all(db, "SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC");
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "brand_priority_updated",
+        targetType: "brand",
+        targetLabel: "Brand display order",
+        metadata: { orderedIds: ids.slice(0, 20) }
+      }).catch(() => {});
       res.json({ brands });
     })
   );
@@ -3573,7 +3901,7 @@ async function main() {
   app.patch(
     "/paint/api/admin/ads/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
       const body = req.body || {};
       const patches = [];
@@ -3601,6 +3929,13 @@ async function main() {
       params.push(id);
       await dbm.run(db, `UPDATE ads SET ${patches.join(", ")} WHERE id = ?`, params);
       const ad = await dbm.get(db, "SELECT * FROM ads WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "hero_ad_updated",
+        targetType: "ad",
+        targetId: id,
+        targetLabel: ad?.title || `Ad #${id}`,
+        metadata: { active: ad?.active, kind: ad?.kind }
+      }).catch(() => {});
       res.json({ ad });
     })
   );
@@ -3608,7 +3943,7 @@ async function main() {
   app.delete(
     "/paint/api/admin/ads/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
       if (!Number.isFinite(id) || id <= 0) {
         res.status(400).json({ error: "Valid ad id required" });
@@ -3621,6 +3956,13 @@ async function main() {
       }
       await dbm.run(db, "DELETE FROM ads WHERE id = ?", [id]);
       tryUnlinkUpload(ad.media_url);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "hero_ad_deleted",
+        targetType: "ad",
+        targetId: id,
+        targetLabel: ad.title || `Ad #${id}`,
+        metadata: { kind: ad.kind }
+      }).catch(() => {});
       res.json({ ok: true });
     })
   );
@@ -3629,7 +3971,7 @@ async function main() {
     "/paint/api/admin/upload-ad",
     uploadAd.single("media"),
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const kind = inferAdKindFromUpload(req.file, req.body?.kind);
       const title = String(req.body?.title || "");
       const duration = Number(req.body?.durationSeconds || (kind === "video" ? 5 : 0)) || (kind === "video" ? 5 : null);
@@ -3647,6 +3989,13 @@ async function main() {
         [kind, url, title, duration, (maxSort?.m || 0) + 1]
       );
       const ad = await dbm.get(db, "SELECT * FROM ads ORDER BY id DESC LIMIT 1");
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "hero_ad_uploaded",
+        targetType: "ad",
+        targetId: ad?.id,
+        targetLabel: ad?.title || title || `Ad #${ad?.id}`,
+        metadata: { kind, active: true }
+      }).catch(() => {});
       res.json({ ad, mediaUrl: url });
     })
   );
@@ -3666,9 +4015,708 @@ async function main() {
           (SELECT COUNT(*) FROM shops) AS shops_total,
           (SELECT COUNT(*) FROM brands) AS brands_total,
           (SELECT COUNT(*) FROM catalog_categories) AS categories_total,
-          (SELECT COUNT(*) FROM users WHERE role = 'shop') AS shop_users_total`
+          (SELECT COUNT(*) FROM users WHERE role IN ('shop','wholesaler','raw_supplier')) AS shop_users_total,
+          (SELECT COUNT(*) FROM users) AS users_total,
+          (SELECT COUNT(*) FROM users WHERE role = 'customer') AS customer_users_total,
+          (SELECT COUNT(*) FROM business_applications WHERE status = 'pending') AS pending_applications`
       );
       res.json({ stats: row });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/activity-log",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      let limit = Number(req.query.limit);
+      if (!Number.isFinite(limit) || limit < 1) limit = 20;
+      limit = Math.min(50, Math.floor(limit));
+      const action = String(req.query.action || "").trim();
+      let sql = `SELECT id, admin_user_id, admin_email, action, target_type, target_id, target_label, metadata_json, created_at
+                 FROM admin_activity_log`;
+      const params = [];
+      if (action) {
+        sql += " WHERE action = ?";
+        params.push(action.slice(0, 64));
+      }
+      sql += " ORDER BY datetime(created_at) DESC, id DESC LIMIT ?";
+      params.push(limit);
+      const entries = await dbm.all(db, sql, params);
+      res.json({ entries, limit });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/users",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const params = parseAdminUsersQuery(req.query);
+      const { whereSql, sqlParams, baseFrom, selectSql } = buildUsersListSql(params);
+      const countRow = await dbm.get(db, `SELECT COUNT(*) AS total ${baseFrom} ${whereSql}`, sqlParams);
+      const rows = await dbm.all(
+        db,
+        `${selectSql} ${baseFrom} ${whereSql} ORDER BY u.id DESC LIMIT ? OFFSET ?`,
+        [...sqlParams, params.limit, params.offset]
+      );
+      res.json({
+        users: rows.map(normalizeAdminUserRow),
+        page: params.page,
+        limit: params.limit,
+        total: countRow?.total ?? 0
+      });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/users/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id < 1) {
+        res.status(400).json({ error: "Invalid user id" });
+        return;
+      }
+      const row = await dbm.get(
+        db,
+        `SELECT u.id, u.email, u.role, u.shop_id, u.phone, u.created_at,
+                COALESCE(u.active, 1) AS active, u.last_login_at,
+                s.name AS shop_name, s.slug AS shop_slug, s.location_text AS shop_location,
+                (SELECT ba.contact_name FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS contact_name,
+                (SELECT ba.status FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS application_status,
+                (SELECT ba.company_name FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS company_name
+         FROM users u
+         LEFT JOIN shops s ON s.id = u.shop_id
+         WHERE u.id = ?`,
+        [id]
+      );
+      if (!row) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const applications = await dbm.all(
+        db,
+        `SELECT id, account_type, company_name, contact_name, status, created_at
+         FROM business_applications WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT 10`,
+        [id]
+      );
+      res.json({ user: normalizeAdminUserRow(row), applications });
+    })
+  );
+
+  app.patch(
+    "/paint/api/admin/users/:id",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id < 1) {
+        res.status(400).json({ error: "Invalid user id" });
+        return;
+      }
+      const target = await dbm.get(
+        db,
+        `SELECT u.id, u.email, u.role, COALESCE(u.active, 1) AS active
+         FROM users u WHERE u.id = ?`,
+        [id]
+      );
+      if (!target) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const body = req.body || {};
+      const patches = [];
+      const patchParams = [];
+      let roleChanged = false;
+      let statusChanged = false;
+
+      if (body.role !== undefined) {
+        const nextRole = String(body.role || "").trim().toLowerCase();
+        if (!ALLOWED_ROLES.has(nextRole)) {
+          res.status(400).json({ error: "Invalid role" });
+          return;
+        }
+        if (Number(adminUser.id) === id && nextRole !== "admin") {
+          res.status(400).json({ error: "Cannot change your own admin role" });
+          return;
+        }
+        if (nextRole !== target.role) {
+          patches.push("role = ?");
+          patchParams.push(nextRole);
+          roleChanged = true;
+        }
+      }
+
+      if (body.active !== undefined) {
+        const nextActive = body.active === true || body.active === 1 || body.active === "1" ? 1 : 0;
+        if (Number(adminUser.id) === id && nextActive === 0) {
+          res.status(400).json({ error: "Cannot disable your own account" });
+          return;
+        }
+        if (nextActive !== target.active) {
+          patches.push("active = ?");
+          patchParams.push(nextActive);
+          statusChanged = true;
+        }
+      }
+
+      if (!patches.length) {
+        res.status(400).json({ error: "No changes" });
+        return;
+      }
+
+      patchParams.push(id);
+      await dbm.run(db, `UPDATE users SET ${patches.join(", ")} WHERE id = ?`, patchParams);
+
+      if (statusChanged && (body.active === false || body.active === 0 || body.active === "0")) {
+        await dbm.run(db, "DELETE FROM sessions WHERE user_id = ?", [id]);
+      }
+
+      const updated = await dbm.get(
+        db,
+        `SELECT u.id, u.email, u.role, u.shop_id, u.phone, u.created_at,
+                COALESCE(u.active, 1) AS active, u.last_login_at,
+                s.name AS shop_name, s.slug AS shop_slug,
+                (SELECT ba.contact_name FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS contact_name,
+                (SELECT ba.status FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS application_status
+         FROM users u
+         LEFT JOIN shops s ON s.id = u.shop_id
+         WHERE u.id = ?`,
+        [id]
+      );
+
+      if (roleChanged) {
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "user_role_changed",
+          targetType: "user",
+          targetId: id,
+          targetLabel: updated.email || `User #${id}`,
+          metadata: { from: target.role, to: updated.role }
+        }).catch(() => {});
+      }
+      if (statusChanged) {
+        await logAdminActivity(db, dbm, adminUser, {
+          action: updated.active === 0 ? "user_disabled" : "user_enabled",
+          targetType: "user",
+          targetId: id,
+          targetLabel: updated.email || `User #${id}`
+        }).catch(() => {});
+      }
+
+      res.json({ user: normalizeAdminUserRow(updated) });
+    })
+  );
+
+  async function logCsvExport(adminUser, exportType, rowCount) {
+    await logAdminActivity(db, dbm, adminUser, {
+      action: "csv_exported",
+      targetType: "export",
+      targetLabel: exportType,
+      metadata: { rows: rowCount }
+    }).catch(() => {});
+  }
+
+  app.get(
+    "/paint/api/admin/export/users.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const params = parseAdminUsersQuery({ ...req.query, limit: 10000, page: 1 });
+      const { whereSql, sqlParams, baseFrom, selectSql } = buildUsersListSql(params);
+      const rows = await dbm.all(
+        db,
+        `${selectSql} ${baseFrom} ${whereSql} ORDER BY u.id DESC LIMIT 10000`,
+        sqlParams
+      );
+      const headers = [
+        "id",
+        "name",
+        "email",
+        "role",
+        "status",
+        "phone",
+        "shop_name",
+        "created_at",
+        "last_login_at"
+      ];
+      const data = rows.map((r) => {
+        const u = normalizeAdminUserRow(r);
+        return [
+          u.id,
+          u.name,
+          u.email,
+          u.role,
+          u.status,
+          u.phone || "",
+          u.shopName || "",
+          u.createdAt || "",
+          u.lastLoginAt || ""
+        ];
+      });
+      await logCsvExport(adminUser, "users", data.length);
+      sendCsv(res, "users.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/shops.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const rows = await dbm.all(
+        db,
+        `SELECT s.id, s.name, s.slug, s.location_text, s.address, s.phone, s.active,
+                s.last_catalog_update, s.created_at,
+                (SELECT COUNT(*) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS product_count
+         FROM shops s ORDER BY s.name ASC`
+      );
+      const headers = [
+        "id",
+        "name",
+        "slug",
+        "location",
+        "address",
+        "phone",
+        "active",
+        "product_count",
+        "last_catalog_update",
+        "created_at"
+      ];
+      const data = rows.map((r) => [
+        r.id,
+        r.name,
+        r.slug,
+        r.location_text,
+        r.address,
+        r.phone,
+        r.active !== 0 ? "yes" : "no",
+        r.product_count ?? 0,
+        r.last_catalog_update || "",
+        r.created_at || ""
+      ]);
+      await logCsvExport(adminUser, "shops", data.length);
+      sendCsv(res, "shops.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/products.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const rows = await dbm.all(
+        db,
+        `SELECT mp.id, mp.name, mp.slug, b.name AS brand_name, c.name AS category_name,
+                mp.popularity_score, mp.sort_index, mp.default_image_url
+         FROM master_products mp
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         ORDER BY b.sort_order ASC, c.sort_order ASC, mp.name ASC`
+      );
+      const headers = ["id", "name", "slug", "brand", "category", "popularity_score", "sort_index", "image_url"];
+      const data = rows.map((r) => [
+        r.id,
+        r.name,
+        r.slug,
+        r.brand_name,
+        r.category_name,
+        r.popularity_score,
+        r.sort_index,
+        r.default_image_url || ""
+      ]);
+      await logCsvExport(adminUser, "products", data.length);
+      sendCsv(res, "products.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/brands.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const rows = await dbm.all(db, "SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC");
+      const headers = ["id", "slug", "name", "sort_order"];
+      const data = rows.map((r) => [r.id, r.slug, r.name, r.sort_order]);
+      await logCsvExport(adminUser, "brands", data.length);
+      sendCsv(res, "brands.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/categories.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const rows = await dbm.all(
+        db,
+        `SELECT c.id, c.slug, c.name, c.sort_order,
+                (SELECT COUNT(*) FROM master_products mp WHERE mp.category_id = c.id) AS product_count
+         FROM catalog_categories c ORDER BY c.sort_order ASC`
+      );
+      const headers = ["id", "slug", "name", "sort_order", "product_count"];
+      const data = rows.map((r) => [r.id, r.slug, r.name, r.sort_order, r.product_count ?? 0]);
+      await logCsvExport(adminUser, "categories", data.length);
+      sendCsv(res, "categories.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/business-approvals.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const rows = await dbm.all(
+        db,
+        `SELECT ba.id, ba.company_name, ba.contact_name, ba.account_type, ba.status,
+                ba.phone, ba.location_text, ba.created_at, u.email AS user_email,
+                s.name AS shop_name
+         FROM business_applications ba
+         JOIN users u ON u.id = ba.user_id
+         LEFT JOIN shops s ON s.id = u.shop_id
+         ORDER BY datetime(ba.created_at) DESC`
+      );
+      const headers = [
+        "id",
+        "company_name",
+        "contact_name",
+        "account_type",
+        "status",
+        "phone",
+        "location",
+        "user_email",
+        "shop_name",
+        "created_at"
+      ];
+      const data = rows.map((r) => [
+        r.id,
+        r.company_name,
+        r.contact_name,
+        r.account_type,
+        r.status,
+        r.phone,
+        r.location_text,
+        r.user_email,
+        r.shop_name || "",
+        r.created_at || ""
+      ]);
+      await logCsvExport(adminUser, "business-approvals", data.length);
+      sendCsv(res, "business-approvals.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/hero-ads.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const rows = await dbm.all(
+        db,
+        "SELECT id, kind, title, media_url, duration_seconds, active, sort_order FROM ads ORDER BY sort_order ASC, id ASC"
+      );
+      const headers = ["id", "kind", "title", "media_url", "duration_seconds", "active", "sort_order"];
+      const data = rows.map((r) => [
+        r.id,
+        r.kind,
+        r.title,
+        r.media_url,
+        r.duration_seconds ?? "",
+        r.active !== 0 ? "yes" : "no",
+        r.sort_order
+      ]);
+      await logCsvExport(adminUser, "hero-ads", data.length);
+      sendCsv(res, "hero-ads.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/reports/dashboard",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const filters = parseReportsDashboardQuery(req.query);
+      const dashboard = await buildReportsDashboard(db, dbm, filters);
+      res.json(dashboard);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/reports/open-count",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const row = await dbm.get(
+        db,
+        "SELECT COUNT(*) AS c FROM moderation_reports WHERE status = 'open'"
+      );
+      res.json({ openCount: row?.c ?? 0 });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/reports-dashboard.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const filters = parseReportsDashboardQuery(req.query);
+      const dashboard = await buildReportsDashboard(db, dbm, filters);
+      const m = dashboard.metrics;
+      const headers = ["metric", "value"];
+      const rows = [
+        ["total_users", m.totalUsers],
+        ["total_shops", m.totalShops],
+        ["active_shops", m.activeShops],
+        ["disabled_shops", m.disabledShops],
+        ["shops_with_products", m.shopsWithProducts],
+        ["shops_without_products", m.shopsWithoutProducts],
+        ["total_products", m.totalProducts],
+        ["total_listings", m.totalListings],
+        ["listings_priced", m.listingsPriced],
+        ["pending_applications", m.pendingApplications],
+        ["approved_applications", m.approvedApplications],
+        ["rejected_applications", m.rejectedApplications],
+        ["hero_ads_total", m.heroAdsTotal],
+        ["hero_ads_active", m.heroAdsActive],
+        ["open_reports", m.openReports]
+      ];
+      for (const r of m.usersByRole || []) rows.push([`users_role_${r.role}`, r.count]);
+      for (const r of m.productsByCategory || []) rows.push([`products_category_${r.label}`, r.count]);
+      for (const r of m.productsByBrand || []) rows.push([`products_brand_${r.label}`, r.count]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "reports_dashboard_exported",
+        targetType: "export",
+        targetLabel: "reports-dashboard",
+        metadata: { rows: rows.length }
+      }).catch(() => {});
+      sendCsv(res, "reports-dashboard.csv", headers, rows);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/reports-shops.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const filters = parseReportsDashboardQuery(req.query);
+      const shopWhere = [];
+      const shopParams = [];
+      if (filters.from) {
+        shopWhere.push("datetime(s.created_at) >= datetime(?)");
+        shopParams.push(filters.from);
+      }
+      if (filters.to) {
+        shopWhere.push("datetime(s.created_at) <= datetime(?)");
+        shopParams.push(`${filters.to} 23:59:59`);
+      }
+      if (filters.city) {
+        shopWhere.push("TRIM(s.location_text) = ?");
+        shopParams.push(filters.city);
+      }
+      const whereSql = shopWhere.length ? `WHERE ${shopWhere.join(" AND ")}` : "";
+      const rows = await dbm.all(
+        db,
+        `SELECT s.id, s.name, s.slug, s.location_text, s.active,
+                (SELECT COUNT(*) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS product_count,
+                s.created_at, s.last_catalog_update
+         FROM shops s ${whereSql} ORDER BY s.name ASC`,
+        shopParams
+      );
+      const headers = ["id", "name", "slug", "city", "active", "product_count", "created_at", "last_catalog_update"];
+      const data = rows.map((r) => [
+        r.id,
+        r.name,
+        r.slug,
+        r.location_text,
+        r.active !== 0 ? "yes" : "no",
+        r.product_count ?? 0,
+        r.created_at || "",
+        r.last_catalog_update || ""
+      ]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "reports_shops_exported",
+        targetType: "export",
+        targetLabel: "reports-shops",
+        metadata: { rows: data.length }
+      }).catch(() => {});
+      sendCsv(res, "reports-shops.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/export/reports-products.csv",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const rows = await dbm.all(
+        db,
+        `SELECT mp.id, mp.name, mp.slug, b.name AS brand, c.name AS category,
+                (SELECT COUNT(*) FROM shop_listings sl WHERE sl.master_product_id = mp.id AND sl.available = 1) AS listing_count
+         FROM master_products mp
+         JOIN brands b ON b.id = mp.brand_id
+         JOIN catalog_categories c ON c.id = mp.category_id
+         ORDER BY b.sort_order ASC, c.sort_order ASC, mp.name ASC`
+      );
+      const headers = ["id", "name", "slug", "brand", "category", "active_listings"];
+      const data = rows.map((r) => [r.id, r.name, r.slug, r.brand, r.category, r.listing_count ?? 0]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "reports_products_exported",
+        targetType: "export",
+        targetLabel: "reports-products",
+        metadata: { rows: data.length }
+      }).catch(() => {});
+      sendCsv(res, "reports-products.csv", headers, data);
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/reports",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const params = parseAdminModerationQuery(req.query);
+      const { whereSql, sqlParams, fromSql, selectSql } = buildModerationListSql(params);
+      const countRow = await dbm.get(db, `SELECT COUNT(*) AS total ${fromSql} ${whereSql}`, sqlParams);
+      const rows = await dbm.all(
+        db,
+        `${selectSql} ${fromSql} ${whereSql} ORDER BY datetime(mr.created_at) DESC, mr.id DESC LIMIT ? OFFSET ?`,
+        [...sqlParams, params.limit, params.offset]
+      );
+      res.json({
+        reports: rows.map(normalizeModerationReport),
+        page: params.page,
+        limit: params.limit,
+        total: countRow?.total ?? 0,
+        openCount: (
+          await dbm.get(db, "SELECT COUNT(*) AS c FROM moderation_reports WHERE status = 'open'")
+        )?.c ?? 0
+      });
+    })
+  );
+
+  app.get(
+    "/paint/api/admin/reports/:id",
+    asyncHandler(async (req, res) => {
+      await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id < 1) {
+        res.status(400).json({ error: "Invalid report id" });
+        return;
+      }
+      const row = await dbm.get(
+        db,
+        `SELECT mr.*, u.email AS reporter_user_email
+         FROM moderation_reports mr
+         LEFT JOIN users u ON u.id = mr.reporter_user_id
+         WHERE mr.id = ?`,
+        [id]
+      );
+      if (!row) {
+        res.status(404).json({ error: "Report not found" });
+        return;
+      }
+      const report = normalizeModerationReport(row);
+      let related = null;
+      if (report.targetType === "shop" && report.targetId) {
+        related = await dbm.get(db, "SELECT id, name, slug, location_text, phone, active FROM shops WHERE id = ?", [
+          report.targetId
+        ]);
+      } else if (report.targetType === "listing" && report.targetId) {
+        related = await dbm.get(
+          db,
+          `SELECT sl.id, sl.price_amount, sl.available, mp.name AS product_name, s.name AS shop_name, s.slug AS shop_slug
+           FROM shop_listings sl
+           JOIN master_products mp ON mp.id = sl.master_product_id
+           JOIN shops s ON s.id = sl.shop_id
+           WHERE sl.id = ?`,
+          [report.targetId]
+        );
+      } else if (report.targetType === "product" && report.targetId) {
+        related = await dbm.get(
+          db,
+          "SELECT mp.id, mp.name, mp.slug, b.name AS brand_name FROM master_products mp JOIN brands b ON b.id = mp.brand_id WHERE mp.id = ?",
+          [report.targetId]
+        );
+      }
+      res.json({ report, related });
+    })
+  );
+
+  app.patch(
+    "/paint/api/admin/reports/:id",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id < 1) {
+        res.status(400).json({ error: "Invalid report id" });
+        return;
+      }
+      const existing = await dbm.get(db, "SELECT * FROM moderation_reports WHERE id = ?", [id]);
+      if (!existing) {
+        res.status(404).json({ error: "Report not found" });
+        return;
+      }
+      const body = req.body || {};
+      const patches = [];
+      const params = [];
+      let statusChanged = false;
+      let noteChanged = false;
+
+      if (body.status !== undefined) {
+        const status = String(body.status || "").trim().toLowerCase();
+        if (!STATUSES.has(status)) {
+          res.status(400).json({ error: "Invalid status" });
+          return;
+        }
+        if (status !== existing.status) {
+          patches.push("status = ?");
+          params.push(status);
+          statusChanged = true;
+          if (status === "resolved" || status === "dismissed") {
+            patches.push("resolved_at = datetime('now')");
+            patches.push("resolved_by_admin_id = ?");
+            params.push(Number(adminUser.id));
+          }
+        }
+      }
+
+      if (body.adminNote !== undefined || body.admin_note !== undefined) {
+        const note = String(body.adminNote ?? body.admin_note ?? "").trim().slice(0, 2000);
+        patches.push("admin_note = ?");
+        params.push(note || null);
+        noteChanged = note !== (existing.admin_note || "");
+      }
+
+      if (!patches.length) {
+        res.status(400).json({ error: "No changes" });
+        return;
+      }
+      patches.push("updated_at = datetime('now')");
+      params.push(id);
+      await dbm.run(db, `UPDATE moderation_reports SET ${patches.join(", ")} WHERE id = ?`, params);
+
+      const updated = await dbm.get(
+        db,
+        `SELECT mr.*, u.email AS reporter_user_email FROM moderation_reports mr
+         LEFT JOIN users u ON u.id = mr.reporter_user_id WHERE mr.id = ?`,
+        [id]
+      );
+
+      if (statusChanged) {
+        const action =
+          updated.status === "resolved"
+            ? "report_resolved"
+            : updated.status === "dismissed"
+              ? "report_dismissed"
+              : "report_status_changed";
+        await logAdminActivity(db, dbm, adminUser, {
+          action,
+          targetType: "report",
+          targetId: id,
+          targetLabel: updated.target_label || `Report #${id}`,
+          metadata: { status: updated.status }
+        }).catch(() => {});
+      } else if (noteChanged) {
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "report_note_updated",
+          targetType: "report",
+          targetId: id,
+          targetLabel: updated.target_label || `Report #${id}`
+        }).catch(() => {});
+      }
+
+      res.json({
+        report: normalizeModerationReport(updated),
+        openCount: (await dbm.get(db, "SELECT COUNT(*) AS c FROM moderation_reports WHERE status = 'open'"))?.c ?? 0
+      });
     })
   );
 
@@ -3692,7 +4740,7 @@ async function main() {
   app.post(
     "/paint/api/admin/categories",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const body = req.body || {};
       const name = String(body.name || "").trim();
       let slug = String(body.slug || "").trim().toLowerCase();
@@ -3709,6 +4757,12 @@ async function main() {
           Number(maxRow?.m || 0) + 1
         ]);
         const category = await dbm.get(db, "SELECT * FROM catalog_categories WHERE id = ?", [ins.lastID]);
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "category_created",
+          targetType: "category",
+          targetId: category?.id,
+          targetLabel: category?.name || name
+        }).catch(() => {});
         res.json({ category: normalizeCategoryRow(category) });
       } catch (e) {
         if (String(e.message || "").includes("UNIQUE")) {
@@ -3723,7 +4777,7 @@ async function main() {
   app.patch(
     "/paint/api/admin/categories/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
       const body = req.body || {};
       const patches = [];
@@ -3747,6 +4801,12 @@ async function main() {
       params.push(id);
       await dbm.run(db, `UPDATE catalog_categories SET ${patches.join(", ")} WHERE id = ?`, params);
       const category = await dbm.get(db, "SELECT * FROM catalog_categories WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "category_updated",
+        targetType: "category",
+        targetId: id,
+        targetLabel: category?.name || `Category #${id}`
+      }).catch(() => {});
       res.json({ category: normalizeCategoryRow(category) });
     })
   );
@@ -3754,14 +4814,21 @@ async function main() {
   app.delete(
     "/paint/api/admin/categories/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
+      const category = await dbm.get(db, "SELECT * FROM catalog_categories WHERE id = ?", [id]);
       const used = await dbm.get(db, "SELECT COUNT(*) AS c FROM master_products WHERE category_id = ?", [id]);
       if (used?.c > 0) {
         res.status(409).json({ error: "Category has products — remove or reassign them first" });
         return;
       }
       await dbm.run(db, "DELETE FROM catalog_categories WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "category_deleted",
+        targetType: "category",
+        targetId: id,
+        targetLabel: category?.name || `Category #${id}`
+      }).catch(() => {});
       res.json({ ok: true });
     })
   );
@@ -3769,7 +4836,7 @@ async function main() {
   app.post(
     "/paint/api/admin/brands",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const body = req.body || {};
       const name = String(body.name || "").trim();
       let slug = String(body.slug || "").trim().toLowerCase();
@@ -3786,6 +4853,12 @@ async function main() {
           Number(maxRow?.m || 0) + 1
         ]);
         const brand = await dbm.get(db, "SELECT id, slug, name, sort_order FROM brands WHERE id = ?", [ins.lastID]);
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "brand_created",
+          targetType: "brand",
+          targetId: brand?.id,
+          targetLabel: brand?.name || name
+        }).catch(() => {});
         res.json({ brand });
       } catch (e) {
         if (String(e.message || "").includes("UNIQUE")) {
@@ -3800,7 +4873,7 @@ async function main() {
   app.patch(
     "/paint/api/admin/brands/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
       const body = req.body || {};
       const patches = [];
@@ -3820,6 +4893,12 @@ async function main() {
       params.push(id);
       await dbm.run(db, `UPDATE brands SET ${patches.join(", ")} WHERE id = ?`, params);
       const brand = await dbm.get(db, "SELECT id, slug, name, sort_order FROM brands WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "brand_updated",
+        targetType: "brand",
+        targetId: id,
+        targetLabel: brand?.name || `Brand #${id}`
+      }).catch(() => {});
       res.json({ brand });
     })
   );
@@ -3827,14 +4906,21 @@ async function main() {
   app.delete(
     "/paint/api/admin/brands/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
+      const brand = await dbm.get(db, "SELECT id, name FROM brands WHERE id = ?", [id]);
       const used = await dbm.get(db, "SELECT COUNT(*) AS c FROM master_products WHERE brand_id = ?", [id]);
       if (used?.c > 0) {
         res.status(409).json({ error: "Brand has products — remove or reassign them first" });
         return;
       }
       await dbm.run(db, "DELETE FROM brands WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "brand_deleted",
+        targetType: "brand",
+        targetId: id,
+        targetLabel: brand?.name || `Brand #${id}`
+      }).catch(() => {});
       res.json({ ok: true });
     })
   );
@@ -3898,7 +4984,7 @@ async function main() {
   app.post(
     "/paint/api/admin/products",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const body = req.body || {};
       const brandId = Number(body.brandId);
       const categoryId = Number(body.categoryId);
@@ -3934,6 +5020,12 @@ async function main() {
          WHERE mp.id = ?`,
         [ins.lastID]
       );
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "product_created",
+        targetType: "product",
+        targetId: row?.id,
+        targetLabel: row?.name || name
+      }).catch(() => {});
       res.json({ product: mapAdminProductRow(row) });
     })
   );
@@ -3941,7 +5033,7 @@ async function main() {
   app.patch(
     "/paint/api/admin/products/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
       const body = req.body || {};
       const patches = [];
@@ -3987,6 +5079,12 @@ async function main() {
          WHERE mp.id = ?`,
         [id]
       );
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "product_updated",
+        targetType: "product",
+        targetId: id,
+        targetLabel: row?.name || `Product #${id}`
+      }).catch(() => {});
       res.json({ product: mapAdminProductRow(row) });
     })
   );
@@ -3994,10 +5092,17 @@ async function main() {
   app.delete(
     "/paint/api/admin/products/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
+      const row = await dbm.get(db, "SELECT id, name FROM master_products WHERE id = ?", [id]);
       await dbm.run(db, "DELETE FROM shop_listings WHERE master_product_id = ?", [id]);
       await dbm.run(db, "DELETE FROM master_products WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "product_deleted",
+        targetType: "product",
+        targetId: id,
+        targetLabel: row?.name || `Product #${id}`
+      }).catch(() => {});
       res.json({ ok: true });
     })
   );
@@ -4010,18 +5115,21 @@ async function main() {
         db,
         `SELECT s.id, s.name, s.slug, s.location_text, s.address, s.phone, s.active, s.last_catalog_update,
                 (SELECT COUNT(*) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS listing_count,
-                (SELECT COUNT(DISTINCT sl.master_product_id) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS product_count
+                (SELECT COUNT(DISTINCT sl.master_product_id) FROM shop_listings sl WHERE sl.shop_id = s.id AND sl.available = 1) AS product_count,
+                (SELECT u.email FROM users u WHERE u.shop_id = s.id AND u.role IN ('shop','wholesaler','raw_supplier') ORDER BY u.id ASC LIMIT 1) AS owner_email,
+                (SELECT ba.contact_name FROM business_applications ba JOIN users u ON u.id = ba.user_id WHERE u.shop_id = s.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS owner_contact_name,
+                (SELECT ba.status FROM business_applications ba JOIN users u ON u.id = ba.user_id WHERE u.shop_id = s.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS application_status
          FROM shops s
          ORDER BY s.name ASC`
       );
-      res.json({ shops });
+      res.json({ shops, total: shops.length });
     })
   );
 
   app.patch(
     "/paint/api/admin/shops/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
       const body = req.body || {};
       const patches = [];
@@ -4062,6 +5170,13 @@ async function main() {
         res.status(404).json({ error: "Shop not found" });
         return;
       }
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "shop_updated",
+        targetType: "shop",
+        targetId: id,
+        targetLabel: shop.name || `Shop #${id}`,
+        metadata: { active: shop.active }
+      }).catch(() => {});
       res.json({ shop });
     })
   );
@@ -4118,9 +5233,9 @@ async function main() {
   app.delete(
     "/paint/api/admin/shops/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
-      const shop = await dbm.get(db, "SELECT id FROM shops WHERE id = ?", [id]);
+      const shop = await dbm.get(db, "SELECT id, name FROM shops WHERE id = ?", [id]);
       if (!shop) {
         res.status(404).json({ error: "Shop not found" });
         return;
@@ -4133,6 +5248,12 @@ async function main() {
         await dbm.run(db, "DELETE FROM shop_listings WHERE shop_id = ?", [id]);
         await dbm.run(db, "DELETE FROM shops WHERE id = ?", [id]);
         await dbm.run(db, "COMMIT");
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "shop_deleted",
+          targetType: "shop",
+          targetId: id,
+          targetLabel: shop.name || `Shop #${id}`
+        }).catch(() => {});
         res.json({ ok: true });
       } catch (e) {
         await dbm.run(db, "ROLLBACK").catch(() => {});
@@ -4145,6 +5266,10 @@ async function main() {
     "/paint/api/admin/business-applications",
     asyncHandler(async (req, res) => {
       await requireRole(db, req, "admin");
+      const pendingRow = await dbm.get(
+        db,
+        "SELECT COUNT(*) AS c FROM business_applications WHERE status = 'pending'"
+      );
       const applications = await dbm.all(
         db,
         `SELECT ba.id, ba.user_id, ba.account_type, ba.company_name, ba.contact_name, ba.phone,
@@ -4157,14 +5282,14 @@ async function main() {
          ORDER BY CASE ba.status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
                   datetime(ba.created_at) DESC`
       );
-      res.json({ applications });
+      res.json({ applications, pendingCount: pendingRow?.c || 0 });
     })
   );
 
   app.patch(
     "/paint/api/admin/business-applications/:id",
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       const id = Number(req.params.id);
       const action = String(req.body?.action || "").trim();
       const appRow = await dbm.get(
@@ -4181,6 +5306,12 @@ async function main() {
       }
       if (action === "reject") {
         await dbm.run(db, "UPDATE business_applications SET status = 'rejected' WHERE id = ?", [id]);
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "business_rejected",
+          targetType: "application",
+          targetId: id,
+          targetLabel: appRow.company_name || appRow.email || `Application #${id}`
+        }).catch(() => {});
         res.json({ ok: true, status: "rejected" });
         return;
       }
@@ -4224,6 +5355,13 @@ async function main() {
         ]);
         await dbm.run(db, "UPDATE business_applications SET status = 'approved' WHERE id = ?", [id]);
         await dbm.run(db, "COMMIT");
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "business_approved",
+          targetType: "application",
+          targetId: id,
+          targetLabel: appRow.company_name || appRow.email || `Application #${id}`,
+          metadata: { shopId }
+        }).catch(() => {});
         res.json({ ok: true, status: "approved", shopId });
       } catch (e) {
         await dbm.run(db, "ROLLBACK").catch(() => {});
@@ -4250,7 +5388,7 @@ async function main() {
     "/paint/api/admin/import-catalog",
     uploadCatalogZip.single("archive"),
     asyncHandler(async (req, res) => {
-      await requireRole(db, req, "admin");
+      const adminUser = await requireRole(db, req, "admin");
       if (!req.file || !req.file.buffer) {
         res.status(400).json({ error: "ZIP archive required (field: archive)" });
         return;
@@ -4259,6 +5397,16 @@ async function main() {
       const brandSlug = req.body?.brandSlug;
       try {
         const result = await importCatalogZipToDb(db, req.file.buffer, { brandId, brandSlug });
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "catalog_zip_imported",
+          targetType: "catalog",
+          targetLabel: result?.brand?.name || "Catalog import",
+          metadata: {
+            created: result?.created,
+            updated: result?.updated,
+            skipped: result?.skipped
+          }
+        }).catch(() => {});
         res.json(result);
       } catch (e) {
         const status = e.status || 400;

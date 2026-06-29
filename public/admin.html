@@ -24,18 +24,15 @@
   <div class="pm-admin-layout admin-shell">
     <aside class="pm-admin-sidebar admin-sidebar" id="adminSidebar" aria-label="Admin navigation">
       <div class="pm-admin-sidebar__brand admin-sidebar__brand">
-        <div class="admin-sidebar__brand-row">
-          <div class="admin-sidebar__mark" aria-hidden="true">
+        <a href="/paint/" class="admin-sidebar__brand-link" aria-label="PAINTIK home">
+          <span class="admin-sidebar__mark" aria-hidden="true">
             <img src="/paint/img/brand/paintik-icon.png" alt="" width="22" height="22" decoding="async" />
-          </div>
-          <div>
-            <a href="/paint/" class="pm-brand-logo-link" aria-label="PAINTIK">
-              <img src="/paint/img/brand/paintik-logo.png" alt="PAINTIK" class="pm-brand-logo-link__img" width="112" height="32" decoding="async" />
-            </a>
-            <p class="admin-sidebar__kicker pm-admin-sidebar__kicker" data-pm-t="admin_platform">Platform admin</p>
-          </div>
-        </div>
-        <p class="admin-sidebar__title" data-pm-t="admin_heading">Go-to-market controls</p>
+          </span>
+          <span class="admin-sidebar__brand-text">
+            <span class="admin-sidebar__brand-name">PAINTIK</span>
+            <span class="admin-sidebar__kicker pm-admin-sidebar__kicker">Admin</span>
+          </span>
+        </a>
       </div>
       <nav class="pm-admin-nav admin-nav" role="tablist" aria-label="Admin sections">
         <button type="button" class="pm-admin-nav__btn admin-nav__btn is-active" data-admin-nav="overview" role="tab" aria-selected="true" aria-current="page">
@@ -66,6 +63,27 @@
         <button type="button" class="pm-admin-nav__btn admin-nav__btn" data-admin-nav="ads" role="tab" aria-selected="false">
           <span class="pm-admin-nav__icon admin-nav__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/></svg></span>
           <span class="pm-admin-nav__label admin-nav__label">Hero Ads</span>
+        </button>
+        <button type="button" class="pm-admin-nav__btn admin-nav__btn" data-admin-nav="users" role="tab" aria-selected="false">
+          <span class="pm-admin-nav__icon admin-nav__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span class="pm-admin-nav__label admin-nav__label">Users</span>
+        </button>
+        <button type="button" class="pm-admin-nav__btn admin-nav__btn" data-admin-nav="exports" role="tab" aria-selected="false">
+          <span class="pm-admin-nav__icon admin-nav__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+          <span class="pm-admin-nav__label admin-nav__label">Exports</span>
+        </button>
+        <button type="button" class="pm-admin-nav__btn admin-nav__btn" data-admin-nav="reports" role="tab" aria-selected="false">
+          <span class="pm-admin-nav__icon admin-nav__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></span>
+          <span class="pm-admin-nav__label admin-nav__label">Reports</span>
+        </button>
+        <button type="button" class="pm-admin-nav__btn admin-nav__btn" data-admin-nav="moderation" role="tab" aria-selected="false">
+          <span class="pm-admin-nav__icon admin-nav__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+          <span class="pm-admin-nav__label admin-nav__label">Moderation</span>
+          <span id="adminNavModerationBadge" class="pm-admin-nav__badge admin-nav__badge" hidden>0</span>
+        </button>
+        <button type="button" class="pm-admin-nav__btn admin-nav__btn" data-admin-nav="activity" role="tab" aria-selected="false">
+          <span class="pm-admin-nav__icon admin-nav__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+          <span class="pm-admin-nav__label admin-nav__label">Activity Log</span>
         </button>
       </nav>
       <div class="pm-admin-sidebar__foot admin-sidebar__foot">
@@ -110,7 +128,7 @@
         </div>
         <div class="pm-admin-topbar__title-wrap admin-topbar__title-wrap">
           <h1 id="adminTopbarTitle" class="pm-admin-topbar__title admin-topbar__title">Overview</h1>
-          <p class="pm-admin-topbar__sub admin-topbar__sub" data-pm-t="admin_platform">Platform admin</p>
+          <p id="adminTopbarSub" class="pm-admin-topbar__sub admin-topbar__sub">Dashboard summary</p>
         </div>
         <div class="pm-admin-topbar__actions admin-topbar__actions">
           <a href="/paint/" class="pm-admin-topbar__home admin-topbar__home" data-pm-t="admin_home">Home</a>
@@ -154,37 +172,108 @@
               </div>
             </div>
 
+            <div class="admin-card pm-admin-card admin-overview-card--pending" id="adminOverviewPendingCard">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 class="admin-card__title pm-admin-card__title mb-1">Pending approvals</h3>
+                  <p class="text-xs text-slate-500">Business registrations awaiting review</p>
+                </div>
+                <button type="button" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-teal-700 text-white" data-admin-goto="approvals">Review</button>
+              </div>
+              <p class="admin-overview-pending__value text-4xl font-extrabold text-amber-600 mt-3">—</p>
+              <p id="adminOverviewPendingEmpty" class="admin-overview-pending__empty" hidden>No pending applications.</p>
+            </div>
+
+            <div class="admin-card pm-admin-card admin-overview-card--moderation" id="adminOverviewModerationCard">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 class="admin-card__title pm-admin-card__title mb-1">Open abuse reports</h3>
+                  <p class="text-xs text-slate-500">User-submitted issues awaiting review</p>
+                </div>
+                <button type="button" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-teal-700 text-white" data-admin-goto="moderation">Review</button>
+              </div>
+              <p class="admin-overview-moderation__value text-4xl font-extrabold text-rose-600 mt-3">—</p>
+              <p id="adminOverviewModerationEmpty" class="admin-overview-moderation__empty" hidden>No open reports.</p>
+            </div>
+
+            <div class="admin-card pm-admin-card">
+              <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+                <h3 class="admin-card__title pm-admin-card__title mb-0">Recent admin activity</h3>
+                <button type="button" id="adminOverviewActivityViewAll" class="text-xs font-semibold text-teal-700">View all</button>
+              </div>
+              <div id="adminOverviewActivityList"></div>
+            </div>
+
             <div class="admin-card pm-admin-card admin-overview-layout__full">
-              <h3 class="admin-card__title pm-admin-card__title">Admin actions</h3>
-              <p class="text-xs text-slate-500 mb-3">Jump to an existing section — no new features, just faster navigation.</p>
+              <h3 class="admin-card__title pm-admin-card__title">Quick actions</h3>
+              <p class="text-xs text-slate-500 mb-3">Operational shortcuts to existing admin sections.</p>
+              <div class="admin-actions-grid admin-actions-grid--ops">
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="approvals">
+                  <span class="admin-action-card__label">Review pending approvals</span>
+                  <span class="admin-action-card__hint">Open business applications queue</span>
+                </button>
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="shops">
+                  <span class="admin-action-card__label">Open shop monitor</span>
+                  <span class="admin-action-card__hint">Search, filter, and inspect showrooms</span>
+                </button>
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="ads">
+                  <span class="admin-action-card__label">Manage hero ads</span>
+                  <span class="admin-action-card__hint">Upload or toggle homepage media</span>
+                </button>
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="catalog">
+                  <span class="admin-action-card__label">Import catalog</span>
+                  <span class="admin-action-card__hint">Upload brand ZIP to master catalog</span>
+                </button>
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="users">
+                  <span class="admin-action-card__label">Manage users</span>
+                  <span class="admin-action-card__hint">Search accounts, roles, and access</span>
+                </button>
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="exports">
+                  <span class="admin-action-card__label">Export data</span>
+                  <span class="admin-action-card__hint">Download CSV reports</span>
+                </button>
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="reports">
+                  <span class="admin-action-card__label">View reports</span>
+                  <span class="admin-action-card__hint">Marketplace metrics dashboard</span>
+                </button>
+                <button type="button" class="admin-action-card admin-action-card--ops" data-admin-goto="moderation">
+                  <span class="admin-action-card__label">Moderation queue</span>
+                  <span class="admin-action-card__hint">Review abuse reports</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-card pm-admin-card admin-overview-layout__full">
+              <h3 class="admin-card__title pm-admin-card__title">All sections</h3>
+              <p class="text-xs text-slate-500 mb-3">Jump to any admin area.</p>
               <div class="admin-actions-grid">
-                <button type="button" class="admin-action-card" data-admin-nav="settings">
+                <button type="button" class="admin-action-card" data-admin-goto="settings">
                   <span class="admin-action-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg></span>
                   <span class="admin-action-card__label">Platform Settings</span>
                   <span class="admin-action-card__hint">Customer access &amp; shop directory display</span>
                 </button>
-                <button type="button" class="admin-action-card" data-admin-nav="approvals">
+                <button type="button" class="admin-action-card" data-admin-goto="approvals">
                   <span class="admin-action-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
                   <span class="admin-action-card__label">Business Approvals</span>
                   <span class="admin-action-card__hint">Review registrations &amp; documents</span>
                   <span id="adminActionPendingBadge" class="admin-action-card__badge" hidden>Pending</span>
                 </button>
-                <button type="button" class="admin-action-card" data-admin-nav="catalog">
+                <button type="button" class="admin-action-card" data-admin-goto="catalog">
                   <span class="admin-action-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
                   <span class="admin-action-card__label">Master Catalog</span>
                   <span class="admin-action-card__hint">Import ZIP, products, categories &amp; brands</span>
                 </button>
-                <button type="button" class="admin-action-card" data-admin-nav="shops">
+                <button type="button" class="admin-action-card" data-admin-goto="shops">
                   <span class="admin-action-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
                   <span class="admin-action-card__label">Shops Monitor</span>
                   <span class="admin-action-card__hint">Live showrooms &amp; shop details</span>
                 </button>
-                <button type="button" class="admin-action-card" data-admin-nav="brands">
+                <button type="button" class="admin-action-card" data-admin-goto="brands">
                   <span class="admin-action-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                   <span class="admin-action-card__label">Brand Priority</span>
                   <span class="admin-action-card__hint">Storefront exposure ordering</span>
                 </button>
-                <button type="button" class="admin-action-card" data-admin-nav="ads">
+                <button type="button" class="admin-action-card" data-admin-goto="ads">
                   <span class="admin-action-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/></svg></span>
                   <span class="admin-action-card__label">Hero Ads</span>
                   <span class="admin-action-card__hint">Homepage carousel media</span>
@@ -233,7 +322,10 @@
         <section class="pm-admin-panel admin-section" data-admin-panel="approvals" role="tabpanel" id="adminSectionApprovals" hidden aria-hidden="true">
           <header class="pm-admin-panel-head admin-section-head">
             <p class="pm-admin-panel-head__tag admin-section-head__tag" data-pm-t="admin_applications_tag">Onboarding</p>
-            <h2 class="pm-admin-panel-head__title admin-section-head__title">Business Approvals</h2>
+            <div class="flex flex-wrap gap-3 items-center">
+              <h2 class="pm-admin-panel-head__title admin-section-head__title mb-0">Business Approvals</h2>
+              <span id="adminApprovalsPendingHeader" class="admin-section-head__badge" hidden>0 pending</span>
+            </div>
             <p class="pm-admin-panel-head__desc admin-section-head__desc" data-pm-t="admin_applications_p">Review pending business registrations, open uploaded documents, and approve shops to make them live.</p>
           </header>
           <div class="admin-card pm-admin-card">
@@ -351,10 +443,348 @@
             <h2 class="pm-admin-panel-head__title admin-section-head__title" data-pm-t="admin_cat_shops_h">Shops Monitor</h2>
             <p class="pm-admin-panel-head__desc admin-section-head__desc">Monitor live showrooms, view details, and manage shop visibility.</p>
           </header>
-          <div class="admin-card pm-admin-card">
+          <div class="admin-card pm-admin-card admin-shops-monitor-card space-y-4">
+            <div class="admin-shops-toolbar-card">
+            <div class="admin-shops-toolbar">
+              <div class="admin-shops-toolbar__search">
+                <label class="admin-shops-field">
+                  <span class="admin-shops-field__label">Search shops</span>
+                  <div class="admin-shops-search-row">
+                    <input id="adminShopSearch" type="search" class="admin-shops-input" placeholder="Name, owner, email, phone, city…" autocomplete="off" />
+                    <button type="button" id="adminShopSearchApply" class="admin-shops-btn admin-shops-btn--primary">Search</button>
+                    <button type="button" id="adminShopSearchClear" class="admin-shops-btn admin-shops-btn--ghost">Clear</button>
+                  </div>
+                </label>
+              </div>
+              <div class="admin-shops-toolbar__filters">
+                <label class="admin-shops-field">
+                  <span class="admin-shops-field__label">Status</span>
+                  <select id="adminShopFilterStatus" class="admin-shops-select">
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="pending">Application pending</option>
+                    <option value="approved">Application approved</option>
+                    <option value="rejected">Application rejected</option>
+                  </select>
+                </label>
+                <label class="admin-shops-field">
+                  <span class="admin-shops-field__label">City</span>
+                  <select id="adminShopFilterCity" class="admin-shops-select">
+                    <option value="all">All cities</option>
+                  </select>
+                </label>
+                <label class="admin-shops-field">
+                  <span class="admin-shops-field__label">Has products</span>
+                  <select id="adminShopFilterProducts" class="admin-shops-select">
+                    <option value="all">All</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </label>
+                <label class="admin-shops-field">
+                  <span class="admin-shops-field__label">Last update</span>
+                  <select id="adminShopFilterLastUpdate" class="admin-shops-select">
+                    <option value="all">All</option>
+                    <option value="recent">Updated in last 30 days</option>
+                    <option value="stale">Not updated recently</option>
+                    <option value="never">Never updated</option>
+                  </select>
+                </label>
+              </div>
+              <div class="admin-shops-toolbar__actions">
+                <p id="adminShopResultCount" class="admin-shops-result-count">Showing — of — shops</p>
+                <button type="button" id="adminShopFilterReset" class="admin-shops-btn admin-shops-btn--ghost">Reset all</button>
+              </div>
+            </div>
+            </div>
             <div class="admin-table-scroll">
               <div id="catAdminShopsTable" class="border border-slate-100 rounded-xl divide-y"></div>
             </div>
+          </div>
+        </section>
+
+        <!-- User Management -->
+        <section class="pm-admin-panel admin-section" data-admin-panel="users" role="tabpanel" id="adminSectionUsers" hidden aria-hidden="true">
+          <header class="pm-admin-panel-head admin-section-head">
+            <p class="pm-admin-panel-head__tag admin-section-head__tag">Accounts</p>
+            <h2 class="pm-admin-panel-head__title admin-section-head__title">User Management</h2>
+            <p class="pm-admin-panel-head__desc admin-section-head__desc">Search platform accounts, review roles, and manage access.</p>
+          </header>
+          <div class="admin-card pm-admin-card admin-shops-monitor-card space-y-4">
+            <div class="admin-shops-toolbar-card">
+              <div class="admin-shops-toolbar">
+                <div class="admin-shops-toolbar__search">
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Search users</span>
+                    <div class="admin-shops-search-row">
+                      <input id="adminUserSearch" type="search" class="admin-shops-input" placeholder="Name, email, shop…" autocomplete="off" />
+                      <button type="button" id="adminUserSearchApply" class="admin-shops-btn admin-shops-btn--primary">Search</button>
+                      <button type="button" id="adminUserSearchClear" class="admin-shops-btn admin-shops-btn--ghost">Clear</button>
+                    </div>
+                  </label>
+                </div>
+                <div class="admin-shops-toolbar__filters">
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Role</span>
+                    <select id="adminUserFilterRole" class="admin-shops-select">
+                      <option value="all">All roles</option>
+                      <option value="admin">Admin</option>
+                      <option value="shop">Shop / business</option>
+                      <option value="customer">Customer</option>
+                    </select>
+                  </label>
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Status</span>
+                    <select id="adminUserFilterStatus" class="admin-shops-select">
+                      <option value="all">All statuses</option>
+                      <option value="active">Active</option>
+                      <option value="disabled">Disabled</option>
+                      <option value="pending">Pending application</option>
+                    </select>
+                  </label>
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Has shop</span>
+                    <select id="adminUserFilterHasShop" class="admin-shops-select">
+                      <option value="all">All</option>
+                      <option value="yes">Yes</option>
+                      <option value="no">No</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="admin-shops-toolbar__actions">
+                  <p id="adminUserResultCount" class="admin-shops-result-count">Showing — of — users</p>
+                  <button type="button" id="adminUserFilterReset" class="admin-shops-btn admin-shops-btn--ghost">Reset all</button>
+                </div>
+              </div>
+            </div>
+            <div id="adminUsersError" class="admin-users-error" hidden></div>
+            <div class="admin-table-scroll">
+              <div id="adminUsersTable" class="admin-users-table border border-slate-100 rounded-xl"></div>
+            </div>
+            <div class="admin-users-pagination">
+              <button type="button" id="adminUsersPrev" class="admin-shops-btn" disabled>Previous</button>
+              <span id="adminUsersPageInfo" class="admin-users-page-info">Page 1</span>
+              <button type="button" id="adminUsersNext" class="admin-shops-btn" disabled>Next</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Exports -->
+        <section class="pm-admin-panel admin-section" data-admin-panel="exports" role="tabpanel" id="adminSectionExports" hidden aria-hidden="true">
+          <header class="pm-admin-panel-head admin-section-head">
+            <p class="pm-admin-panel-head__tag admin-section-head__tag">Reports</p>
+            <h2 class="pm-admin-panel-head__title admin-section-head__title">Exports</h2>
+            <p class="pm-admin-panel-head__desc admin-section-head__desc">Download UTF-8 CSV reports for users, shops, catalog, and approvals.</p>
+          </header>
+          <div id="adminExportsError" class="admin-users-error mb-3" hidden></div>
+          <div class="admin-exports-grid">
+            <div class="admin-export-card">
+              <h3 class="admin-export-card__title">Users</h3>
+              <p class="admin-export-card__desc">Respects current user search and filters from User Management.</p>
+              <button type="button" class="admin-shops-btn admin-shops-btn--primary admin-export-btn" data-export="users">Download users.csv</button>
+            </div>
+            <div class="admin-export-card">
+              <h3 class="admin-export-card__title">Shops</h3>
+              <p class="admin-export-card__desc">All showrooms with location, status, and product counts.</p>
+              <button type="button" class="admin-shops-btn admin-shops-btn--primary admin-export-btn" data-export="shops">Download shops.csv</button>
+            </div>
+            <div class="admin-export-card">
+              <h3 class="admin-export-card__title">Products</h3>
+              <p class="admin-export-card__desc">Master catalog products with brand and category.</p>
+              <button type="button" class="admin-shops-btn admin-shops-btn--primary admin-export-btn" data-export="products">Download products.csv</button>
+            </div>
+            <div class="admin-export-card">
+              <h3 class="admin-export-card__title">Brands</h3>
+              <p class="admin-export-card__desc">Brand list with sort order.</p>
+              <button type="button" class="admin-shops-btn admin-shops-btn--primary admin-export-btn" data-export="brands">Download brands.csv</button>
+            </div>
+            <div class="admin-export-card">
+              <h3 class="admin-export-card__title">Categories</h3>
+              <p class="admin-export-card__desc">Catalog categories with product counts.</p>
+              <button type="button" class="admin-shops-btn admin-shops-btn--primary admin-export-btn" data-export="categories">Download categories.csv</button>
+            </div>
+            <div class="admin-export-card">
+              <h3 class="admin-export-card__title">Business approvals</h3>
+              <p class="admin-export-card__desc">Registration applications and review status.</p>
+              <button type="button" class="admin-shops-btn admin-shops-btn--primary admin-export-btn" data-export="business-approvals">Download business-approvals.csv</button>
+            </div>
+            <div class="admin-export-card">
+              <h3 class="admin-export-card__title">Hero ads</h3>
+              <p class="admin-export-card__desc">Homepage carousel media entries.</p>
+              <button type="button" class="admin-shops-btn admin-shops-btn--primary admin-export-btn" data-export="hero-ads">Download hero-ads.csv</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reports dashboard -->
+        <section class="pm-admin-panel admin-section" data-admin-panel="reports" role="tabpanel" id="adminSectionReports" hidden aria-hidden="true">
+          <header class="pm-admin-panel-head admin-section-head">
+            <p class="pm-admin-panel-head__tag admin-section-head__tag">Analytics</p>
+            <h2 class="pm-admin-panel-head__title admin-section-head__title">Reports</h2>
+            <p class="pm-admin-panel-head__desc admin-section-head__desc">Live marketplace metrics from existing database records. Filters apply where supported.</p>
+          </header>
+          <div class="admin-card pm-admin-card admin-shops-monitor-card space-y-4">
+            <div class="admin-shops-toolbar-card">
+              <div class="admin-shops-toolbar admin-reports-toolbar">
+                <div class="admin-shops-toolbar__filters">
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">From date</span>
+                    <input id="adminReportsFilterFrom" type="date" class="admin-shops-input" />
+                  </label>
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">To date</span>
+                    <input id="adminReportsFilterTo" type="date" class="admin-shops-input" />
+                  </label>
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">City</span>
+                    <select id="adminReportsFilterCity" class="admin-shops-select">
+                      <option value="all">All cities</option>
+                    </select>
+                  </label>
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">User role</span>
+                    <select id="adminReportsFilterRole" class="admin-shops-select">
+                      <option value="all">All roles</option>
+                      <option value="admin">Admin</option>
+                      <option value="shop">Shop / business</option>
+                      <option value="customer">Customer</option>
+                      <option value="wholesaler">Wholesaler</option>
+                      <option value="raw_supplier">Raw supplier</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="admin-shops-toolbar__actions">
+                  <button type="button" id="adminReportsFilterApply" class="admin-shops-btn admin-shops-btn--primary">Apply filters</button>
+                  <button type="button" id="adminReportsFilterReset" class="admin-shops-btn admin-shops-btn--ghost">Reset</button>
+                </div>
+              </div>
+            </div>
+            <div id="adminReportsError" class="admin-users-error" hidden></div>
+            <div id="adminReportsMetrics" class="admin-overview-grid admin-overview-grid--metrics pm-admin-stat-grid"></div>
+            <div id="adminReportsBreakdown" class="admin-reports-breakdown-grid"></div>
+            <div class="admin-reports-export-row">
+              <p class="text-xs font-semibold uppercase text-slate-500">Export</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="admin-shops-btn admin-shops-btn--primary" data-reports-export="reports-dashboard">Export report CSV</button>
+                <button type="button" class="admin-shops-btn" data-reports-export="reports-shops">Export shops report CSV</button>
+                <button type="button" class="admin-shops-btn" data-reports-export="reports-products">Export products report CSV</button>
+              </div>
+              <p id="adminReportsExportMsg" class="text-xs text-emerald-700" hidden></p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Moderation -->
+        <section class="pm-admin-panel admin-section" data-admin-panel="moderation" role="tabpanel" id="adminSectionModeration" hidden aria-hidden="true">
+          <header class="pm-admin-panel-head admin-section-head">
+            <p class="pm-admin-panel-head__tag admin-section-head__tag">Trust &amp; safety</p>
+            <div class="flex flex-wrap gap-3 items-center">
+              <h2 class="pm-admin-panel-head__title admin-section-head__title mb-0">Moderation</h2>
+              <span id="adminModerationOpenHeader" class="admin-section-head__badge" hidden>0 open</span>
+            </div>
+            <p class="pm-admin-panel-head__desc admin-section-head__desc">Review user-submitted abuse reports and update status or admin notes.</p>
+          </header>
+          <div class="admin-card pm-admin-card admin-shops-monitor-card space-y-4">
+            <div class="admin-shops-toolbar-card">
+              <div class="admin-shops-toolbar">
+                <div class="admin-shops-toolbar__search">
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Search</span>
+                    <input id="adminModerationSearch" type="search" class="admin-shops-input" placeholder="Target, email, message…" autocomplete="off" />
+                  </label>
+                </div>
+                <div class="admin-shops-toolbar__filters">
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Status</span>
+                    <select id="adminModerationFilterStatus" class="admin-shops-select">
+                      <option value="all">All statuses</option>
+                      <option value="open" selected>Open</option>
+                      <option value="reviewing">Reviewing</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="dismissed">Dismissed</option>
+                    </select>
+                  </label>
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Report type</span>
+                    <select id="adminModerationFilterType" class="admin-shops-select">
+                      <option value="all">All types</option>
+                      <option value="wrong_price">Wrong price</option>
+                      <option value="wrong_product_info">Wrong product information</option>
+                      <option value="shop_unreachable">Shop closed / unreachable</option>
+                      <option value="inappropriate_content">Inappropriate content</option>
+                      <option value="duplicate_listing">Duplicate listing</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                  <label class="admin-shops-field">
+                    <span class="admin-shops-field__label">Target type</span>
+                    <select id="adminModerationFilterTarget" class="admin-shops-select">
+                      <option value="all">All targets</option>
+                      <option value="shop">Shop</option>
+                      <option value="listing">Listing</option>
+                      <option value="product">Product</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="admin-shops-toolbar__actions">
+                  <p id="adminModerationResultCount" class="admin-shops-result-count">Showing — of — reports</p>
+                  <button type="button" id="adminModerationFilterReset" class="admin-shops-btn admin-shops-btn--ghost">Reset</button>
+                </div>
+              </div>
+            </div>
+            <div id="adminModerationError" class="admin-users-error" hidden></div>
+            <div class="admin-table-scroll">
+              <div id="adminModerationTable" class="admin-users-table admin-moderation-table border border-slate-100 rounded-xl"></div>
+            </div>
+            <div class="admin-users-pagination">
+              <button type="button" id="adminModerationPrev" class="admin-shops-btn" disabled>Previous</button>
+              <span id="adminModerationPageInfo" class="admin-users-page-info">Page 1</span>
+              <button type="button" id="adminModerationNext" class="admin-shops-btn" disabled>Next</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Activity Log -->
+        <section class="pm-admin-panel admin-section" data-admin-panel="activity" role="tabpanel" id="adminSectionActivity" hidden aria-hidden="true">
+          <header class="pm-admin-panel-head admin-section-head">
+            <p class="pm-admin-panel-head__tag admin-section-head__tag">Audit</p>
+            <h2 class="pm-admin-panel-head__title admin-section-head__title">Activity Log</h2>
+            <p class="pm-admin-panel-head__desc admin-section-head__desc">Recent important admin actions (latest 20 records).</p>
+          </header>
+          <div class="admin-card pm-admin-card space-y-4">
+            <label class="admin-shops-field admin-shops-field--inline">
+              <span class="admin-shops-field__label">Filter by action</span>
+              <select id="adminActivityFilterAction" class="admin-shops-select">
+                <option value="all">All actions</option>
+                <option value="business_approved">Business approved</option>
+                <option value="business_rejected">Business rejected</option>
+                <option value="customer_access_toggled">Customer access</option>
+                <option value="shop_list_lu_toggled">Shop last-update display</option>
+                <option value="hero_ad_uploaded">Hero ad uploaded</option>
+                <option value="hero_ad_updated">Hero ad updated</option>
+                <option value="hero_ad_deleted">Hero ad deleted</option>
+                <option value="brand_priority_updated">Brand priority</option>
+                <option value="catalog_zip_imported">Catalog ZIP import</option>
+                <option value="product_created">Product created</option>
+                <option value="product_updated">Product updated</option>
+                <option value="product_deleted">Product deleted</option>
+                <option value="shop_updated">Shop updated</option>
+                <option value="user_role_changed">User role changed</option>
+                <option value="user_disabled">User disabled</option>
+                <option value="user_enabled">User enabled</option>
+                <option value="csv_exported">CSV exported</option>
+                <option value="report_status_changed">Report status changed</option>
+                <option value="report_note_updated">Report note updated</option>
+                <option value="report_resolved">Report resolved</option>
+                <option value="report_dismissed">Report dismissed</option>
+                <option value="reports_dashboard_exported">Reports dashboard exported</option>
+                <option value="reports_shops_exported">Reports shops exported</option>
+                <option value="reports_products_exported">Reports products exported</option>
+              </select>
+            </label>
+            <div id="adminActivityLogList"></div>
           </div>
         </section>
 
@@ -409,6 +839,14 @@
 
   <div id="adminSidebarBackdrop" class="pm-admin-sidebar-backdrop admin-sidebar-backdrop" aria-hidden="true"></div>
 
+  <dialog id="adminUserDetailsDialog" class="rounded-2xl border border-slate-200 bg-white p-0 w-[min(94vw,40rem)] max-h-[84vh] shadow-2xl backdrop:bg-slate-950/60">
+    <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+      <h2 id="adminUserDetailsTitle" class="text-lg font-bold text-slate-950">User details</h2>
+      <button id="adminUserDetailsClose" type="button" class="rounded-full bg-slate-100 px-3 py-1 text-xl leading-none" aria-label="Close">×</button>
+    </div>
+    <div id="adminUserDetailsBody" class="max-h-[calc(84vh-4rem)] overflow-auto p-5 text-sm space-y-4"></div>
+  </dialog>
+
   <dialog id="adminShopDetailsDialog" class="rounded-2xl border border-slate-200 bg-white p-0 w-[min(94vw,52rem)] max-h-[84vh] shadow-2xl backdrop:bg-slate-950/60">
     <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
       <h2 id="adminShopDetailsTitle" class="text-lg font-bold text-slate-950">Shop details</h2>
@@ -417,10 +855,24 @@
     <div id="adminShopDetailsBody" class="max-h-[calc(84vh-4rem)] overflow-auto p-5 text-sm"></div>
   </dialog>
 
+  <dialog id="adminModerationDetailsDialog" class="rounded-2xl border border-slate-200 bg-white p-0 w-[min(94vw,40rem)] max-h-[84vh] shadow-2xl backdrop:bg-slate-950/60">
+    <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+      <h2 id="adminModerationDetailsTitle" class="text-lg font-bold text-slate-950">Report details</h2>
+      <button id="adminModerationDetailsClose" type="button" class="rounded-full bg-slate-100 px-3 py-1 text-xl leading-none" aria-label="Close">×</button>
+    </div>
+    <div id="adminModerationDetailsBody" class="max-h-[calc(84vh-4rem)] overflow-auto p-5 text-sm"></div>
+  </dialog>
+
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>
   <script src="/paint/js/admin-shell.js"></script>
+  <script src="/paint/js/admin-shops-monitor.js"></script>
+  <script src="/paint/js/admin-users.js"></script>
+  <script src="/paint/js/admin-exports.js"></script>
   <script src="/paint/js/admin-catalog.js"></script>
+  <script src="/paint/js/admin-reports.js"></script>
+  <script src="/paint/js/admin-moderation.js"></script>
+  <script src="/paint/js/admin-activity-ui.js"></script>
   <script>
     function esc(s) {
       return String(s ?? "").replace(/[&<>"']/g, (c) => ({
@@ -503,6 +955,7 @@
           await PaintApi.adminPatchAd(Number(btn.dataset.id), { active: makeActive });
           const refreshed = await PaintApi.adminAds();
           renderAds(refreshed.ads || []);
+          if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
         })
       );
 
@@ -513,6 +966,7 @@
           await PaintApi.adminDeleteAd(Number(btn.dataset.id));
           const refreshed = await PaintApi.adminAds();
           renderAds(refreshed.ads || []);
+          if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
         })
       );
     }
@@ -542,6 +996,7 @@
             [next[idx], next[j]] = [next[j], next[idx]];
             await PaintApi.adminReorderBrands(next.map((b) => b.id));
             await hydrateBrands();
+            if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
           })
         );
         brandListEl.appendChild(wrap);
@@ -583,6 +1038,7 @@
       await PaintApi.adminCustomerAccess(next);
       customerEnabled = next;
       renderToggle();
+      if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
     });
 
     shopListLuToggleBtn.addEventListener("click", async () => {
@@ -592,6 +1048,7 @@
         const r = await PaintApi.adminShopsListShowLastUpdate(next);
         shopsListShowLastUpdate = !!(r && r.shopsListShowLastUpdate);
         renderShopListLuToggle();
+        if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
       } catch (e) {
         console.error(e);
         let msg = (e && e.data && e.data.error) || (e && e.message) || String(e);
@@ -630,6 +1087,7 @@
       await PaintApi.adminUploadAd(file, { kind, title: file.name, durationSeconds: duration });
       const refreshed = await PaintApi.adminAds();
       renderAds(refreshed.ads || []);
+      if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
     });
 
     (async () => {
@@ -644,6 +1102,7 @@
       const ads = await PaintApi.adminAds();
       renderAds(ads.ads || []);
       if (typeof initAdminCatalog === "function") await initAdminCatalog();
+      if (typeof window.refreshAdminActivityLog === "function") await window.refreshAdminActivityLog();
     })().catch((e) => {
       console.error(e);
       customerToggleStatus.textContent = paintMarketT("admin_hydrate_fail");
