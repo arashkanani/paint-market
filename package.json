@@ -6,6 +6,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "seed": "node scripts/seed.js",
+    "seed:dev": "node scripts/seed.js --dev-admin",
+    "backup-db": "node scripts/backup-db.js",
+    "check-db-git": "node scripts/check-no-db-commit.js",
+    "audit-orphans": "node scripts/audit-orphans.js",
     "compress-images": "node scripts/compress-brand-images.js"
   },
   "engines": {

@@ -31,8 +31,16 @@ const {
   normalizeModerationReport,
   validatePublicReportBody
 } = require("./lib/moderation-reports");
-const { filterPorcelainForCodePush, runGitResetExcluded } = require("./lib/dev-git-code-push");
+const {
+  filterPorcelainForCodePush,
+  runGitResetExcluded,
+  buildCodePushPreview,
+  getStagedForbiddenFromGit,
+  PROTECTED_LABELS
+} = require("./lib/dev-git-code-push");
 const devDbBackup = require("./lib/dev-db-backup");
+const { writeDevOpsState } = require("./lib/dev-ops-state");
+const { buildDevOpsOverview } = require("./lib/dev-ops-overview");
 
 async function loadShopCustomColors(db, shopId) {
   return dbm.all(
@@ -1441,8 +1449,8 @@ function handleCommitPushStep(req, res) {
   if (step === "precheck") {
     lines.push("$ git status --short");
     const status = runGitCommandDetailed(["status", "--short"]);
-    const codePorcelain = filterPorcelainForCodePush(status.stdout || "");
-    lines.push(codePorcelain || status.stdout || "(clean working tree)");
+    const porcelain = status.stdout || "";
+    lines.push(porcelain || "(clean working tree)");
     if (!status.ok) {
       res.json({
         ok: false,
@@ -1452,19 +1460,46 @@ function handleCommitPushStep(req, res) {
       });
       return;
     }
+    const preview = buildCodePushPreview(porcelain);
+    const codePorcelain = filterPorcelainForCodePush(porcelain);
     const summary = summarizeGitStatus(codePorcelain);
     const head = getGitHeadInfo();
     res.json({
       ok: true,
       step: "precheck",
-      nothingToCommit: summary.total === 0,
-      noCodeChanges: summary.total === 0,
-      workingTreeClean: summary.total === 0,
+      nothingToCommit: preview.filesToPush.length === 0,
+      noCodeChanges: preview.filesToPush.length === 0,
+      workingTreeClean: preview.total === 0,
       summary,
-      commitHash: head.commitHash,
       branch: head.branch,
+      filesToPush: preview.filesToPush,
+      protectedFiles: preview.protectedFiles,
+      protectedLabels: PROTECTED_LABELS,
+      commitHash: head.commitHash,
       repository: getRepoName(),
       githubUrl: getGitHubCommitWebUrl(head.commitHash),
+      output: lines.join("\n")
+    });
+    return;
+  }
+
+  if (step === "guard") {
+    const guard = getStagedForbiddenFromGit(runGitCommandDetailed);
+    lines.push("$ git diff --cached --name-only");
+    if (!guard.ok) {
+      res.json({
+        ok: false,
+        step: "guard",
+        blocked: guard.blocked,
+        output: lines.join("\n"),
+        error: guard.error
+      });
+      return;
+    }
+    res.json({
+      ok: true,
+      step: "guard",
+      blocked: [],
       output: lines.join("\n")
     });
     return;
@@ -1497,11 +1532,30 @@ function handleCommitPushStep(req, res) {
     }
     const resetResult = runGitResetExcluded(runGitCommandDetailed, ROOT);
     lines.push(resetResult.output);
+    if (!resetResult.ok) {
+      res.json({
+        ok: false,
+        step: "stage",
+        output: lines.join("\n"),
+        error: resetResult.error || "git reset failed"
+      });
+      return;
+    }
+    const guard = getStagedForbiddenFromGit(runGitCommandDetailed);
+    if (!guard.ok) {
+      res.json({
+        ok: false,
+        step: "stage",
+        blocked: guard.blocked,
+        output: lines.join("\n"),
+        error: guard.error
+      });
+      return;
+    }
     res.json({
-      ok: resetResult.ok,
+      ok: true,
       step: "stage",
-      output: lines.join("\n"),
-      error: resetResult.ok ? undefined : resetResult.error || "git reset failed"
+      output: lines.join("\n")
     });
     return;
   }
@@ -1654,6 +1708,16 @@ function handleCommitPushFull(message, res) {
   const resetResult = runGitResetExcluded(runGitCommandDetailed, ROOT);
   if (!resetResult.ok) {
     res.json({ ok: false, error: resetResult.error || "git reset failed", output: resetResult.output });
+    return;
+  }
+  const guard = getStagedForbiddenFromGit(runGitCommandDetailed);
+  if (!guard.ok) {
+    res.json({
+      ok: false,
+      blocked: guard.blocked,
+      error: guard.error,
+      output: resetResult.output
+    });
     return;
   }
 
@@ -1828,11 +1892,8 @@ function testPublicPage(publicDir, pageRel) {
   };
 }
 
-function handleBackupDbStep(req, res) {
+function handleBackupDbLocal(req, res) {
   const step = String(req.body?.step || "full").toLowerCase();
-  const message =
-    String(req.body?.message || "").trim() ||
-    (req.body?.filename ? `Database backup: ${req.body.filename}` : "Database backup");
 
   if (step === "check") {
     const livePath = devDbBackup.getLiveDbPath(ROOT);
@@ -1843,101 +1904,43 @@ function handleBackupDbStep(req, res) {
       livePath,
       exists,
       sizeHuman: exists ? devDbBackup.formatByteSize(fs.statSync(livePath).size) : null,
+      backupDirectory: devDbBackup.getBackupDir(ROOT),
       output: exists ? `Live database found: ${livePath}` : `Live database not found: ${livePath}`,
       error: exists ? undefined : "Live database file not found"
     });
     return;
   }
 
-  if (step === "copy") {
-    const result = devDbBackup.createBackupCopy(ROOT);
+  if (step === "copy" || step === "full") {
+    const result = devDbBackup.createLocalBackup(ROOT);
     if (!result.ok) {
-      res.json({ ok: false, step: "copy", error: result.error, output: result.error });
-      return;
-    }
-    res.json({
-      ok: true,
-      step: "copy",
-      backup: result,
-      output: `Created backup: ${result.localPath} (${result.sizeHuman})`
-    });
-    return;
-  }
-
-  if (step === "stage") {
-    const rel = String(req.body?.relPath || req.body?.filename || "").trim();
-    if (!rel) {
-      res.status(400).json({ ok: false, error: "Backup path required for stage step" });
-      return;
-    }
-    const filename = path.basename(rel);
-    const resolved = devDbBackup.resolveBackupFile(ROOT, filename);
-    if (!resolved.ok) {
-      res.json({ ok: false, step: "stage", error: resolved.error });
-      return;
-    }
-    const lines = ["$ git reset", `$ git add ${resolved.relPath}`];
-    runGitCommandDetailed(["reset"]);
-    const add = runGitCommandDetailed(["add", "--", resolved.relPath]);
-    if (add.output) lines.push(add.output);
-    res.json({
-      ok: add.ok,
-      step: "stage",
-      relPath: resolved.relPath,
-      output: lines.join("\n"),
-      error: add.ok ? undefined : add.stderr || add.stdout || "git add failed"
-    });
-    return;
-  }
-
-  if (step === "commit") {
-    const rel = String(req.body?.relPath || "").trim();
-    const commitMsg = message || (rel ? `Database backup: ${path.basename(rel)}` : "Database backup");
-    const lines = [`$ git commit -m "${commitMsg}"`];
-    const pre = runGitCommandDetailed(["status", "--short"]);
-    if (!countStatusLines(pre.stdout)) {
-      res.json({
-        ok: true,
-        step: "commit",
-        nothingToCommit: true,
-        message: "No staged backup to commit.",
-        output: pre.stdout || "(clean working tree)"
-      });
-      return;
-    }
-    const commit = runGitCommandDetailed(["commit", "-m", commitMsg]);
-    lines.push(commit.output || "(no commit output)");
-    if (!commit.ok) {
-      res.json({
+      res.status(result.error === "Live database file not found" ? 404 : 400).json({
         ok: false,
-        step: "commit",
-        output: lines.join("\n"),
-        error: commit.stderr || commit.stdout || "git commit failed"
+        step,
+        error: result.error,
+        output: result.output || result.error
       });
       return;
     }
-    const head = getGitHeadInfo();
     res.json({
       ok: true,
-      step: "commit",
-      commitHash: head.commitHash,
-      branch: head.branch,
-      githubUrl: getGitHubCommitWebUrl(head.commitHash),
-      output: lines.join("\n")
+      step,
+      backup: result.backup,
+      backupDirectory: result.backupDirectory,
+      output: result.output
     });
+    writeDevOpsState(ROOT, { lastBackupAt: new Date().toISOString() });
     return;
   }
 
-  if (step === "push") {
-    handleCommitPushPushStep(req, res);
-    return;
-  }
-
-  res.status(400).json({ ok: false, error: `Unknown backup-db step: ${step}` });
+  res.status(400).json({
+    ok: false,
+    error: `Unknown backup step: ${step}. Use check, copy, or full.`
+  });
 }
 
 function registerDevActionRoutes(app, ctx) {
-  const { publicDir, getListeningPort } = ctx;
+  const { publicDir, getListeningPort, getServerStartedAt, getHttpServer, db, restoreLiveDatabase } = ctx;
 
   const mountPost = (route, handler) => {
     app.post(route, handler);
@@ -1956,24 +1959,69 @@ function registerDevActionRoutes(app, ctx) {
 
   mountGet("/api/dev-action/db-backups", (req, res) => {
     if (devActionForbidden(req, res)) return;
-    const data = devDbBackup.listDbBackups(ROOT, runGitCommandDetailed);
+    const data = devDbBackup.listDbBackups(ROOT);
     res.json({ ok: true, ...data });
   });
 
-  mountPost("/api/dev-action/backup-db", (req, res) => {
+  mountGet("/api/dev-action/ops-overview", async (req, res) => {
     if (devActionForbidden(req, res)) return;
-    handleBackupDbStep(req, res);
+    try {
+      const payload = await buildDevOpsOverview(
+        ROOT,
+        db,
+        { get: dbm.get, all: dbm.all },
+        { getListeningPort, getServerStartedAt },
+        { runGitCommand, getGitCommitHistory }
+      );
+      res.json(payload);
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e.message || "ops overview failed" });
+    }
   });
 
-  mountPost("/api/dev-action/restore-db", (req, res) => {
+  mountGet("/api/dev-action/health", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const port = getListeningPort();
+    res.json({
+      ok: true,
+      port,
+      pid: process.pid,
+      preferredPort: PREFERRED_PORT,
+      startedAt: getServerStartedAt ? getServerStartedAt() : null,
+      apiOrigin: `http://localhost:${port}`
+    });
+  });
+
+  mountGet("/api/dev-action/restart-status", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    const { readRestartStatus } = require("./lib/dev-restart");
+    const status = readRestartStatus(ROOT) || {};
+    res.json({ ok: true, ...status });
+  });
+
+  mountPost("/api/dev-action/backup-db-local", (req, res) => {
+    if (devActionForbidden(req, res)) return;
+    handleBackupDbLocal(req, res);
+  });
+
+  mountPost("/api/dev-action/restore-db", async (req, res) => {
     if (devActionForbidden(req, res)) return;
     const filename = req.body?.filename;
-    const result = devDbBackup.restoreBackup(ROOT, filename);
-    if (!result.ok) {
-      res.status(400).json(result);
+    if (typeof restoreLiveDatabase !== "function") {
+      res.status(500).json({ ok: false, error: "Database restore is not available" });
       return;
     }
-    res.json(result);
+    try {
+      const result = await restoreLiveDatabase(filename);
+      if (!result.ok) {
+        res.status(400).json(result);
+        return;
+      }
+      writeDevOpsState(ROOT, { lastRestoreAt: new Date().toISOString() });
+      res.json(result);
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e.message || "Restore failed" });
+    }
   });
 
   mountDelete("/api/dev-action/db-backups/:filename", (req, res) => {
@@ -2024,23 +2072,34 @@ function registerDevActionRoutes(app, ctx) {
   mountPost("/api/dev-action/restart", (req, res) => {
     if (devActionForbidden(req, res)) return;
     const port = getListeningPort();
-    const script = path.join(ROOT, "scripts", "dev-restart-server.js");
-    if (!fs.existsSync(script)) {
-      res.status(500).json({ ok: false, error: "Restart script not found." });
-      return;
-    }
+    const oldPid = process.pid;
+    const requestedAt = new Date().toISOString();
 
-    res.json({ ok: true, message: "Server restarting...", output: `Scheduling restart on port ${port}…` });
+    res.json({
+      ok: true,
+      message: "Server restarting…",
+      oldPid,
+      port,
+      requestedAt
+    });
 
     setImmediate(() => {
       try {
-        const child = spawn(process.execPath, [script, `--port=${port}`, `--pid=${process.pid}`], {
-          cwd: ROOT,
-          detached: true,
-          stdio: "ignore",
-          env: process.env
-        });
-        child.unref();
+        const { spawnReplacementServer, writeRestartStatus, appendRestartLog } = require("./lib/dev-restart");
+        writeRestartStatus(ROOT, { ok: true, phase: "restarting", oldPid, port, requestedAt });
+        spawnReplacementServer(ROOT, port, oldPid);
+
+        const exitOldServer = () => {
+          appendRestartLog(ROOT, `Old server exiting PID ${oldPid}`);
+          process.exit(0);
+        };
+
+        const httpServer = getHttpServer?.();
+        if (httpServer && typeof httpServer.close === "function") {
+          httpServer.close(() => setTimeout(exitOldServer, 150));
+        } else {
+          setTimeout(exitOldServer, 400);
+        }
       } catch (e) {
         console.error("Dev restart spawn failed:", e.message);
       }
@@ -2059,49 +2118,51 @@ function registerDevActionRoutes(app, ctx) {
   });
 }
 
-/** Try preferred port, then preferred+1, +2, … until listen succeeds (no process killing). */
-function listenOnAvailablePort(app, preferredPort, maxAttempts = 50) {
-  const start = Number(preferredPort) || 3010;
+/** Listen on a fixed port only; fail if already in use (no auto-increment). */
+function listenOnFixedPort(app, port) {
+  const fixed = Number(port) || 3010;
   return new Promise((resolve, reject) => {
-    let attempt = 0;
-
-    const tryNext = () => {
-      if (attempt >= maxAttempts) {
-        reject(new Error(`No free port found from ${start} to ${start + maxAttempts - 1}`));
+    const server = app.listen(fixed);
+    server.once("error", (err) => {
+      if (err && err.code === "EADDRINUSE") {
+        reject(
+          new Error(
+            `Port ${fixed} is already in use. Stop the existing server or set PORT=another_port.`
+          )
+        );
         return;
       }
-      const port = start + attempt;
-      attempt += 1;
-      const server = app.listen(port);
-
-      const onError = (err) => {
-        server.removeListener("listening", onListening);
-        if (err && err.code === "EADDRINUSE") {
-          server.close(() => tryNext());
-          return;
-        }
-        server.close(() => reject(err));
-      };
-
-      const onListening = () => {
-        server.removeListener("error", onError);
-        if (port !== start) {
-          console.warn(`Port ${start} is busy. Using port ${port} instead.`);
-        }
-        resolve(port);
-      };
-
-      server.once("error", onError);
-      server.once("listening", onListening);
-    };
-
-    tryNext();
+      reject(err);
+    });
+    server.once("listening", () => resolve({ port: fixed, server }));
   });
 }
 
 async function main() {
-  const db = dbm.openDb();
-  await dbm.migrate(db);
+  const deferredStart = process.env.PAINT_DEFERRED_START === "1";
+  const deferredPort = Number(process.env.PORT || process.env.PAINT_PORT || PREFERRED_PORT);
+  const oldPid = Number(process.env.PAINT_OLD_PID || 0);
+
+  if (deferredStart) {
+    const { waitForPortFree, writeRestartStatus, appendRestartLog } = require("./lib/dev-restart");
+    appendRestartLog(ROOT, `Deferred start: waiting for port ${deferredPort} (oldPid=${oldPid})`);
+    const free = await waitForPortFree(deferredPort, 30000);
+    if (!free) {
+      appendRestartLog(ROOT, `Deferred start failed: port ${deferredPort} still busy`);
+      writeRestartStatus(ROOT, { ok: false, error: `Port ${deferredPort} still in use`, oldPid, port: deferredPort });
+      process.exit(1);
+    }
+    appendRestartLog(ROOT, `Deferred start: port ${deferredPort} free, PID ${process.pid}`);
+  }
+
+  let db = dbm.openDb();
+  const migrateResult = await dbm.migrate(db);
+  if (migrateResult.sessionsRemoved > 0) {
+    console.log(`Cleaned ${migrateResult.sessionsRemoved} expired session(s).`);
+  }
+  if (migrateResult.applied?.length) {
+    console.log(`Applied migrations: ${migrateResult.applied.join(", ")}`);
+  }
 
   const app = express();
   app.disable("x-powered-by");
@@ -2113,6 +2174,8 @@ async function main() {
   const PUBLIC_DIR = path.join(ROOT, "public");
   const UI_BUILD = "20260602";
   let listeningPort = PREFERRED_PORT;
+  let serverStartedAt = null;
+  let httpServer = null;
   app.get("/paint/dashboard.html", (_req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.setHeader("Pragma", "no-cache");
@@ -2138,7 +2201,41 @@ async function main() {
 
   registerDevActionRoutes(app, {
     publicDir: PUBLIC_DIR,
-    getListeningPort: () => listeningPort
+    getListeningPort: () => listeningPort,
+    getServerStartedAt: () => serverStartedAt,
+    getHttpServer: () => httpServer,
+    db,
+    restoreLiveDatabase: async (filename) => {
+      await dbm.checkpointDb(db);
+      const safety = devDbBackup.createSafetyBackup(ROOT);
+      if (!safety.ok) return safety;
+
+      await dbm.closeDb(db);
+      let applied;
+      try {
+        applied = devDbBackup.applyRestoreFromBackup(ROOT, filename);
+      } catch (e) {
+        db = dbm.openDb();
+        await dbm.migrate(db);
+        return { ok: false, error: e.message || "Could not copy backup onto live database" };
+      }
+
+      if (!applied.ok) {
+        db = dbm.openDb();
+        await dbm.migrate(db);
+        return applied;
+      }
+
+      db = dbm.openDb();
+      await dbm.migrate(db);
+      return {
+        ok: true,
+        ...applied,
+        safetyPath: safety.safetyPath,
+        safetyFilename: safety.safetyFilename,
+        message: "Database restored and reloaded."
+      };
+    }
   });
 
   registerGitControlRoutes(app, ROOT, runGitCommandDetailed, devActionForbidden);
@@ -5439,9 +5536,31 @@ async function main() {
     res.status(status).json({ error: err.message || "Server error" });
   });
 
-  listeningPort = await listenOnAvailablePort(app, PREFERRED_PORT);
+  const listenResult = await listenOnFixedPort(app, PREFERRED_PORT);
+  listeningPort = listenResult.port;
+  httpServer = listenResult.server;
+  serverStartedAt = new Date().toISOString();
+
+  if (deferredStart) {
+    const { writeRestartStatus, appendRestartLog } = require("./lib/dev-restart");
+    writeRestartStatus(ROOT, {
+      ok: true,
+      oldPid,
+      newPid: process.pid,
+      port: listeningPort,
+      spawnedAt: serverStartedAt,
+      startedAt: serverStartedAt
+    });
+    appendRestartLog(ROOT, `Deferred start complete PID ${process.pid} port ${listeningPort}`);
+  }
+
   console.log(`Paint market UI + API -> http://localhost:${listeningPort}/paint`);
-  console.log(`Default admin login: admin@local.test / admin123 (development only)`);
+  console.log(`Fixed port: ${listeningPort} (set PORT or PAINT_PORT to change)`);
+  console.log(`Database: ${dbm.DB_PATH}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`Dev: run npm run seed:dev for catalog + admin@local.test (if needed)`);
+  }
+  console.log(`Default admin login: admin@local.test / admin123 (development only — requires npm run seed:dev)`);
 }
 
 main().catch((e) => {
