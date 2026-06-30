@@ -1,0 +1,357 @@
+/**
+ * PAINTIK home (index.html) — desktop visual polish (noon-inspired layout feel).
+ * Scope: min-width 1024px + index page only. Appearance only — no colors/functionality/mobile changes.
+ */
+
+@media (min-width: 1024px) {
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] {
+    --pm-index-desk-radius-sm: 0.375rem;
+    --pm-index-desk-radius-md: 0.5rem;
+    --pm-index-desk-radius-lg: 0.625rem;
+    --pm-index-desk-border: #e8e8e8;
+    --pm-index-desk-border-soft: rgba(15, 23, 42, 0.08);
+    --pm-index-desk-strip-bg: #f8fafc;
+    --pm-index-desk-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  /* —— Header (prominent search, utility nav) —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-header {
+    border-bottom: 1px solid var(--pm-index-desk-border);
+    box-shadow: none;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-header__top {
+    align-items: center;
+    column-gap: 1.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-logo__img {
+    height: 3rem;
+    max-width: 9.75rem;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-header__nav {
+    gap: 0.125rem 0.625rem;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-header__nav a {
+    padding: 0.45rem 0.7rem;
+    border-radius: var(--pm-index-desk-radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition:
+      color 0.18s var(--pm-index-desk-ease),
+      background-color 0.18s var(--pm-index-desk-ease);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-header__nav-login {
+    padding: 0.45rem 0.9rem !important;
+    border-radius: var(--pm-index-desk-radius-sm);
+  }
+
+  /* —— Search (noon-style pill, border-first) —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-search__input {
+    min-height: 3rem;
+    padding: 0.7rem 1.25rem;
+    border-radius: var(--pm-index-desk-radius-md);
+    border: 1px solid var(--pm-index-desk-border);
+    background: #fff;
+    box-shadow: none;
+    font-size: 0.9375rem;
+    transition:
+      border-color 0.18s var(--pm-index-desk-ease),
+      box-shadow 0.18s var(--pm-index-desk-ease);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-search__input:focus {
+    border-color: var(--pm-pfinder-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  /* —— Country / City / Language —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-geo-bar {
+    padding-top: 0.6rem;
+    padding-bottom: 0.75rem;
+    gap: 0.75rem 1.75rem;
+    border-top: 1px solid var(--pm-index-desk-border);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-geo-bar label {
+    gap: 0.5rem;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-geo-bar .paint-market-header-select {
+    min-height: 2.375rem;
+    border-radius: var(--pm-index-desk-radius-sm);
+    border-color: var(--pm-index-desk-border);
+    background: #fff;
+    box-shadow: none;
+    transition:
+      border-color 0.18s var(--pm-index-desk-ease),
+      box-shadow 0.18s var(--pm-index-desk-ease);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-geo-bar .paint-market-header-select:focus {
+    border-color: var(--pm-pfinder-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+  }
+
+  /* —— Section rhythm (more breathable) —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-home__content {
+    padding-bottom: 2rem;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-home__content > .pm-pfinder-popular,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-home__content > .pm-index-ad-pin,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-home__content > .pm-pfinder-panel {
+    margin-top: calc(var(--pm-pfinder-section-gap) + 0.625rem);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular__head,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-panel__head {
+    margin-bottom: 1rem;
+    min-height: 2rem;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular__title,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-panel__title {
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-panel__more {
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    border-radius: var(--pm-index-desk-radius-sm);
+    padding: 0.4rem 0.85rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition:
+      background-color 0.18s var(--pm-index-desk-ease),
+      border-color 0.18s var(--pm-index-desk-ease);
+  }
+
+  /* —— Popular products → product cards (noon carousel style) —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular__track {
+    gap: 0.875rem;
+    padding: 0.125rem 0 0.5rem;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular-item {
+    width: 8.75rem;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.625rem;
+    text-align: start;
+    background: #fff;
+    border: 1px solid var(--pm-index-desk-border);
+    border-radius: var(--pm-index-desk-radius-sm);
+    box-shadow: none;
+    transition:
+      border-color 0.2s var(--pm-index-desk-ease),
+      box-shadow 0.2s var(--pm-index-desk-ease);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular-item__ring {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: var(--pm-index-desk-radius-sm);
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular-item__img-wrap {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--pm-index-desk-radius-sm);
+    padding: 0.5rem;
+    background: #fff;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular-item__img {
+    border-radius: 0;
+    object-fit: contain;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular-item__label {
+    width: 100%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #0f172a;
+    text-align: start;
+    -webkit-line-clamp: 2;
+  }
+
+  /* —— Hero / ads —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-ad-pin {
+    border-radius: var(--pm-index-desk-radius-md);
+    border: 1px solid var(--pm-index-desk-border);
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-ad__frame,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-ad-pin .relative {
+    border-radius: var(--pm-index-desk-radius-md);
+    overflow: hidden;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-ad-pin img,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-ad-pin video {
+    object-fit: cover;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] #adCarouselPrev,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] #adCarouselNext {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--pm-index-desk-border);
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+    transition:
+      background-color 0.18s var(--pm-index-desk-ease),
+      box-shadow 0.18s var(--pm-index-desk-ease);
+  }
+
+  /* —— Brands strip (noon popular brands band) —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-panel.pm-index-browse-panel--brand {
+    margin-left: calc(-1 * var(--pm-pfinder-pad-x));
+    margin-right: calc(-1 * var(--pm-pfinder-pad-x));
+    padding: 1.375rem var(--pm-pfinder-pad-x);
+    background: var(--pm-index-desk-strip-bg);
+    border: none;
+    border-top: 1px solid var(--pm-index-desk-border);
+    border-bottom: 1px solid var(--pm-index-desk-border);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-panel.pm-index-browse-panel--category {
+    border-radius: var(--pm-index-desk-radius-md);
+    border: 1px solid var(--pm-index-desk-border);
+    box-shadow: none;
+    padding: calc(var(--pm-pfinder-panel-pad) + 0.25rem);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-brand-bar__track,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-brand__track {
+    gap: calc(var(--pm-pfinder-grid-gap) + 0.35rem);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-brand-chip {
+    padding: 0.35rem 0.25rem;
+    background: transparent;
+    border: none;
+    border-radius: var(--pm-index-desk-radius-sm);
+    box-shadow: none;
+    transition: opacity 0.2s var(--pm-index-desk-ease);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-brand-chip__icon {
+    border-radius: var(--pm-index-desk-radius-sm);
+    background: transparent;
+    border: none;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-brand-chip__label {
+    margin-top: 0.35rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #475569;
+    letter-spacing: 0;
+  }
+
+  /* —— Category cards —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-category-chip {
+    border-radius: var(--pm-index-desk-radius-sm);
+    border: 1px solid var(--pm-index-desk-border);
+    box-shadow: none;
+    background: #fff;
+    transition:
+      border-color 0.2s var(--pm-index-desk-ease),
+      box-shadow 0.2s var(--pm-index-desk-ease);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-category-chip__icon {
+    border-radius: var(--pm-index-desk-radius-sm);
+    background: #fff;
+    border: none;
+  }
+
+  /* —— Buttons (outline / VIEW ALL style) —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-brand-view-more,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-panel-show-all {
+    margin-top: 1rem;
+    border-radius: var(--pm-index-desk-radius-sm);
+    padding: 0.65rem 1.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    box-shadow: none;
+    transition:
+      background-color 0.2s var(--pm-index-desk-ease),
+      border-color 0.2s var(--pm-index-desk-ease),
+      box-shadow 0.2s var(--pm-index-desk-ease);
+  }
+
+  /* —— Shop cards —— */
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-shop-card {
+    border-radius: var(--pm-index-desk-radius-sm);
+    border-color: var(--pm-index-desk-border);
+    box-shadow: none;
+    transition:
+      border-color 0.2s var(--pm-index-desk-ease),
+      box-shadow 0.2s var(--pm-index-desk-ease);
+  }
+}
+
+/* Desktop hover — subtle, border-first (noon-like) */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-header__nav a:not(.pm-pfinder-header__nav-login):hover {
+    background: #f8fafc;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-panel__more:hover {
+    background: var(--pm-pfinder-accent-soft);
+    text-decoration: none;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-pfinder-popular-item:hover {
+    border-color: #d4d4d4;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-brand-chip:hover {
+    opacity: 0.82;
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-category-chip:hover {
+    border-color: #d4d4d4;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-brand-view-more:hover,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-panel-show-all:hover {
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.12);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-shop-card:hover {
+    border-color: #d4d4d4;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
+  }
+
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] #adCarouselPrev:hover,
+  body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] #adCarouselNext:hover {
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+  }
+}
