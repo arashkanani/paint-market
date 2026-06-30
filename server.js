@@ -21,7 +21,11 @@ const {
   ALLOWED_ROLES,
   parseAdminUsersQuery,
   buildUsersListSql,
-  normalizeAdminUserRow
+  normalizeAdminUserRow,
+  validateAdminCreateUserBody,
+  validateAdminUpdateUserBody,
+  isFullAdminUserEdit,
+  SHOP_ROLES
 } = require("./lib/admin-users");
 const { parseReportsDashboardQuery, buildReportsDashboard } = require("./lib/admin-reports-dashboard");
 const {
@@ -41,6 +45,7 @@ const {
 const devDbBackup = require("./lib/dev-db-backup");
 const { writeDevOpsState } = require("./lib/dev-ops-state");
 const { buildDevOpsOverview } = require("./lib/dev-ops-overview");
+const { createAuthAccess } = require("./lib/auth-access");
 
 async function loadShopCustomColors(db, shopId) {
   return dbm.all(
@@ -832,7 +837,8 @@ async function getSessionUser(db, req) {
   if (!token) return null;
   const row = await dbm.get(
     db,
-    `SELECT u.id, u.email, u.role, u.shop_id, u.phone, s.slug AS shop_slug, s.name AS shop_name
+    `SELECT u.id, u.email, u.role, u.shop_id, u.phone, COALESCE(u.is_primary_admin, 0) AS is_primary_admin,
+            s.slug AS shop_slug, s.name AS shop_name
      FROM sessions sess
      JOIN users u ON u.id = sess.user_id
      LEFT JOIN shops s ON s.id = u.shop_id
@@ -842,28 +848,7 @@ async function getSessionUser(db, req) {
   return row || null;
 }
 
-async function requireAuth(db, req) {
-  const u = await getSessionUser(db, req);
-  if (!u) {
-    const err = new Error("Unauthorized");
-    err.status = 401;
-    throw err;
-  }
-  return u;
-}
-
-async function requireRole(db, req, role) {
-  const u = await requireAuth(db, req);
-  if (role === "shop" && ["shop", "wholesaler", "raw_supplier"].includes(u.role)) {
-    return u;
-  }
-  if (u.role !== role) {
-    const err = new Error("Forbidden");
-    err.status = 403;
-    throw err;
-  }
-  return u;
-}
+const { requireAuth, requireRole, requireAdminOnly, requirePrimaryAdminOnly } = createAuthAccess(getSessionUser);
 
 async function readCustomerAccess(db) {
   const row = await dbm.get(db, "SELECT value FROM site_settings WHERE key = 'customer_access_enabled'");
@@ -2169,6 +2154,19 @@ async function main() {
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: "1mb" }));
 
+  /** Every DELETE under /paint/api and /api/dev-action requires an admin session. */
+  async function enforceAdminForDelete(req, res, next) {
+    if (req.method !== "DELETE") return next();
+    try {
+      await requireAdminOnly(db, req);
+      next();
+    } catch (e) {
+      next(e);
+    }
+  }
+  app.use("/paint/api", asyncHandler(enforceAdminForDelete));
+  app.use("/api", asyncHandler(enforceAdminForDelete));
+
   app.use("/paint/uploads", express.static(path.join(ROOT, "uploads")));
 
   const PUBLIC_DIR = path.join(ROOT, "public");
@@ -2371,10 +2369,10 @@ async function main() {
         res.status(400).json({ error: "Valid account type required" });
         return;
       }
-      const email = String(req.body?.email || "")
+      let email = String(req.body?.email || "")
         .trim()
         .toLowerCase();
-      const password = String(req.body?.password || "");
+      let password = String(req.body?.password || "");
       const companyName = String(req.body?.companyName || "").trim();
       const contactName = String(req.body?.contactName || "").trim();
       const locationText = String(req.body?.location || "").trim();
@@ -2382,9 +2380,22 @@ async function main() {
       const termsAccepted = String(req.body?.termsAccepted || "") === "1";
       const phoneRaw = String(req.body?.phone || "").trim();
       const phone = phoneRaw ? normalizePhoneE164(phoneRaw) : "";
-      if (!email || !password || !companyName || !contactName) {
-        res.status(400).json({ error: "email, password, companyName, and contactName are required" });
+      if (!companyName) {
+        res.status(400).json({ error: "Company name is required" });
         return;
+      }
+      if (!email || !password) {
+        const slugBase = dbm.slugify(companyName) || `shop-${Date.now()}`;
+        for (let n = 0; n < 50; n += 1) {
+          const candidate = n === 0 ? `${slugBase}@biz.local` : `${slugBase}-${n}@biz.local`;
+          const clash = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [candidate]);
+          if (!clash) {
+            email = candidate;
+            break;
+          }
+        }
+        if (!email) email = `shop-${Date.now()}@biz.local`;
+        password = randomToken(16);
       }
       if (!isStrongPassword(password)) {
         res.status(400).json({ error: "Password is required" });
@@ -2394,21 +2405,15 @@ async function main() {
         res.status(400).json({ error: "Valid phone number required" });
         return;
       }
-      if (!termsAccepted || !termsSignature) {
-        res.status(400).json({ error: "Terms signature is required" });
-        return;
-      }
-      if (!req.file) {
-        res.status(400).json({ error: "Company document is required" });
-        return;
-      }
       const existing = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [email]);
       if (existing) {
         res.status(409).json({ error: "Email already registered" });
         return;
       }
-      const rel = path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/");
-      const documentUrl = publicUrlForUpload(rel);
+      const rel = req.file
+        ? path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/")
+        : "";
+      const documentUrl = req.file ? publicUrlForUpload(rel) : "";
       const passHash = await hashPassword(password);
       await dbm.run(db, "BEGIN");
       try {
@@ -2621,7 +2626,14 @@ async function main() {
           ])
         : null;
       res.json({
-        user: { id: u.id, email: u.email, role: u.role, shopId: u.shop_id, phone: u.phone || null },
+        user: {
+          id: u.id,
+          email: u.email,
+          role: u.role,
+          shopId: u.shop_id,
+          phone: u.phone || null,
+          isPrimaryAdmin: Number(u.is_primary_admin) === 1
+        },
         shop
       });
     })
@@ -3835,37 +3847,32 @@ async function main() {
     })
   );
 
-  app.delete(
-    "/paint/api/shop/products/:id",
+  app.post(
+    "/paint/api/shop/catalog/remove-product",
     asyncHandler(async (req, res) => {
       const u = await requireRole(db, req, "shop");
-      const id = Number(req.params.id);
-      if (!Number.isFinite(id)) {
-        res.status(400).json({ error: "Valid product id required" });
+      const masterProductId = Number(req.body?.masterProductId);
+      if (!Number.isFinite(masterProductId) || masterProductId <= 0) {
+        res.status(400).json({ error: "masterProductId required" });
         return;
       }
-      const owned = await dbm.get(
+      const listings = await dbm.all(
         db,
-        "SELECT id FROM master_products WHERE id = ? AND created_by_shop_id = ?",
-        [id, u.shop_id]
+        "SELECT id FROM shop_listings WHERE shop_id = ? AND master_product_id = ?",
+        [u.shop_id, masterProductId]
       );
-      if (!owned) {
-        res.status(403).json({ error: "Only your custom products are deletable" });
+      if (!listings.length) {
+        res.status(404).json({ error: "Product not in your catalog" });
         return;
       }
-      const usedByOthers = await dbm.get(
+      await dbm.run(
         db,
-        "SELECT COUNT(*) AS c FROM shop_listings WHERE master_product_id = ? AND shop_id <> ?",
-        [id, u.shop_id]
+        `UPDATE shop_listings SET available = 0, updated_at = datetime('now')
+         WHERE shop_id = ? AND master_product_id = ?`,
+        [u.shop_id, masterProductId]
       );
-      if (usedByOthers && Number(usedByOthers.c) > 0) {
-        res.status(409).json({ error: "Cannot delete: this product is used by other shops" });
-        return;
-      }
-      await dbm.run(db, "DELETE FROM shop_listings WHERE master_product_id = ? AND shop_id = ?", [id, u.shop_id]);
-      await dbm.run(db, "DELETE FROM master_products WHERE id = ?", [id]);
       await dbm.touchShopCatalogUpdate(db, u.shop_id);
-      res.json({ ok: true });
+      res.json({ ok: true, removedListings: listings.length });
     })
   );
 
@@ -4164,6 +4171,104 @@ async function main() {
     })
   );
 
+  app.post(
+    "/paint/api/admin/users",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const validation = validateAdminCreateUserBody(req.body || {});
+      if (!validation.ok) {
+        res.status(400).json({ ok: false, error: "Validation failed", errors: validation.errors });
+        return;
+      }
+
+      const { name, email, password, role, shopName, active, applicationStatus, shopActive } = validation.data;
+      const existing = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [email]);
+      if (existing) {
+        res.status(409).json({ ok: false, error: "Email already registered", errors: { email: "Email is already in use" } });
+        return;
+      }
+
+      const passHash = await hashPassword(password);
+      let createdUserId = null;
+      let createdShopId = null;
+
+      await dbm.run(db, "BEGIN");
+      try {
+        const rUser = await dbm.run(db, "INSERT INTO users (email, password_hash, role, active) VALUES (?, ?, ?, ?)", [
+          email,
+          passHash,
+          role,
+          active
+        ]);
+        createdUserId = rUser.lastID;
+
+        if (role === "shop") {
+          const displayShopName = shopName || name;
+          const slugBase = dbm.slugify(displayShopName) || `shop-${Date.now()}`;
+          let slug = slugBase;
+          for (let n = 0; n < 50; n += 1) {
+            const trySlug = n === 0 ? slugBase : `${slugBase}-${n}`;
+            const clash = await dbm.get(db, "SELECT id FROM shops WHERE slug = ?", [trySlug]);
+            if (!clash) {
+              slug = trySlug;
+              break;
+            }
+          }
+          const rShop = await dbm.run(
+            db,
+            "INSERT INTO shops (name, slug, location_text, address, phone, active) VALUES (?, ?, '', '', '', ?)",
+            [displayShopName, slug, shopActive]
+          );
+          createdShopId = rShop.lastID;
+          await dbm.run(db, "UPDATE users SET shop_id = ? WHERE id = ?", [createdShopId, createdUserId]);
+        }
+
+        if (SHOP_ROLES.has(role)) {
+          await dbm.run(
+            db,
+            `INSERT INTO business_applications
+             (user_id, account_type, company_name, contact_name, phone, location_text, document_url, terms_signature, status)
+             VALUES (?, ?, ?, ?, '', '', '', '', ?)`,
+            [createdUserId, role, shopName || name, name, applicationStatus]
+          );
+        }
+
+        await dbm.run(db, "COMMIT");
+      } catch (e) {
+        await dbm.run(db, "ROLLBACK").catch(() => {});
+        throw e;
+      }
+
+      const row = await dbm.get(
+        db,
+        `SELECT u.id, u.email, u.role, u.shop_id, u.phone, u.created_at,
+                COALESCE(u.active, 1) AS active, u.last_login_at,
+                s.name AS shop_name, s.slug AS shop_slug,
+                (SELECT ba.contact_name FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS contact_name,
+                (SELECT ba.status FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS application_status
+         FROM users u
+         LEFT JOIN shops s ON s.id = u.shop_id
+         WHERE u.id = ?`,
+        [createdUserId]
+      );
+
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "user_created",
+        targetType: "user",
+        targetId: createdUserId,
+        targetLabel: name,
+        metadata: { name, email, role, shopId: createdShopId }
+      }).catch(() => {});
+
+      res.status(201).json({
+        success: true,
+        user: normalizeAdminUserRow(row, { displayName: name })
+      });
+    })
+  );
+
   app.get(
     "/paint/api/admin/users/:id",
     asyncHandler(async (req, res) => {
@@ -4214,7 +4319,7 @@ async function main() {
       }
       const target = await dbm.get(
         db,
-        `SELECT u.id, u.email, u.role, COALESCE(u.active, 1) AS active
+        `SELECT u.id, u.email, u.role, u.shop_id, COALESCE(u.active, 1) AS active
          FROM users u WHERE u.id = ?`,
         [id]
       );
@@ -4222,7 +4327,160 @@ async function main() {
         res.status(404).json({ error: "User not found" });
         return;
       }
+
       const body = req.body || {};
+
+      if (isFullAdminUserEdit(body)) {
+        const validation = validateAdminUpdateUserBody(body);
+        if (!validation.ok) {
+          res.status(400).json({ ok: false, error: "Validation failed", errors: validation.errors });
+          return;
+        }
+
+        const { name, email, password, role, shopName, active, applicationStatus, shopActive } = validation.data;
+        const emailClash = await dbm.get(db, "SELECT id FROM users WHERE email = ? AND id != ?", [email, id]);
+        if (emailClash) {
+          res.status(409).json({
+            ok: false,
+            error: "Email already registered",
+            errors: { email: "Email is already in use" }
+          });
+          return;
+        }
+
+        if (Number(adminUser.id) === id && role !== "admin") {
+          res.status(400).json({ error: "Cannot change your own admin role" });
+          return;
+        }
+        if (Number(adminUser.id) === id && active === 0) {
+          res.status(400).json({ error: "Cannot disable your own account" });
+          return;
+        }
+        if (target.role === "admin" && role !== "admin") {
+          const adminCount = await dbm.get(
+            db,
+            "SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND COALESCE(active, 1) = 1"
+          );
+          if ((adminCount?.c ?? 0) <= 1) {
+            res.status(400).json({ error: "Cannot remove the last active admin" });
+            return;
+          }
+        }
+
+        await dbm.run(db, "BEGIN");
+        try {
+          if (password) {
+            const passHash = await hashPassword(password);
+            await dbm.run(db, "UPDATE users SET email = ?, role = ?, active = ?, password_hash = ? WHERE id = ?", [
+              email,
+              role,
+              active,
+              passHash,
+              id
+            ]);
+          } else {
+            await dbm.run(db, "UPDATE users SET email = ?, role = ?, active = ? WHERE id = ?", [
+              email,
+              role,
+              active,
+              id
+            ]);
+          }
+
+          let shopId = target.shop_id;
+          if (role === "shop" && !shopId) {
+            const displayShopName = shopName || name;
+            const slugBase = dbm.slugify(displayShopName) || `shop-${Date.now()}`;
+            let slug = slugBase;
+            for (let n = 0; n < 50; n += 1) {
+              const trySlug = n === 0 ? slugBase : `${slugBase}-${n}`;
+              const clash = await dbm.get(db, "SELECT id FROM shops WHERE slug = ?", [trySlug]);
+              if (!clash) {
+                slug = trySlug;
+                break;
+              }
+            }
+            const rShop = await dbm.run(
+              db,
+              "INSERT INTO shops (name, slug, location_text, address, phone, active) VALUES (?, ?, '', '', '', ?)",
+              [displayShopName, slug, shopActive]
+            );
+            shopId = rShop.lastID;
+            await dbm.run(db, "UPDATE users SET shop_id = ? WHERE id = ?", [shopId, id]);
+          } else if (shopId && role === "shop") {
+            const displayShopName = shopName || name;
+            await dbm.run(db, "UPDATE shops SET name = ?, active = ? WHERE id = ?", [
+              displayShopName,
+              shopActive,
+              shopId
+            ]);
+          } else if (shopId && shopName) {
+            await dbm.run(db, "UPDATE shops SET name = ? WHERE id = ?", [shopName, shopId]);
+          }
+
+          if (SHOP_ROLES.has(role)) {
+            const latestApp = await dbm.get(
+              db,
+              `SELECT id FROM business_applications WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT 1`,
+              [id]
+            );
+            const companyName = shopName || name;
+            if (latestApp) {
+              await dbm.run(
+                db,
+                `UPDATE business_applications
+                 SET account_type = ?, company_name = ?, contact_name = ?, status = ?
+                 WHERE id = ?`,
+                [role, companyName, name, applicationStatus, latestApp.id]
+              );
+            } else {
+              await dbm.run(
+                db,
+                `INSERT INTO business_applications
+                 (user_id, account_type, company_name, contact_name, phone, location_text, document_url, terms_signature, status)
+                 VALUES (?, ?, ?, ?, '', '', '', '', ?)`,
+                [id, role, companyName, name, applicationStatus]
+              );
+            }
+          }
+
+          if (active === 0) {
+            await dbm.run(db, "DELETE FROM sessions WHERE user_id = ?", [id]);
+          }
+
+          await dbm.run(db, "COMMIT");
+        } catch (e) {
+          await dbm.run(db, "ROLLBACK").catch(() => {});
+          throw e;
+        }
+
+        const updated = await dbm.get(
+          db,
+          `SELECT u.id, u.email, u.role, u.shop_id, u.phone, u.created_at,
+                  COALESCE(u.active, 1) AS active, u.last_login_at,
+                  s.name AS shop_name, s.slug AS shop_slug,
+                  (SELECT ba.contact_name FROM business_applications ba
+                   WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS contact_name,
+                  (SELECT ba.status FROM business_applications ba
+                   WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS application_status
+           FROM users u
+           LEFT JOIN shops s ON s.id = u.shop_id
+           WHERE u.id = ?`,
+          [id]
+        );
+
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "user_edited",
+          targetType: "user",
+          targetId: id,
+          targetLabel: name,
+          metadata: { name, email, role, status: validation.data.status }
+        }).catch(() => {});
+
+        res.json({ success: true, user: normalizeAdminUserRow(updated, { displayName: name }) });
+        return;
+      }
+
       const patches = [];
       const patchParams = [];
       let roleChanged = false;
@@ -4304,6 +4562,73 @@ async function main() {
       }
 
       res.json({ user: normalizeAdminUserRow(updated) });
+    })
+  );
+
+  app.delete(
+    "/paint/api/admin/users/:id",
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireAdminOnly(db, req);
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id < 1) {
+        res.status(400).json({ ok: false, error: "Invalid user id" });
+        return;
+      }
+
+      if (Number(adminUser.id) === id) {
+        res.status(400).json({ ok: false, error: "You cannot disable your own account" });
+        return;
+      }
+
+      const target = await dbm.get(
+        db,
+        `SELECT u.id, u.email, u.role, COALESCE(u.active, 1) AS active,
+                (SELECT ba.contact_name FROM business_applications ba
+                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS contact_name,
+                s.name AS shop_name
+         FROM users u
+         LEFT JOIN shops s ON s.id = u.shop_id
+         WHERE u.id = ?`,
+        [id]
+      );
+      if (!target) {
+        res.status(404).json({ ok: false, error: "User not found" });
+        return;
+      }
+
+      if (target.role === "admin") {
+        const adminCount = await dbm.get(
+          db,
+          "SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND COALESCE(active, 1) = 1"
+        );
+        if ((adminCount?.c ?? 0) <= 1) {
+          res.status(400).json({ ok: false, error: "Cannot disable the last active admin" });
+          return;
+        }
+      }
+
+      if (target.active === 0) {
+        res.json({ success: true, softDelete: true, alreadyDisabled: true });
+        return;
+      }
+
+      await dbm.run(db, "UPDATE users SET active = 0 WHERE id = ?", [id]);
+      await dbm.run(db, "DELETE FROM sessions WHERE user_id = ?", [id]);
+
+      const displayName =
+        (target.contact_name && String(target.contact_name).trim()) ||
+        (target.shop_name && String(target.shop_name).trim()) ||
+        target.email;
+
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "user_disabled",
+        targetType: "user",
+        targetId: id,
+        targetLabel: displayName,
+        metadata: { name: displayName, email: target.email, role: target.role, softDelete: true }
+      }).catch(() => {});
+
+      res.json({ success: true, softDelete: true });
     })
   );
 
@@ -5512,6 +5837,15 @@ async function main() {
     })
   );
 
+  /** Unmatched API routes — JSON (avoids HTML "Cannot POST …" from Express default). */
+  app.use("/paint/api", (req, res) => {
+    res.status(404).json({
+      ok: false,
+      error: `No handler for ${req.method} ${req.originalUrl}`,
+      hint: "If you recently updated server.js, restart the Node server (npm start)."
+    });
+  });
+
   app.use(
     "/paint",
     express.static(PUBLIC_DIR, {
@@ -5533,7 +5867,7 @@ async function main() {
 
   app.use((err, _req, res, _next) => {
     const status = err.status || 500;
-    res.status(status).json({ error: err.message || "Server error" });
+    res.status(status).json({ ok: false, error: err.message || "Server error" });
   });
 
   const listenResult = await listenOnFixedPort(app, PREFERRED_PORT);

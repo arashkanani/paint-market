@@ -130,8 +130,8 @@
           <input name="companyName" required class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
         </div>
         <div>
-          <label class="text-xs font-semibold text-slate-600" data-pm-t="business_contact_name">Contact person</label>
-          <input name="contactName" required class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
+          <label class="text-xs font-semibold text-slate-600" data-pm-t="business_contact_name">Contact person (optional)</label>
+          <input name="contactName" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-600" data-pm-t="register_phone">Business phone (optional)</label>
@@ -146,8 +146,8 @@
           <input name="locationArea" data-pm-shop-location-area class="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" data-pm-ph="register_loc_area_ph" placeholder="e.g. Al Khuwair" />
         </div>
         <div>
-          <label class="text-xs font-semibold text-slate-600" data-pm-t="business_document">Company document</label>
-          <input id="businessDocument" name="document" type="file" required accept=".pdf,.png,.jpg,.jpeg,.webp" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-teal-700" />
+          <label class="text-xs font-semibold text-slate-600" data-pm-t="business_document">Company document (optional)</label>
+          <input id="businessDocument" name="document" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-teal-700" />
           <p id="businessDocumentHint" class="mt-1 text-xs text-slate-400" data-pm-t="business_document_hint">Upload trade license, tax document, or company registration.</p>
         </div>
         <section id="businessPrivacySource" class="pm-business-legal-source" aria-labelledby="businessPrivacyTitle">
@@ -698,8 +698,8 @@ Commercial Registration (CR) Number: [CR Number]</pre>
           </div>
         </section>
         <div>
-          <label class="text-xs font-semibold text-slate-600" data-pm-t="business_terms_signature">Type your full name as signature</label>
-          <input name="termsSignature" required class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
+          <label class="text-xs font-semibold text-slate-600" data-pm-t="business_terms_signature">Type your full name as signature (optional)</label>
+          <input name="termsSignature" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none ring-teal-500/30 focus:ring-4" />
         </div>
         <p id="businessTermsError" class="hidden text-sm font-semibold text-rose-600" role="alert" data-pm-t="business_terms_required"></p>
         <button class="w-full rounded-lg bg-teal-700 text-white py-2.5 font-semibold hover:bg-teal-800" type="submit" data-pm-t="business_submit">Submit application</button>
@@ -738,7 +738,7 @@ Commercial Registration (CR) Number: [CR Number]</pre>
     const legalDialogTitle = document.getElementById("businessLegalDialogTitle");
     const legalDialogBody = document.getElementById("businessLegalDialogBody");
     const params = new URLSearchParams(window.location.search);
-    const type = params.get("type") || sessionStorage.getItem("paint_register_account_type") || "";
+    const type = params.get("type") || sessionStorage.getItem("paint_register_account_type") || "shop";
     const email = sessionStorage.getItem("paint_register_email") || "";
     const password = sessionStorage.getItem("paint_register_password") || "";
     const labels = {
@@ -746,7 +746,7 @@ Commercial Registration (CR) Number: [CR Number]</pre>
       wholesaler: paintMarketT("account_type_wholesaler"),
       raw_supplier: paintMarketT("account_type_raw_supplier")
     };
-    if (!["shop", "wholesaler", "raw_supplier"].includes(type) || !email || !password) {
+    if (!["shop", "wholesaler", "raw_supplier"].includes(type)) {
       window.location.href = "/paint/account.html";
     }
     typeLabel.textContent = labels[type] || "";
@@ -824,17 +824,18 @@ Commercial Registration (CR) Number: [CR Number]</pre>
       e.preventDefault();
       errorEl.classList.add("hidden");
       clearTermsError();
-      if (!termsCheckbox?.checked) {
-        showTermsError();
-        termsCheckbox?.focus();
-        return;
-      }
       const docFile = documentInput?.files?.[0];
       if (type === "shop" && docFile && !isPdfDocument(docFile)) {
         showError(paintMarketT("business_document_pdf_invalid"));
         return;
       }
       const fd = new FormData(form);
+      const companyName = String(fd.get("companyName") || "").trim();
+      if (!companyName) {
+        showError(paintMarketT("business_company_required"));
+        form.querySelector('[name="companyName"]')?.focus();
+        return;
+      }
       const phoneRaw = String(fd.get("phone") || "").trim();
       if (phoneRaw && typeof paintMarketValidatePhone === "function") {
         const country = String(fd.get("locationCountry") || paintMarketCountryGet() || "OM");

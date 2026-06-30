@@ -1075,6 +1075,25 @@
   border-color: #115e59;
 }
 
+.admin-shops-btn--danger {
+  border-color: #e11d48;
+  background: #e11d48;
+  color: #fff;
+}
+
+.admin-shops-btn--danger:hover {
+  background: #be123c;
+  border-color: #be123c;
+}
+
+.admin-users-cell--actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+  white-space: normal;
+}
+
 .admin-shops-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1229,7 +1248,7 @@
 
 .admin-users-row {
   display: grid;
-  grid-template-columns: 3rem 1.1fr 1.4fr 0.9fr 0.8fr 1fr 1fr 1fr 5.5rem;
+  grid-template-columns: 3rem 1.1fr 1.4fr 0.9fr 0.8fr 1fr 1fr 1fr minmax(10.5rem, auto);
   gap: 0.5rem;
   align-items: center;
   padding: 0.65rem 0.85rem;
@@ -1283,6 +1302,34 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: #64748b;
+}
+
+.admin-create-user-field-error {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e11d48;
+}
+
+.admin-users-toast {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 120;
+  max-width: min(92vw, 22rem);
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.admin-users-toast[hidden] {
+  display: none !important;
 }
 
 .admin-exports-grid {

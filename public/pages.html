@@ -1864,6 +1864,13 @@
     return `${window.location.origin}${pageHref(href)}`;
   }
 
+  /** Dev dashboard Preview — admin bypasses role redirects on localhost only. */
+  function pagePreviewUrl(href) {
+    const url = new URL(pageFullUrl(href));
+    url.searchParams.set("pm_dev_preview", "1");
+    return url.toString();
+  }
+
   function formatDevActionError(endpoint, status, body) {
     const snippet = String(body || "").trim().slice(0, 500) || "(empty)";
     return `Request failed:\nEndpoint: ${endpoint}\nStatus: ${status}\nResponse: ${snippet}`;
@@ -2464,7 +2471,7 @@
   pagesEl.addEventListener("click", (e) => {
     const preview = e.target.closest("[data-page-preview]");
     if (preview) {
-      window.open(pageFullUrl(preview.getAttribute("data-page-preview")), "_blank", "noopener,noreferrer");
+      window.open(pagePreviewUrl(preview.getAttribute("data-page-preview")), "_blank", "noopener,noreferrer");
       return;
     }
     const mobile = e.target.closest("[data-page-mobile]");

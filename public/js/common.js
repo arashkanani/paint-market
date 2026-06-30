@@ -46,6 +46,19 @@ function paintMarketApiFullUrl(apiPathSuffix) {
   }
 }
 
+/** Localhost dev-dashboard Preview: admin can open role-guarded pages without redirect. */
+function paintMarketDevPreviewActive() {
+  try {
+    const w = typeof window !== "undefined" ? window : null;
+    if (!w?.location) return false;
+    const host = w.location.hostname;
+    if (host !== "localhost" && host !== "127.0.0.1") return false;
+    return new URLSearchParams(w.location.search).get("pm_dev_preview") === "1";
+  } catch {
+    return false;
+  }
+}
+
 function paintMarketBrowsePageUrl(opts = {}) {
   const qs = new URLSearchParams();
   const catId = Number(opts.categoryId);
@@ -324,8 +337,15 @@ const PaintApi = {
   patchProduct(id, body) {
     return this.request(`/shop/products/${id}`, { method: "PATCH", body });
   },
+  removeProductFromCatalog(masterProductId) {
+    return this.request("/shop/catalog/remove-product", {
+      method: "POST",
+      body: { masterProductId: Number(masterProductId) }
+    });
+  },
+  /** Removes product from shop catalog (listings marked unavailable). Does not DELETE. */
   deleteProduct(id) {
-    return this.request(`/shop/products/${id}`, { method: "DELETE" });
+    return this.removeProductFromCatalog(id);
   },
   putListing(body) {
     return this.request("/shop/listings", { method: "PUT", body });
@@ -474,6 +494,12 @@ const PaintApi = {
   },
   adminPatchUser(id, body) {
     return this.request(`/admin/users/${id}`, { method: "PATCH", body });
+  },
+  adminCreateUser(body) {
+    return this.request("/admin/users", { method: "POST", body });
+  },
+  adminDeleteUser(id) {
+    return this.request(`/admin/users/${id}`, { method: "DELETE" });
   },
   async adminDownloadExport(type, queryParams = {}) {
     const qs = new URLSearchParams();
@@ -2014,6 +2040,7 @@ window.paintMarketSearchResultsUrl = paintMarketSearchResultsUrl;
 window.paintMarketRecentSearchesGet = paintMarketRecentSearchesGet;
 window.paintMarketRecentSearchAdd = paintMarketRecentSearchAdd;
 window.paintMarketRecentSearchesClear = paintMarketRecentSearchesClear;
+window.paintMarketDevPreviewActive = paintMarketDevPreviewActive;
 
 if (typeof document !== "undefined") {
   function paintMarketBootBottomNav() {
