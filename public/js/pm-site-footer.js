@@ -10,6 +10,7 @@
     if (!body) return false;
     if (html.classList.contains("pm-account-embed")) return false;
     if (body.dataset.pmSiteFooter === "off") return false;
+    if (body.classList.contains("pm-admin") || body.classList.contains("admin-shell")) return false;
     if (document.querySelector(".pm-site-footer")) return false;
     if (body.classList.contains("pm-account-page")) return false;
     return true;

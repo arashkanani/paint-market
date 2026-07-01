@@ -213,7 +213,7 @@
       const label = paintMarketCategoryLabel(c.slug, c.name);
       btn.setAttribute("aria-label", label);
       btn.title = label;
-      btn.innerHTML = `<span class="pm-index-category-chip__icon">${paintMarketCategoryIconImgHtml(c.slug, "pm-cat-icon pm-cat-icon--bar")}</span><span class="pm-index-category-chip__label">${paintMarketCategoryChipLabelHtml(c.slug, c.name)}</span>`;
+      btn.innerHTML = `<span class="pm-index-category-chip__icon">${paintMarketCategoryIconImgHtml(c.slug, "pm-cat-icon pm-cat-icon--bar", c.iconUrl)}</span><span class="pm-index-category-chip__label">${paintMarketCategoryChipLabelHtml(c.slug, c.name)}</span>`;
       btn.addEventListener("click", async () => {
         if (browseCategoryDialog?.open) browseCategoryDialog.close();
         await selectBrowseCategory(selected ? null : c);

@@ -25,7 +25,13 @@ const {
   validateAdminCreateUserBody,
   validateAdminUpdateUserBody,
   isFullAdminUserEdit,
-  SHOP_ROLES
+  SHOP_ROLES,
+  userDeleteDisplayName,
+  assertCanDeleteUser,
+  countAdminUsers,
+  fetchUserDeleteTarget,
+  permanentlyDeleteUser,
+  permanentlyDeleteUsers
 } = require("./lib/admin-users");
 const { parseReportsDashboardQuery, buildReportsDashboard } = require("./lib/admin-reports-dashboard");
 const {
@@ -66,9 +72,17 @@ function categoryDisplayName(slug, name) {
   return name;
 }
 
+function normalizeBrandRow(row) {
+  if (!row) return row;
+  if (row.icon_url != null && row.icon_url !== "") row.iconUrl = row.icon_url;
+  return row;
+}
+
 function normalizeCategoryRow(row) {
   if (!row) return row;
   if (row.slug) row.name = categoryDisplayName(row.slug, row.name);
+  if (row.icon_url != null && row.icon_url !== "") row.iconUrl = row.icon_url;
+  if (row.product_count != null) row.productCount = Number(row.product_count);
   return row;
 }
 
@@ -133,7 +147,9 @@ const uploadDirShop = path.join(ROOT, "uploads", "shops");
 const uploadDirProduct = path.join(ROOT, "uploads", "products");
 const uploadDirAds = path.join(ROOT, "uploads", "ads");
 const uploadDirDocuments = path.join(ROOT, "uploads", "documents");
-for (const d of [uploadDirShop, uploadDirProduct, uploadDirAds, uploadDirDocuments]) {
+const uploadDirCategory = path.join(ROOT, "uploads", "categories");
+const uploadDirBrand = path.join(ROOT, "uploads", "brands");
+for (const d of [uploadDirShop, uploadDirProduct, uploadDirAds, uploadDirDocuments, uploadDirCategory, uploadDirBrand]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 }
 
@@ -169,6 +185,24 @@ const uploadShop = multer({ storage: storageShop, limits: { fileSize: 6 * 1024 *
 const uploadProduct = multer({ storage: storageProduct, limits: { fileSize: 6 * 1024 * 1024 } });
 const uploadAd = multer({ storage: storageAd, limits: { fileSize: 40 * 1024 * 1024 } });
 const uploadDocument = multer({ storage: storageDocument, limits: { fileSize: 10 * 1024 * 1024 } });
+const storageCategory = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDirCategory),
+  filename: (req, file, cb) => {
+    const ext = path.extname(String(file.originalname || "")).toLowerCase() || ".png";
+    const safeExt = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"].includes(ext) ? ext : ".png";
+    cb(null, `cat-${req.params.id}-${Date.now()}${safeExt}`);
+  }
+});
+const uploadCategoryIcon = multer({ storage: storageCategory, limits: { fileSize: 4 * 1024 * 1024 } });
+const storageBrand = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDirBrand),
+  filename: (req, file, cb) => {
+    const ext = path.extname(String(file.originalname || "")).toLowerCase() || ".png";
+    const safeExt = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"].includes(ext) ? ext : ".png";
+    cb(null, `brand-${req.params.id}-${Date.now()}${safeExt}`);
+  }
+});
+const uploadBrandIcon = multer({ storage: storageBrand, limits: { fileSize: 4 * 1024 * 1024 } });
 const uploadCatalogZip = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 80 * 1024 * 1024 }
@@ -2676,11 +2710,11 @@ async function main() {
       }
       const categories = await dbm.all(
         db,
-        `SELECT id, slug, name
+        `SELECT id, slug, name, icon_url
          FROM catalog_categories
          ORDER BY sort_order ASC, name ASC`
       );
-      res.json({ categories });
+      res.json({ categories: categories.map(normalizeCategoryRow) });
     })
   );
 
@@ -2697,7 +2731,7 @@ async function main() {
       if (Number.isFinite(categoryId) && categoryId > 0) {
         brands = await dbm.all(
           db,
-          `SELECT DISTINCT b.id, b.slug, b.name, b.sort_order
+          `SELECT DISTINCT b.id, b.slug, b.name, b.sort_order, b.icon_url
            FROM brands b
            JOIN master_products mp ON mp.brand_id = b.id AND mp.category_id = ?
            JOIN shop_listings sl ON sl.master_product_id = mp.id AND sl.available = 1
@@ -2709,10 +2743,10 @@ async function main() {
       if (!brands?.length) {
         brands = await dbm.all(
           db,
-          `SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC, name ASC`
+          `SELECT id, slug, name, sort_order, icon_url FROM brands ORDER BY sort_order ASC, name ASC`
         );
       }
-      res.json({ brands });
+      res.json({ brands: brands.map(normalizeBrandRow) });
     })
   );
 
@@ -3930,8 +3964,8 @@ async function main() {
     "/paint/api/admin/brands",
     asyncHandler(async (req, res) => {
       await requireRole(db, req, "admin");
-      const brands = await dbm.all(db, "SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC");
-      res.json({ brands });
+      const brands = await dbm.all(db, "SELECT id, slug, name, sort_order, icon_url FROM brands ORDER BY sort_order ASC");
+      res.json({ brands: brands.map(normalizeBrandRow) });
     })
   );
 
@@ -3957,14 +3991,14 @@ async function main() {
         await dbm.run(db, "ROLLBACK").catch(() => {});
         throw e;
       }
-      const brands = await dbm.all(db, "SELECT id, slug, name, sort_order FROM brands ORDER BY sort_order ASC");
+      const brands = await dbm.all(db, "SELECT id, slug, name, sort_order, icon_url FROM brands ORDER BY sort_order ASC");
       await logAdminActivity(db, dbm, adminUser, {
         action: "brand_priority_updated",
         targetType: "brand",
         targetLabel: "Brand display order",
         metadata: { orderedIds: ids.slice(0, 20) }
       }).catch(() => {});
-      res.json({ brands });
+      res.json({ brands: brands.map(normalizeBrandRow) });
     })
   );
 
@@ -4185,9 +4219,24 @@ async function main() {
       }
 
       const { name, email, password, role, shopName, active, applicationStatus, shopActive } = validation.data;
-      const existing = await dbm.get(db, "SELECT id FROM users WHERE email = ?", [email]);
+      const existing = await dbm.get(
+        db,
+        "SELECT id, email, role, COALESCE(active, 1) AS active FROM users WHERE LOWER(email) = ?",
+        [email]
+      );
       if (existing) {
-        res.status(409).json({ ok: false, error: "Email already registered", errors: { email: "Email is already in use" } });
+        res.status(409).json({
+          ok: false,
+          error: "Email already registered",
+          errors: { email: "Email is already in use" },
+          existingUser: {
+            id: existing.id,
+            email: existing.email,
+            role: existing.role,
+            active: existing.active !== 0,
+            status: existing.active === 0 ? "disabled" : "active"
+          }
+        });
         return;
       }
 
@@ -4340,8 +4389,8 @@ async function main() {
           return;
         }
 
-        const { name, email, password, role, shopName, active, applicationStatus, shopActive } = validation.data;
-        const emailClash = await dbm.get(db, "SELECT id FROM users WHERE email = ? AND id != ?", [email, id]);
+        const { name, email, password, role, shopName, phone, active, applicationStatus, shopActive } = validation.data;
+        const emailClash = await dbm.get(db, "SELECT id FROM users WHERE LOWER(email) = ? AND id != ?", [email, id]);
         if (emailClash) {
           res.status(409).json({
             ok: false,
@@ -4372,13 +4421,30 @@ async function main() {
 
         await dbm.run(db, "BEGIN");
         try {
+          const phoneValue = phone !== undefined ? phone : undefined;
           if (password) {
             const passHash = await hashPassword(password);
-            await dbm.run(db, "UPDATE users SET email = ?, role = ?, active = ?, password_hash = ? WHERE id = ?", [
+            if (phoneValue !== undefined) {
+              await dbm.run(
+                db,
+                "UPDATE users SET email = ?, role = ?, active = ?, phone = ?, password_hash = ? WHERE id = ?",
+                [email, role, active, phoneValue, passHash, id]
+              );
+            } else {
+              await dbm.run(db, "UPDATE users SET email = ?, role = ?, active = ?, password_hash = ? WHERE id = ?", [
+                email,
+                role,
+                active,
+                passHash,
+                id
+              ]);
+            }
+          } else if (phoneValue !== undefined) {
+            await dbm.run(db, "UPDATE users SET email = ?, role = ?, active = ?, phone = ? WHERE id = ?", [
               email,
               role,
               active,
-              passHash,
+              phoneValue,
               id
             ]);
           } else {
@@ -4568,9 +4634,30 @@ async function main() {
     })
   );
 
-  app.delete(
-    "/paint/api/admin/users/:id",
+  app.post(
+    "/paint/api/admin/users/bulk-delete",
     asyncHandler(async (req, res) => {
+      const adminUser = await requireAdminOnly(db, req);
+      const ids = req.body && Array.isArray(req.body.ids) ? req.body.ids.map(Number) : [];
+      if (!ids.length) {
+        res.status(400).json({ ok: false, error: "ids[] required" });
+        return;
+      }
+      const { deleted, failed } = await permanentlyDeleteUsers(db, dbm, adminUser, ids);
+      for (const row of deleted) {
+        await logAdminActivity(db, dbm, adminUser, {
+          action: "user_deleted",
+          targetType: "user",
+          targetId: row.id,
+          targetLabel: row.name,
+          metadata: { email: row.email, role: row.role, bulk: true }
+        }).catch(() => {});
+      }
+      res.json({ ok: true, deleted, failed });
+    })
+  );
+
+  const adminDeleteUserHandler = asyncHandler(async (req, res) => {
       const adminUser = await requireAdminOnly(db, req);
       const id = Number(req.params.id);
       if (!Number.isFinite(id) || id < 1) {
@@ -4578,62 +4665,44 @@ async function main() {
         return;
       }
 
-      if (Number(adminUser.id) === id) {
-        res.status(400).json({ ok: false, error: "You cannot disable your own account" });
+      const target = await fetchUserDeleteTarget(db, dbm, id);
+      const adminCount = await countAdminUsers(db, dbm);
+      try {
+        assertCanDeleteUser(adminUser, target, adminCount);
+      } catch (e) {
+        res.status(e.status || 400).json({ ok: false, error: e.message, code: e.code || undefined });
         return;
       }
 
-      const target = await dbm.get(
-        db,
-        `SELECT u.id, u.email, u.role, COALESCE(u.active, 1) AS active,
-                (SELECT ba.contact_name FROM business_applications ba
-                 WHERE ba.user_id = u.id ORDER BY datetime(ba.created_at) DESC LIMIT 1) AS contact_name,
-                s.name AS shop_name
-         FROM users u
-         LEFT JOIN shops s ON s.id = u.shop_id
-         WHERE u.id = ?`,
-        [id]
-      );
-      if (!target) {
-        res.status(404).json({ ok: false, error: "User not found" });
-        return;
-      }
-
-      if (target.role === "admin") {
-        const adminCount = await dbm.get(
-          db,
-          "SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND COALESCE(active, 1) = 1"
-        );
-        if ((adminCount?.c ?? 0) <= 1) {
-          res.status(400).json({ ok: false, error: "Cannot disable the last active admin" });
+      try {
+        await permanentlyDeleteUser(db, dbm, id);
+      } catch (e) {
+        if (e.status) {
+          res.status(e.status).json({
+            ok: false,
+            error: e.message,
+            code: e.code || undefined,
+            hint: e.hint || undefined
+          });
           return;
         }
+        throw e;
       }
 
-      if (target.active === 0) {
-        res.json({ success: true, softDelete: true, alreadyDisabled: true });
-        return;
-      }
-
-      await dbm.run(db, "UPDATE users SET active = 0 WHERE id = ?", [id]);
-      await dbm.run(db, "DELETE FROM sessions WHERE user_id = ?", [id]);
-
-      const displayName =
-        (target.contact_name && String(target.contact_name).trim()) ||
-        (target.shop_name && String(target.shop_name).trim()) ||
-        target.email;
-
+      const displayName = userDeleteDisplayName(target);
       await logAdminActivity(db, dbm, adminUser, {
-        action: "user_disabled",
+        action: "user_deleted",
         targetType: "user",
         targetId: id,
         targetLabel: displayName,
-        metadata: { name: displayName, email: target.email, role: target.role, softDelete: true }
+        metadata: { email: target.email, role: target.role }
       }).catch(() => {});
 
-      res.json({ success: true, softDelete: true });
-    })
-  );
+      res.json({ ok: true, deleted: true, id });
+    });
+
+  app.delete("/paint/api/admin/users/:id", adminDeleteUserHandler);
+  app.delete("/api/admin/users/:id", adminDeleteUserHandler);
 
   async function logCsvExport(adminUser, exportType, rowCount) {
     await logAdminActivity(db, dbm, adminUser, {
@@ -5152,7 +5221,7 @@ async function main() {
       const categories = (
         await dbm.all(
           db,
-          `SELECT c.id, c.slug, c.name, c.sort_order,
+          `SELECT c.id, c.slug, c.name, c.sort_order, c.icon_url,
                   (SELECT COUNT(*) FROM master_products mp WHERE mp.category_id = c.id) AS product_count
            FROM catalog_categories c
            ORDER BY c.sort_order ASC, c.name ASC`
@@ -5259,6 +5328,36 @@ async function main() {
   );
 
   app.post(
+    "/paint/api/admin/categories/:id/icon",
+    uploadCategoryIcon.single("icon"),
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      if (!req.file) {
+        res.status(400).json({ error: "icon file required" });
+        return;
+      }
+      const category = await dbm.get(db, "SELECT * FROM catalog_categories WHERE id = ?", [id]);
+      if (!category) {
+        res.status(404).json({ error: "Category not found" });
+        return;
+      }
+      const rel = path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/");
+      const iconUrl = publicUrlForUpload(rel);
+      await dbm.run(db, "UPDATE catalog_categories SET icon_url = ? WHERE id = ?", [iconUrl, id]);
+      const updated = await dbm.get(db, "SELECT * FROM catalog_categories WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "category_updated",
+        targetType: "category",
+        targetId: id,
+        targetLabel: updated?.name || `Category #${id}`,
+        detail: "icon uploaded"
+      }).catch(() => {});
+      res.json({ category: normalizeCategoryRow(updated), iconUrl });
+    })
+  );
+
+  app.post(
     "/paint/api/admin/brands",
     asyncHandler(async (req, res) => {
       const adminUser = await requireRole(db, req, "admin");
@@ -5277,14 +5376,14 @@ async function main() {
           name,
           Number(maxRow?.m || 0) + 1
         ]);
-        const brand = await dbm.get(db, "SELECT id, slug, name, sort_order FROM brands WHERE id = ?", [ins.lastID]);
+        const brand = await dbm.get(db, "SELECT id, slug, name, sort_order, icon_url FROM brands WHERE id = ?", [ins.lastID]);
         await logAdminActivity(db, dbm, adminUser, {
           action: "brand_created",
           targetType: "brand",
           targetId: brand?.id,
           targetLabel: brand?.name || name
         }).catch(() => {});
-        res.json({ brand });
+        res.json({ brand: normalizeBrandRow(brand) });
       } catch (e) {
         if (String(e.message || "").includes("UNIQUE")) {
           res.status(409).json({ error: "Brand slug already exists" });
@@ -5317,14 +5416,44 @@ async function main() {
       }
       params.push(id);
       await dbm.run(db, `UPDATE brands SET ${patches.join(", ")} WHERE id = ?`, params);
-      const brand = await dbm.get(db, "SELECT id, slug, name, sort_order FROM brands WHERE id = ?", [id]);
+      const brand = await dbm.get(db, "SELECT id, slug, name, sort_order, icon_url FROM brands WHERE id = ?", [id]);
       await logAdminActivity(db, dbm, adminUser, {
         action: "brand_updated",
         targetType: "brand",
         targetId: id,
         targetLabel: brand?.name || `Brand #${id}`
       }).catch(() => {});
-      res.json({ brand });
+      res.json({ brand: normalizeBrandRow(brand) });
+    })
+  );
+
+  app.post(
+    "/paint/api/admin/brands/:id/icon",
+    uploadBrandIcon.single("icon"),
+    asyncHandler(async (req, res) => {
+      const adminUser = await requireRole(db, req, "admin");
+      const id = Number(req.params.id);
+      if (!req.file) {
+        res.status(400).json({ error: "icon file required" });
+        return;
+      }
+      const brand = await dbm.get(db, "SELECT * FROM brands WHERE id = ?", [id]);
+      if (!brand) {
+        res.status(404).json({ error: "Brand not found" });
+        return;
+      }
+      const rel = path.relative(path.join(ROOT, "uploads"), req.file.path).split(path.sep).join("/");
+      const iconUrl = publicUrlForUpload(rel);
+      await dbm.run(db, "UPDATE brands SET icon_url = ? WHERE id = ?", [iconUrl, id]);
+      const updated = await dbm.get(db, "SELECT * FROM brands WHERE id = ?", [id]);
+      await logAdminActivity(db, dbm, adminUser, {
+        action: "brand_updated",
+        targetType: "brand",
+        targetId: id,
+        targetLabel: updated?.name || `Brand #${id}`,
+        detail: "icon uploaded"
+      }).catch(() => {});
+      res.json({ brand: normalizeBrandRow(updated), iconUrl });
     })
   );
 

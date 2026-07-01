@@ -410,6 +410,11 @@ const PaintApi = {
   adminDeleteCategory(id) {
     return this.request(`/admin/categories/${id}`, { method: "DELETE" });
   },
+  adminUploadCategoryIcon(id, file) {
+    const fd = new FormData();
+    fd.append("icon", file);
+    return this.request(`/admin/categories/${id}/icon`, { method: "POST", body: fd });
+  },
   adminCreateBrand(body) {
     return this.request("/admin/brands", { method: "POST", body });
   },
@@ -418,6 +423,11 @@ const PaintApi = {
   },
   adminDeleteBrand(id) {
     return this.request(`/admin/brands/${id}`, { method: "DELETE" });
+  },
+  adminUploadBrandIcon(id, file) {
+    const fd = new FormData();
+    fd.append("icon", file);
+    return this.request(`/admin/brands/${id}/icon`, { method: "POST", body: fd });
   },
   adminProducts(opts = {}) {
     const qs = new URLSearchParams();
@@ -499,7 +509,26 @@ const PaintApi = {
     return this.request("/admin/users", { method: "POST", body });
   },
   adminDeleteUser(id) {
-    return this.request(`/admin/users/${id}`, { method: "DELETE" });
+    return this.request(`/admin/users/${id}`, { method: "DELETE" }).then((data) => {
+      if (data && data.softDelete) {
+        const err = new Error(
+          "Server returned soft-delete (user was not removed). Restart the server and hard-refresh this page (Ctrl+Shift+R)."
+        );
+        err.status = 409;
+        err.data = data;
+        throw err;
+      }
+      if (!data || data.deleted !== true) {
+        const err = new Error((data && data.error) || "User was not deleted.");
+        err.status = 400;
+        err.data = data || {};
+        throw err;
+      }
+      return data;
+    });
+  },
+  adminBulkDeleteUsers(ids) {
+    return this.request("/admin/users/bulk-delete", { method: "POST", body: { ids } });
   },
   async adminDownloadExport(type, queryParams = {}) {
     const qs = new URLSearchParams();
@@ -941,14 +970,16 @@ function paintMarketBrandMarkInnerHtml(name, slug) {
 
 const PAINT_MARKET_BRAND_ICON_FILES = {};
 
-function paintMarketBrandIconUrl(slug) {
+function paintMarketBrandIconUrl(slug, iconUrl) {
+  const custom = String(iconUrl || "").trim();
+  if (custom) return custom;
   const file = PAINT_MARKET_BRAND_ICON_FILES[String(slug || "")];
   if (!file) return "";
   return `/paint/img/brands/${file}`;
 }
 
-function paintMarketBrandIconImgHtml(slug, className) {
-  const url = paintMarketBrandIconUrl(slug);
+function paintMarketBrandIconImgHtml(slug, className, iconUrl) {
+  const url = paintMarketBrandIconUrl(slug, iconUrl);
   if (!url) return "";
   const cls = className ? paintMarketEscapeHtml(className) : "pm-brand-icon__img";
   return `<img class="${cls}" src="${paintMarketEscapeHtml(url)}" alt="" loading="lazy" />`;
@@ -1083,7 +1114,8 @@ function paintMarketBrandPrismFaceHtml(brand) {
   const name = brand?.name != null ? String(brand.name) : "";
   const slugKey = String(slug || "").trim().toLowerCase();
   const slugCls = paintMarketEscapeHtml(slugKey.replace(/[^a-z0-9_-]/gi, "") || "brand");
-  const img = paintMarketBrandIconImgHtml(slugKey, "pm-brand-prism__face-img");
+  const customIcon = brand?.iconUrl || brand?.icon_url || "";
+  const img = paintMarketBrandIconImgHtml(slugKey, "pm-brand-prism__face-img", customIcon);
   if (img) {
     return `<span class="pm-brand-prism__face-fill pm-brand-prism__face-fill--${slugCls} pm-brand-prism__face-fill--image">${img}</span>`;
   }
@@ -1097,7 +1129,8 @@ function paintMarketBrandIconHtml(brand) {
   const name = brand?.name != null ? String(brand.name) : "";
   const slugKey = String(slug || "").trim().toLowerCase();
   const slugCls = paintMarketEscapeHtml(slug.replace(/[^a-z0-9_-]/gi, "") || "brand");
-  const img = paintMarketBrandIconImgHtml(slugKey, "pm-brand-icon__img pm-brand-icon__img--bar");
+  const customIcon = brand?.iconUrl || brand?.icon_url || "";
+  const img = paintMarketBrandIconImgHtml(slugKey, "pm-brand-icon__img pm-brand-icon__img--bar", customIcon);
   if (img) {
     return `<span class="pm-brand-icon pm-brand-icon--${slugCls} pm-brand-icon--image" aria-hidden="true">${img}</span>`;
   }
@@ -1116,7 +1149,9 @@ const PAINT_MARKET_CATEGORY_ICON_FILES = {
   epoxy_flooring: "epoxy_flooring.png"
 };
 
-function paintMarketCategoryIconUrl(slug) {
+function paintMarketCategoryIconUrl(slug, iconUrl) {
+  const custom = String(iconUrl || "").trim();
+  if (custom) return custom;
   const key = String(slug || "").trim().toLowerCase();
   if (!key) return "";
   const file = PAINT_MARKET_CATEGORY_ICON_FILES[key];
@@ -1134,9 +1169,9 @@ function paintMarketEscapeHtml(s) {
   })[c]);
 }
 
-function paintMarketCategoryIconImgHtml(slug, className) {
+function paintMarketCategoryIconImgHtml(slug, className, iconUrl) {
   const cls = className ? paintMarketEscapeHtml(className) : "pm-cat-icon";
-  const url = paintMarketCategoryIconUrl(slug);
+  const url = paintMarketCategoryIconUrl(slug, iconUrl);
   if (!url) {
     const label = paintMarketCategoryLabel(slug, "");
     const initial = paintMarketEscapeHtml((label || "?").slice(0, 2).toUpperCase());
@@ -1158,7 +1193,7 @@ function paintMarketContextHitInnerHtml(label, opts) {
     return `<span class="pm-context-hit__inner pm-context-hit__inner--brand">${icon}<span class="pm-context-hit__label">${paintMarketEscapeHtml(name)}</span></span>`;
   }
   const icon = o.categorySlug
-    ? paintMarketCategoryIconImgHtml(o.categorySlug, o.iconClass || "pm-context-hit__icon")
+    ? paintMarketCategoryIconImgHtml(o.categorySlug, o.iconClass || "pm-context-hit__icon", o.categoryIconUrl)
     : "";
   return `<span class="pm-context-hit__inner">${icon}<span class="pm-context-hit__label">${paintMarketEscapeHtml(label)}</span></span>`;
 }

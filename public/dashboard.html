@@ -3046,7 +3046,7 @@
         btn.className = "pm-dash-picker-card pm-dash-picker-card--category";
         btn.setAttribute("data-category-id", String(c.id));
         const label = paintMarketCategoryLabel(c.slug, c.name);
-        const iconUrl = paintMarketCategoryIconUrl(c.slug);
+        const iconUrl = paintMarketCategoryIconUrl(c.slug, c.iconUrl);
         const iconHtml = iconUrl
           ? `<img class="pm-dash-picker-card__cat-icon" src="${esc(iconUrl)}" alt="" loading="lazy" />`
           : "";

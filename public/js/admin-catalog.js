@@ -13,6 +13,38 @@
     return typeof paintMarketT === "function" ? paintMarketT(key) : key;
   }
 
+  function setPanelVisible(el, visible) {
+    if (!el) return;
+    el.hidden = !visible;
+    el.classList.toggle("hidden", !visible);
+  }
+
+  function openCatalogDialog(title) {
+    if (catalogItemDialogTitle) catalogItemDialogTitle.textContent = title;
+    if (typeof catalogItemDialog?.showModal === "function") catalogItemDialog.showModal();
+    else if (catalogItemDialog) catalogItemDialog.setAttribute("open", "");
+  }
+
+  function closeCatalogDialog() {
+    if (typeof catalogItemDialog?.close === "function") catalogItemDialog.close();
+    else if (catalogItemDialog) catalogItemDialog.removeAttribute("open");
+    editingCategoryId = null;
+    editingBrandId = null;
+    if (catalogItemDialogBody) catalogItemDialogBody.innerHTML = "";
+  }
+
+  function bindIconFilePreview(formRoot, previewId) {
+    const input = formRoot?.querySelector('input[name="icon"]');
+    const preview = document.getElementById(previewId);
+    if (!input || !preview) return;
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      preview.innerHTML = `<img src="${url}" alt="" class="max-w-full max-h-full object-contain" />`;
+    });
+  }
+
   const overviewStatsEl = document.getElementById("adminOverviewStats");
   const catalogStatsEl = document.getElementById("catAdminStats");
   const statsEl = overviewStatsEl || catalogStatsEl;
@@ -37,6 +69,9 @@
   const addCategoryBtn = document.getElementById("catAdminAddCategoryBtn");
   const addBrandBtn = document.getElementById("catAdminAddBrandBtn");
   const brandManageList = document.getElementById("catAdminBrandManage");
+  const catalogItemDialog = document.getElementById("catAdminCatalogItemDialog");
+  const catalogItemDialogTitle = document.getElementById("catAdminCatalogItemDialogTitle");
+  const catalogItemDialogBody = document.getElementById("catAdminCatalogItemDialogBody");
   const shopsTable = document.getElementById("catAdminShopsTable");
   const applicationsList = document.getElementById("adminApplicationsList");
   const applicationsRefreshBtn = document.getElementById("adminApplicationsRefresh");
@@ -198,6 +233,8 @@
 
   let brands = [];
   let categories = [];
+  let editingCategoryId = null;
+  let editingBrandId = null;
   let productPage = 1;
   let productTotal = 0;
   const productLimit = 50;
@@ -377,6 +414,177 @@
     });
   }
 
+  function categoryIconPreviewUrl(cat) {
+    if (typeof paintMarketCategoryIconUrl === "function") {
+      return paintMarketCategoryIconUrl(cat.slug, cat.iconUrl || cat.icon_url);
+    }
+    return cat.iconUrl || cat.icon_url || "";
+  }
+
+  function slugifyCategoryHint(name) {
+    return String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
+  function showCategoryForm(category) {
+    if (!catalogItemDialogBody) return;
+    editingBrandId = null;
+    editingCategoryId = category ? category.id : null;
+    const iconUrl = category ? categoryIconPreviewUrl(category) : "";
+    const title = category ? t("admin_cat_edit_category_h") : t("admin_cat_add_category_h");
+    catalogItemDialogBody.innerHTML = `
+      <form id="catAdminCategoryFormInner" class="grid gap-3">
+        <label class="text-xs font-semibold text-slate-600">${esc(t("admin_cat_name"))}
+          <input name="name" required value="${esc(category?.name || "")}" class="w-full mt-1 rounded-lg border px-3 py-2 text-sm" />
+        </label>
+        <label class="text-xs font-semibold text-slate-600">${esc(t("admin_cat_slug"))}
+          <input name="slug" value="${esc(category?.slug || "")}" placeholder="building_paints" class="w-full mt-1 rounded-lg border px-3 py-2 text-sm font-mono" />
+        </label>
+        <div class="text-xs text-slate-500">${esc(t("admin_cat_icon_hint"))}</div>
+        <div class="flex items-center gap-3">
+          <div class="w-16 h-16 rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden shrink-0" id="catAdminCategoryIconPreview">
+            ${iconUrl ? `<img src="${esc(iconUrl)}" alt="" class="max-w-full max-h-full object-contain" />` : `<span class="text-slate-400 text-xs">—</span>`}
+          </div>
+          <label class="text-xs font-semibold text-slate-600 flex-1">${esc(t("admin_cat_icon_upload"))}
+            <input name="icon" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="w-full mt-1 text-sm" />
+          </label>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="px-4 py-2 rounded-lg bg-teal-700 text-white text-sm font-semibold">${esc(t("admin_cat_save"))}</button>
+          <button type="button" id="catAdminCategoryFormCancel" class="px-4 py-2 rounded-lg border text-sm">${esc(t("admin_cat_cancel"))}</button>
+        </div>
+      </form>`;
+    document.getElementById("catAdminCategoryFormCancel").onclick = closeCatalogDialog;
+    bindIconFilePreview(catalogItemDialogBody, "catAdminCategoryIconPreview");
+    const nameInput = catalogItemDialogBody.querySelector('input[name="name"]');
+    const slugInput = catalogItemDialogBody.querySelector('input[name="slug"]');
+    if (nameInput && slugInput && !category) {
+      nameInput.addEventListener("input", () => {
+        if (!slugInput.dataset.touched) slugInput.value = slugifyCategoryHint(nameInput.value);
+      });
+      slugInput.addEventListener("input", () => {
+        slugInput.dataset.touched = slugInput.value.trim() ? "1" : "";
+      });
+    }
+    document.getElementById("catAdminCategoryFormInner").onsubmit = async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(ev.target);
+      const name = String(fd.get("name") || "").trim();
+      const slug = String(fd.get("slug") || "").trim().toLowerCase();
+      const iconFile = fd.get("icon");
+      if (!name) return;
+      try {
+        let catId = editingCategoryId;
+        if (catId) {
+          await PaintApi.adminPatchCategory(catId, { name, slug: slug || undefined });
+        } else {
+          const created = await PaintApi.adminCreateCategory({ name, slug: slug || undefined });
+          catId = created.category?.id;
+        }
+        if (catId && iconFile && iconFile.size) {
+          await PaintApi.adminUploadCategoryIcon(catId, iconFile);
+        }
+        closeCatalogDialog();
+        await loadMeta();
+        await loadGroupedLists();
+        if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
+      } catch (e) {
+        alert((e.data && e.data.error) || e.message);
+      }
+    };
+    openCatalogDialog(title);
+    catalogItemDialogBody.querySelector('input[name="name"]')?.focus();
+  }
+
+  function slugifyBrandHint(name) {
+    return String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  function brandIconPreviewUrl(brand) {
+    if (typeof paintMarketBrandIconUrl === "function") {
+      return paintMarketBrandIconUrl(brand.slug, brand.iconUrl || brand.icon_url);
+    }
+    return brand.iconUrl || brand.icon_url || "";
+  }
+
+  function showBrandForm(brand) {
+    if (!catalogItemDialogBody) return;
+    editingCategoryId = null;
+    editingBrandId = brand ? brand.id : null;
+    const iconUrl = brand ? brandIconPreviewUrl(brand) : "";
+    const title = brand ? t("admin_cat_edit_brand_h") : t("admin_cat_add_brand_h");
+    catalogItemDialogBody.innerHTML = `
+      <form id="catAdminBrandFormInner" class="grid gap-3">
+        <label class="text-xs font-semibold text-slate-600">${esc(t("admin_cat_name"))}
+          <input name="name" required value="${esc(brand?.name || "")}" class="w-full mt-1 rounded-lg border px-3 py-2 text-sm" />
+        </label>
+        <label class="text-xs font-semibold text-slate-600">${esc(t("admin_cat_slug"))}
+          <input name="slug" value="${esc(brand?.slug || "")}" placeholder="hemple" class="w-full mt-1 rounded-lg border px-3 py-2 text-sm font-mono" />
+        </label>
+        <div class="text-xs text-slate-500">${esc(t("admin_cat_brand_icon_hint"))}</div>
+        <div class="flex items-center gap-3">
+          <div class="w-16 h-16 rounded-xl border border-slate-200 bg-white flex items-center justify-center overflow-hidden shrink-0" id="catAdminBrandIconPreview">
+            ${iconUrl ? `<img src="${esc(iconUrl)}" alt="" class="max-w-full max-h-full object-contain" />` : `<span class="text-slate-400 text-xs">—</span>`}
+          </div>
+          <label class="text-xs font-semibold text-slate-600 flex-1">${esc(t("admin_cat_brand_icon_upload"))}
+            <input name="icon" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="w-full mt-1 text-sm" />
+          </label>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" class="px-4 py-2 rounded-lg bg-teal-700 text-white text-sm font-semibold">${esc(t("admin_cat_save"))}</button>
+          <button type="button" id="catAdminBrandFormCancel" class="px-4 py-2 rounded-lg border text-sm">${esc(t("admin_cat_cancel"))}</button>
+        </div>
+      </form>`;
+    document.getElementById("catAdminBrandFormCancel").onclick = closeCatalogDialog;
+    bindIconFilePreview(catalogItemDialogBody, "catAdminBrandIconPreview");
+    const nameInput = catalogItemDialogBody.querySelector('input[name="name"]');
+    const slugInput = catalogItemDialogBody.querySelector('input[name="slug"]');
+    if (nameInput && slugInput && !brand) {
+      nameInput.addEventListener("input", () => {
+        if (!slugInput.dataset.touched) slugInput.value = slugifyBrandHint(nameInput.value);
+      });
+      slugInput.addEventListener("input", () => {
+        slugInput.dataset.touched = slugInput.value.trim() ? "1" : "";
+      });
+    }
+    document.getElementById("catAdminBrandFormInner").onsubmit = async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(ev.target);
+      const name = String(fd.get("name") || "").trim();
+      const slug = String(fd.get("slug") || "").trim().toLowerCase();
+      const iconFile = fd.get("icon");
+      if (!name) return;
+      try {
+        let brandId = editingBrandId;
+        if (brandId) {
+          await PaintApi.adminPatchBrand(brandId, { name, slug: slug || undefined });
+        } else {
+          const created = await PaintApi.adminCreateBrand({ name, slug: slug || undefined });
+          brandId = created.brand?.id;
+        }
+        if (brandId && iconFile && iconFile.size) {
+          await PaintApi.adminUploadBrandIcon(brandId, iconFile);
+        }
+        closeCatalogDialog();
+        await loadMeta();
+        await loadGroupedLists();
+        if (typeof window.adminCatalogRefreshBrands === "function") window.adminCatalogRefreshBrands();
+        if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
+      } catch (e) {
+        alert((e.data && e.data.error) || e.message);
+      }
+    };
+    openCatalogDialog(title);
+    catalogItemDialogBody.querySelector('input[name="name"]')?.focus();
+  }
+
   function renderCategories() {
     if (!categoryListEl) return;
     categoryListEl.innerHTML = "";
@@ -385,28 +593,26 @@
       return;
     }
     for (const cat of categories) {
-      const row = document.createElement("div");
-      row.className = "flex flex-wrap gap-2 items-center border border-slate-100 rounded-lg px-3 py-2 text-sm";
+      const iconUrl = categoryIconPreviewUrl(cat);
+      const row = document.createElement("article");
+      row.className = "admin-catalog-icon-card";
       row.innerHTML = `
-        <div class="flex-1 min-w-[140px]">
-          <p class="font-semibold">${esc(cat.name)}</p>
-          <p class="text-xs text-slate-500">${esc(cat.slug)} · ${esc(cat.productCount ?? cat.product_count ?? 0)} products</p>
+        <div class="admin-catalog-icon-card__thumb">
+          ${iconUrl ? `<img src="${esc(iconUrl)}" alt="" loading="lazy" />` : `<span class="text-[10px] text-slate-400">—</span>`}
         </div>
-        <button type="button" class="cat-edit-cat text-xs px-2 py-1 rounded border" data-id="${cat.id}">${esc(t("admin_cat_edit"))}</button>
-        <button type="button" class="cat-del-cat text-xs px-2 py-1 rounded border border-rose-200 text-rose-700" data-id="${cat.id}">${esc(t("admin_cat_delete"))}</button>`;
+        <p class="admin-catalog-icon-card__name">${esc(cat.name)}</p>
+        <p class="admin-catalog-icon-card__meta">${esc(cat.slug)} · ${esc(cat.productCount ?? cat.product_count ?? 0)}</p>
+        <div class="admin-catalog-icon-card__actions">
+          <button type="button" class="cat-edit-cat border" data-id="${cat.id}">${esc(t("admin_cat_edit"))}</button>
+          <button type="button" class="cat-del-cat border border-rose-200 text-rose-700" data-id="${cat.id}">${esc(t("admin_cat_delete"))}</button>
+        </div>`;
       categoryListEl.appendChild(row);
     }
     categoryListEl.querySelectorAll(".cat-edit-cat").forEach((btn) =>
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", () => {
         const id = Number(btn.dataset.id);
         const cat = categories.find((c) => c.id === id);
-        if (!cat) return;
-        const name = prompt(t("admin_cat_name"), cat.name);
-        if (name == null) return;
-        const slug = prompt("Slug", cat.slug);
-        if (slug == null) return;
-        await PaintApi.adminPatchCategory(id, { name: name.trim(), slug: slug.trim() });
-        await loadMeta();
+        if (cat) showCategoryForm(cat);
       })
     );
     categoryListEl.querySelectorAll(".cat-del-cat").forEach((btn) =>
@@ -425,30 +631,31 @@
   function renderBrandManage() {
     if (!brandManageList) return;
     brandManageList.innerHTML = "";
+    if (!brands.length) {
+      brandManageList.innerHTML = `<p class="text-sm text-slate-500">—</p>`;
+      return;
+    }
     for (const brand of brands) {
-      const row = document.createElement("div");
-      row.className = "flex flex-wrap gap-2 items-center border border-slate-100 rounded-lg px-3 py-2 text-sm bg-white";
+      const iconUrl = brandIconPreviewUrl(brand);
+      const row = document.createElement("article");
+      row.className = "admin-catalog-icon-card";
       row.innerHTML = `
-        <div class="flex-1 min-w-[140px]">
-          <p class="font-semibold">${esc(brand.name)}</p>
-          <p class="text-xs text-slate-500">${esc(brand.slug)}</p>
+        <div class="admin-catalog-icon-card__thumb">
+          ${iconUrl ? `<img src="${esc(iconUrl)}" alt="" loading="lazy" />` : `<span class="text-[10px] text-slate-400">—</span>`}
         </div>
-        <button type="button" class="cat-edit-brand text-xs px-2 py-1 rounded border" data-id="${brand.id}">${esc(t("admin_cat_edit"))}</button>
-        <button type="button" class="cat-del-brand text-xs px-2 py-1 rounded border border-rose-200 text-rose-700" data-id="${brand.id}">${esc(t("admin_cat_delete"))}</button>`;
+        <p class="admin-catalog-icon-card__name">${esc(brand.name)}</p>
+        <p class="admin-catalog-icon-card__meta">${esc(brand.slug)}</p>
+        <div class="admin-catalog-icon-card__actions">
+          <button type="button" class="cat-edit-brand border" data-id="${brand.id}">${esc(t("admin_cat_edit"))}</button>
+          <button type="button" class="cat-del-brand border border-rose-200 text-rose-700" data-id="${brand.id}">${esc(t("admin_cat_delete"))}</button>
+        </div>`;
       brandManageList.appendChild(row);
     }
     brandManageList.querySelectorAll(".cat-edit-brand").forEach((btn) =>
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", () => {
         const id = Number(btn.dataset.id);
         const brand = brands.find((b) => b.id === id);
-        if (!brand) return;
-        const name = prompt(t("admin_cat_name"), brand.name);
-        if (name == null) return;
-        const slug = prompt("Slug", brand.slug);
-        if (slug == null) return;
-        await PaintApi.adminPatchBrand(id, { name: name.trim(), slug: slug.trim() });
-        await loadMeta();
-        if (typeof window.adminCatalogRefreshBrands === "function") window.adminCatalogRefreshBrands();
+        if (brand) showBrandForm(brand);
       })
     );
     brandManageList.querySelectorAll(".cat-del-brand").forEach((btn) =>
@@ -936,28 +1143,17 @@
 
   if (addProductBtn) addProductBtn.addEventListener("click", () => showProductForm(null));
   if (addCategoryBtn) {
-    addCategoryBtn.addEventListener("click", async () => {
-      const name = prompt(t("admin_cat_name"));
-      if (!name?.trim()) return;
-      const slug = prompt("Slug (optional)", name.trim().toLowerCase().replace(/\s+/g, "_"));
-      await PaintApi.adminCreateCategory({ name: name.trim(), slug: slug?.trim() || undefined });
-      await loadMeta();
-      await loadGroupedLists();
-    });
+    addCategoryBtn.addEventListener("click", () => showCategoryForm(null));
   }
   if (addBrandBtn) {
-    addBrandBtn.addEventListener("click", async () => {
-      const name = prompt(t("admin_cat_name"));
-      if (!name?.trim()) return;
-      const slug = prompt("Slug (optional)", name.trim().toLowerCase().replace(/\s+/g, "-"));
-      await PaintApi.adminCreateBrand({ name: name.trim(), slug: slug?.trim() || undefined });
-      await loadMeta();
-      await loadGroupedLists();
-      if (typeof window.adminCatalogRefreshBrands === "function") window.adminCatalogRefreshBrands();
-    });
+    addBrandBtn.addEventListener("click", () => showBrandForm(null));
   }
   groupedRefreshBtn?.addEventListener("click", () => loadGroupedLists().catch((e) => alert(formatApiError(e))));
   applicationsRefreshBtn?.addEventListener("click", () => loadApplications().catch((e) => alert(formatApiError(e))));
+  document.getElementById("catAdminCatalogItemDialogClose")?.addEventListener("click", closeCatalogDialog);
+  catalogItemDialog?.addEventListener("click", (e) => {
+    if (e.target === catalogItemDialog) closeCatalogDialog();
+  });
   document.getElementById("adminShopDetailsClose")?.addEventListener("click", () => shopDetailsDialog?.close());
   shopDetailsDialog?.addEventListener("click", (e) => {
     if (e.target === shopDetailsDialog) shopDetailsDialog.close();

@@ -32,19 +32,27 @@
   const editShopWrap = document.getElementById("adminEditUserShopWrap");
   const editFormError = document.getElementById("adminEditUserFormError");
   const deleteDialog = document.getElementById("adminDeleteUserDialog");
+  const deleteDialogTitle = document.getElementById("adminDeleteUserDialogTitle");
+  const deleteDialogMessage = document.getElementById("adminDeleteUserDialogMessage");
+  const deleteSingleWrap = document.getElementById("adminDeleteUserSingleWrap");
+  const deleteBulkSummary = document.getElementById("adminDeleteUserBulkSummary");
   const deleteCloseBtn = document.getElementById("adminDeleteUserClose");
   const deleteCancelBtn = document.getElementById("adminDeleteUserCancel");
   const deleteConfirmBtn = document.getElementById("adminDeleteUserConfirm");
   const deleteFormError = document.getElementById("adminDeleteUserFormError");
+  const bulkDeleteBtn = document.getElementById("adminUserBulkDeleteBtn");
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   let currentPage = 1;
   let deletePendingUser = null;
+  let deleteBulkIds = null;
   let totalUsers = 0;
   let pageLimit = 25;
   let currentAdminId = null;
   let isAdminUser = false;
   let loading = false;
+  let displayedUsers = [];
+  const selectedUserIds = new Set();
 
   function esc(s) {
     return String(s ?? "").replace(/[&<>"']/g, (c) => ({
@@ -92,7 +100,7 @@
     return {
       q: String(searchEl?.value || "").trim(),
       role: filterRole?.value || "all",
-      status: filterStatus?.value || "active",
+      status: filterStatus?.value || "all",
       hasShop: filterHasShop?.value || "all"
     };
   }
@@ -252,7 +260,14 @@
       if (createFormError) {
         createFormError.hidden = false;
         let msg = err?.data?.error || err?.message || "Could not create user.";
-        if (err?.status === 404) {
+        const existing = err?.data?.existingUser;
+        if (err?.status === 409 && existing) {
+          const statusLabel = existing.active ? "active" : "disabled";
+          msg = `This email belongs to user #${existing.id} (${existing.role}, ${statusLabel}). The list was refreshed — use Edit on that row or enable the account.`;
+          if (filterStatus) filterStatus.value = "all";
+          if (searchEl) searchEl.value = payload.email;
+          loadUsers(1).catch(() => {});
+        } else if (err?.status === 404) {
           msg =
             err?.data?.hint ||
             "Create user API not found. Restart the server (npm start) so POST /paint/api/admin/users is loaded.";
@@ -272,6 +287,7 @@
     const fd = new FormData(editForm);
     const name = String(fd.get("name") || "").trim();
     const email = String(fd.get("email") || "").trim().toLowerCase();
+    const phone = String(fd.get("phone") || "").trim();
     const password = String(fd.get("password") || "");
     const confirmPassword = String(fd.get("confirmPassword") || "");
     const role = String(fd.get("role") || "").trim();
@@ -319,6 +335,7 @@
       payload: {
         name,
         email,
+        phone,
         role,
         status,
         shopName: String(fd.get("shopName") || "").trim(),
@@ -326,6 +343,47 @@
         confirmPassword
       }
     };
+  }
+
+  function canDeleteUser(user) {
+    if (!isAdminUser || !user) return false;
+    if (Number(currentAdminId) === Number(user.id)) return false;
+    return true;
+  }
+
+  function removeUserRowFromTable(userId) {
+    const row = tableEl.querySelector(`.admin-users-row[data-user-id="${String(userId)}"]`);
+    if (!row) return false;
+    row.remove();
+    totalUsers = Math.max(0, totalUsers - 1);
+    const remaining = tableEl.querySelectorAll(".admin-users-row:not(.admin-users-row--head)").length;
+    if (remaining === 0 && totalUsers > 0 && currentPage > 1) {
+      loadUsers(currentPage - 1, { force: true });
+      return true;
+    }
+    updatePagination(remaining, totalUsers, currentPage, pageLimit);
+    if (remaining === 0) {
+      tableEl.innerHTML = `<div class="admin-shops-empty"><p class="admin-shops-empty__title">${
+        totalUsers > 0 ? "No users match your search or filters." : "No users found."
+      }</p></div>`;
+    }
+    return true;
+  }
+
+  function updateBulkDeleteUi() {
+    const count = selectedUserIds.size;
+    if (bulkDeleteBtn) {
+      bulkDeleteBtn.hidden = !isAdminUser || count === 0;
+      bulkDeleteBtn.textContent = count > 0 ? `Delete Selected (${count})` : "Delete Selected";
+    }
+  }
+
+  function syncEditUserSelfRestrictions(userId) {
+    const isSelf = currentAdminId != null && Number(currentAdminId) === Number(userId);
+    const roleEl = editForm?.elements.role;
+    const statusEl = editForm?.elements.status;
+    if (roleEl) roleEl.disabled = isSelf;
+    if (statusEl) statusEl.disabled = isSelf;
   }
 
   function syncEditUserShopField() {
@@ -367,10 +425,13 @@
       if (editForm.elements.userId) editForm.elements.userId.value = String(id);
       if (editForm.elements.name) editForm.elements.name.value = u.name || "";
       if (editForm.elements.email) editForm.elements.email.value = u.email || "";
+      if (editForm.elements.phone) editForm.elements.phone.value = u.phone || "";
       if (editForm.elements.role) editForm.elements.role.value = u.role || "customer";
       if (editForm.elements.status) editForm.elements.status.value = u.status || "active";
       if (editForm.elements.shopName) editForm.elements.shopName.value = u.shopName || "";
       syncEditUserShopField();
+      syncEditUserSelfRestrictions(id);
+      syncEditUserStatusOptions();
       editForm.elements.name?.focus();
     } catch (err) {
       closeEditUserModal();
@@ -400,6 +461,7 @@
     const patchBody = {
       name: payload.name,
       email: payload.email,
+      phone: payload.phone,
       role: payload.role,
       status: payload.status,
       shopName: payload.shopName
@@ -411,10 +473,15 @@
 
     try {
       const result = await PaintApi.adminPatchUser(userId, patchBody);
-      closeEditUserModal();
-      showUsersToast(`User updated: ${result.user?.name || payload.name}`);
+      const updated = result.user;
+      showUsersToast(`User updated: ${updated?.name || payload.name}`);
       if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
-      await loadUsers(currentPage);
+      if (updated) {
+        patchUserRowInTable(updated);
+        const idx = displayedUsers.findIndex((u) => Number(u.id) === userId);
+        if (idx >= 0) displayedUsers[idx] = updated;
+      }
+      closeEditUserModal();
     } catch (err) {
       const apiErrors = err?.data?.errors;
       if (apiErrors && typeof apiErrors === "object") {
@@ -422,7 +489,11 @@
       }
       if (editFormError) {
         editFormError.hidden = false;
-        editFormError.textContent = err?.message || "Could not update user.";
+        let msg = err?.data?.error || err?.message || "Could not update user.";
+        if (err?.status === 409) {
+          msg = err?.data?.errors?.email || "This email is already used by another account.";
+        }
+        editFormError.textContent = msg;
       }
     } finally {
       if (submitBtn) {
@@ -435,9 +506,39 @@
   function openDeleteUserModal(user) {
     if (!deleteDialog || !user) return;
     deletePendingUser = user;
+    deleteBulkIds = null;
+    if (deleteDialogTitle) deleteDialogTitle.textContent = "Delete User";
+    if (deleteDialogMessage) {
+      deleteDialogMessage.textContent = "Are you sure you want to permanently delete this user?";
+    }
+    if (deleteSingleWrap) deleteSingleWrap.hidden = false;
+    if (deleteBulkSummary) deleteBulkSummary.hidden = true;
     setText("adminDeleteUserName", user.name || "—");
     setText("adminDeleteUserEmail", user.email || "—");
     setText("adminDeleteUserRole", roleLabel(user.role));
+    if (deleteConfirmBtn) deleteConfirmBtn.textContent = "Delete User";
+    if (deleteFormError) {
+      deleteFormError.hidden = true;
+      deleteFormError.textContent = "";
+    }
+    if (typeof deleteDialog.showModal === "function") deleteDialog.showModal();
+    else deleteDialog.setAttribute("open", "");
+  }
+
+  function openBulkDeleteModal(ids) {
+    if (!deleteDialog || !ids?.length) return;
+    deletePendingUser = null;
+    deleteBulkIds = ids.slice();
+    if (deleteDialogTitle) deleteDialogTitle.textContent = "Delete Selected Users";
+    if (deleteDialogMessage) {
+      deleteDialogMessage.textContent = `Are you sure you want to permanently delete ${ids.length} user(s)?`;
+    }
+    if (deleteSingleWrap) deleteSingleWrap.hidden = true;
+    if (deleteBulkSummary) {
+      deleteBulkSummary.hidden = false;
+      deleteBulkSummary.textContent = `${ids.length} account(s) will be removed from the database. This cannot be undone.`;
+    }
+    if (deleteConfirmBtn) deleteConfirmBtn.textContent = `Delete ${ids.length} User(s)`;
     if (deleteFormError) {
       deleteFormError.hidden = true;
       deleteFormError.textContent = "";
@@ -454,6 +555,7 @@
   function closeDeleteUserModal() {
     deleteDialog?.close();
     deletePendingUser = null;
+    deleteBulkIds = null;
     if (deleteFormError) {
       deleteFormError.hidden = true;
       deleteFormError.textContent = "";
@@ -461,29 +563,77 @@
   }
 
   async function confirmDeleteUser() {
-    if (!deletePendingUser?.id) return;
     if (deleteConfirmBtn) {
       deleteConfirmBtn.disabled = true;
       deleteConfirmBtn.textContent = "Deleting…";
     }
+    const pendingId = deletePendingUser?.id != null ? Number(deletePendingUser.id) : null;
+    const pendingLabel = deletePendingUser?.name || deletePendingUser?.email || "";
     try {
-      await PaintApi.adminDeleteUser(deletePendingUser.id);
-      const label = deletePendingUser.name || deletePendingUser.email;
+      if (deleteBulkIds?.length) {
+        const result = await PaintApi.adminBulkDeleteUsers(deleteBulkIds);
+        const deletedCount = result.deleted?.length || 0;
+        const failed = result.failed || [];
+        for (const row of result.deleted || []) {
+          removeUserRowFromTable(row.id);
+        }
+        closeDeleteUserModal();
+        selectedUserIds.clear();
+        updateBulkDeleteUi();
+        if (deletedCount) {
+          showUsersToast(`${deletedCount} user(s) deleted permanently.`);
+          if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
+        }
+        if (failed.length) {
+          showError(
+            failed.map((f) => `#${f.id}: ${f.error}`).join(" · ") +
+              (deletedCount ? "" : " Use Disable User if permanent delete is blocked.")
+          );
+        } else {
+          showError("");
+        }
+        await loadUsers(currentPage, { force: true });
+        return;
+      }
+
+      if (!Number.isFinite(pendingId) || pendingId < 1) return;
+      await PaintApi.adminDeleteUser(pendingId);
+      removeUserRowFromTable(pendingId);
       closeDeleteUserModal();
-      showUsersToast(`User deleted: ${label}`);
+      selectedUserIds.delete(pendingId);
+      updateBulkDeleteUi();
+      showUsersToast(`User deleted: ${pendingLabel}`);
       if (typeof window.refreshAdminActivityLog === "function") window.refreshAdminActivityLog();
-      await loadUsers(currentPage);
+      await loadUsers(currentPage, { force: true });
     } catch (err) {
       if (deleteFormError) {
         deleteFormError.hidden = false;
-        deleteFormError.textContent = err?.data?.error || err?.message || "Could not delete user.";
+        let msg = err?.data?.error || err?.message || "Could not delete user.";
+        if (err?.data?.hint) msg += ` ${err.data.hint}`;
+        else if (err?.status === 409 && err?.data?.code === "USER_DELETE_BLOCKED") {
+          msg += " Try disabling the account instead.";
+        }
+        deleteFormError.textContent = msg;
       }
+      showError(err?.data?.error || err?.message || "Could not delete user.");
     } finally {
       if (deleteConfirmBtn) {
         deleteConfirmBtn.disabled = false;
-        deleteConfirmBtn.textContent = "Delete User";
+        deleteConfirmBtn.textContent = deleteBulkIds?.length
+          ? `Delete ${deleteBulkIds.length} User(s)`
+          : "Delete User";
       }
     }
+  }
+
+  function patchUserRowInTable(user) {
+    const row = tableEl.querySelector(`.admin-users-row[data-user-id="${user.id}"]`);
+    if (!row) return;
+    const cells = row.querySelectorAll(".admin-users-cell");
+    if (cells[2]) cells[2].textContent = user.name || "—";
+    if (cells[3]) cells[3].textContent = user.email || "—";
+    if (cells[4]) cells[4].textContent = roleLabel(user.role);
+    if (cells[5]) cells[5].innerHTML = statusBadge(user.status);
   }
 
   function updatePagination(shown, total, page, limit) {
@@ -497,6 +647,9 @@
   }
 
   function renderUsers(users, total, page, limit) {
+    displayedUsers = users || [];
+    selectedUserIds.clear();
+    updateBulkDeleteUi();
     tableEl.innerHTML = "";
     if (!users?.length) {
       tableEl.innerHTML = `<div class="admin-shops-empty"><p class="admin-shops-empty__title">${
@@ -506,8 +659,16 @@
       return;
     }
 
+    const selectableOnPage = users.filter((u) => canDeleteUser(u));
     const header = `
       <div class="admin-users-row admin-users-row--head">
+        <span class="admin-users-cell admin-users-cell--check">
+          ${
+            isAdminUser && selectableOnPage.length
+              ? `<input type="checkbox" id="adminUsersSelectAll" aria-label="Select all users on this page" />`
+              : ""
+          }
+        </span>
         <span>ID</span><span>Name</span><span>Email</span><span>Role</span><span>Status</span>
         <span>Created</span><span>Last login</span><span>Shop</span><span></span>
       </div>`;
@@ -516,6 +677,13 @@
       .map(
         (u) => `
       <div class="admin-users-row" data-user-id="${esc(u.id)}">
+        <span class="admin-users-cell admin-users-cell--check">
+          ${
+            canDeleteUser(u)
+              ? `<input type="checkbox" class="admin-user-select" data-id="${esc(u.id)}" aria-label="Select user ${esc(u.email)}" />`
+              : ""
+          }
+        </span>
         <span class="admin-users-cell admin-users-cell--id">${esc(u.id)}</span>
         <span class="admin-users-cell">${esc(u.name)}</span>
         <span class="admin-users-cell admin-users-cell--email">${esc(u.email)}</span>
@@ -528,7 +696,7 @@
           <button type="button" class="admin-users-view-btn text-xs px-2 py-1 rounded border bg-white" data-action="details" data-id="${esc(u.id)}">Details</button>
           <button type="button" class="admin-users-view-btn text-xs px-2 py-1 rounded border bg-white" data-action="edit" data-id="${esc(u.id)}">Edit</button>
           ${
-            isAdminUser && Number(currentAdminId) !== Number(u.id) && u.status !== "disabled"
+            canDeleteUser(u)
               ? `<button type="button" class="admin-users-view-btn text-xs px-2 py-1 rounded border border-rose-200 text-rose-700 bg-white" data-action="delete" data-id="${esc(u.id)}" data-name="${esc(u.name)}" data-email="${esc(u.email)}" data-role="${esc(u.role)}">Delete</button>`
               : ""
           }
@@ -539,6 +707,33 @@
 
     tableEl.innerHTML = header + rows;
     updatePagination(users.length, total, page, limit);
+
+    document.getElementById("adminUsersSelectAll")?.addEventListener("change", (e) => {
+      const checked = e.target.checked;
+      tableEl.querySelectorAll(".admin-user-select").forEach((box) => {
+        box.checked = checked;
+        const id = Number(box.dataset.id);
+        if (!Number.isFinite(id)) return;
+        if (checked) selectedUserIds.add(id);
+        else selectedUserIds.delete(id);
+      });
+      updateBulkDeleteUi();
+    });
+
+    tableEl.querySelectorAll(".admin-user-select").forEach((box) => {
+      box.addEventListener("change", () => {
+        const id = Number(box.dataset.id);
+        if (!Number.isFinite(id)) return;
+        if (box.checked) selectedUserIds.add(id);
+        else selectedUserIds.delete(id);
+        updateBulkDeleteUi();
+        const selectAll = document.getElementById("adminUsersSelectAll");
+        if (selectAll) {
+          const boxes = [...tableEl.querySelectorAll(".admin-user-select")];
+          selectAll.checked = boxes.length > 0 && boxes.every((b) => b.checked);
+        }
+      });
+    });
 
     tableEl.querySelectorAll("[data-action]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -558,8 +753,8 @@
     });
   }
 
-  async function loadUsers(page = 1) {
-    if (loading) return;
+  async function loadUsers(page = 1, opts = {}) {
+    if (loading && !opts.force) return;
     loading = true;
     showError("");
     tableEl.innerHTML = `<div class="admin-shops-empty"><p class="admin-shops-empty__title">Loading…</p></div>`;
@@ -701,7 +896,7 @@
   function resetFilters() {
     if (searchEl) searchEl.value = "";
     if (filterRole) filterRole.value = "all";
-    if (filterStatus) filterStatus.value = "active";
+    if (filterStatus) filterStatus.value = "all";
     if (filterHasShop) filterHasShop.value = "all";
     currentPage = 1;
     loadUsers(1);
@@ -783,6 +978,11 @@
     e.preventDefault();
     closeDeleteUserModal();
   });
+  bulkDeleteBtn?.addEventListener("click", () => {
+    const ids = [...selectedUserIds];
+    if (!ids.length) return;
+    openBulkDeleteModal(ids);
+  });
 
   window.addEventListener("hashchange", () => {
     if ((location.hash || "").replace(/^#/, "").split("?")[0] === "users") loadUsers(currentPage);
@@ -794,6 +994,7 @@
       currentAdminId = me?.user?.id ?? null;
       isAdminUser = me?.user?.role === "admin";
       if (addUserBtn) addUserBtn.hidden = !isAdminUser;
+      if (bulkDeleteBtn) bulkDeleteBtn.hidden = true;
       syncCreateUserStatusOptions();
       syncEditUserStatusOptions();
     } catch (_) {
