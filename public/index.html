@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
   <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260531g" />
-  <link rel="stylesheet" href="/paint/css/pindex-index-desktop-polish.css?v=20260630b" />
+  <link rel="stylesheet" href="/paint/css/pindex-index-desktop-polish.css?v=20260630m" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body { font-family: "DM Sans", system-ui, sans-serif; }
@@ -33,15 +33,8 @@
 <body class="pm-pfinder-home text-slate-900 min-h-screen" data-pm-page-title="index_metaTitle">
   <header class="pm-pfinder-header sticky top-0 z-40">
     <div class="pm-pfinder-header__top">
-      <a href="/paint/" class="pm-pfinder-logo pm-brand-logo-link" aria-label="PAINTIK">
-        <img
-          src="/paint/img/brand/paintik-logo.png"
-          alt="PAINTIK"
-          class="pm-pfinder-logo__img pm-brand-logo-link__img"
-          width="240"
-          height="67"
-          decoding="async"
-        />
+      <a href="/paint/" class="pm-pfinder-logo pm-brand-logo-link pm-index-header-wordmark" aria-label="PAINTIK">
+        <span class="pm-index-header-wordmark__text" data-pm-t="index_nav_brand">PAINTIK</span>
       </a>
       <div class="relative flex flex-1 min-w-0 hidden items-center" id="searchWrap">
         <div class="pm-pfinder-search flex-1 min-w-0">
@@ -64,28 +57,48 @@
           <div id="suggestPanel" class="hidden" aria-hidden="true"></div>
         </div>
       </div>
+      <div class="pm-geo-bar-desktop pm-pfinder-geo-bar pm-index-header-geo hidden md:flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label class="pm-country-field flex items-center gap-2 shrink-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
+          <span class="pm-select-with-flag pm-select-with-flag--header">
+            <span class="pm-country-flag" aria-hidden="true"></span>
+            <select class="paint-market-country paint-market-header-select rounded-lg border border-slate-200 text-sm py-1.5 pe-2.5 ps-9" aria-label="Country"></select>
+          </span>
+        </label>
+        <label class="flex items-center gap-2 shrink-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap" data-pm-t="hdr_city">City</span>
+          <select class="paint-market-city paint-market-header-select rounded-lg border border-slate-200 text-sm px-2.5 py-1.5 min-w-[9rem]" aria-label="City"></select>
+        </label>
+        <label class="flex items-center gap-2 shrink-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
+          <select class="paint-market-lang paint-market-header-select rounded-lg border border-slate-200 text-sm px-2.5 py-1.5 min-w-[6.5rem]" aria-label="Language"></select>
+        </label>
+      </div>
       <nav class="pm-pfinder-header__nav" aria-label="Quick links">
-        <a href="/paint/browse.html" data-pm-t="index_nav_browse">Browse</a>
-        <a href="/paint/register.html" data-pm-t="index_nav_register">Register shop</a>
-        <a href="/paint/account.html" class="pm-pfinder-header__nav-login" data-pm-t="index_nav_login">Login</a>
+        <a href="/paint/browse.html" class="lg:hidden" data-pm-t="index_nav_browse">Browse</a>
+        <a href="/paint/register.html" class="lg:hidden" data-pm-t="index_nav_register">Register shop</a>
+        <a
+          href="/paint/account.html"
+          class="pm-pfinder-header__nav-wishlist hidden lg:inline-flex items-center gap-1.5 shrink-0"
+          aria-label="Wishlist"
+        >
+          <svg class="pm-pfinder-header__nav-wishlist-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span class="pm-pfinder-header__nav-wishlist-label" data-pm-t="index_nav_wishlist">Wishlist</span>
+        </a>
+        <a
+          href="/paint/account.html"
+          class="pm-pfinder-header__nav-login inline-flex items-center gap-1.5 shrink-0"
+          aria-label="Login"
+        >
+          <svg class="pm-pfinder-header__nav-login-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <circle cx="12" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.75"/>
+            <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" d="M6.75 19.25c.65-2.85 2.85-4.5 5.25-4.5s4.6 1.65 5.25 4.5"/>
+          </svg>
+          <span data-pm-t="index_nav_login">Login</span>
+        </a>
       </nav>
-    </div>
-    <div class="pm-geo-bar-desktop pm-pfinder-geo-bar hidden md:flex flex-wrap items-center gap-x-4 gap-y-2">
-      <label class="pm-country-field flex items-center gap-2 shrink-0">
-        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap" data-pm-t="hdr_country">Country</span>
-        <span class="pm-select-with-flag pm-select-with-flag--header">
-          <span class="pm-country-flag" aria-hidden="true"></span>
-          <select class="paint-market-country paint-market-header-select rounded-lg border border-slate-200 text-sm py-1.5 pe-2.5 ps-9" aria-label="Country"></select>
-        </span>
-      </label>
-      <label class="flex items-center gap-2 shrink-0">
-        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap" data-pm-t="hdr_city">City</span>
-        <select class="paint-market-city paint-market-header-select rounded-lg border border-slate-200 text-sm px-2.5 py-1.5 min-w-[9rem]" aria-label="City"></select>
-      </label>
-      <label class="flex items-center gap-2 shrink-0">
-        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap" data-pm-t="hdr_language">Language</span>
-        <select class="paint-market-lang paint-market-header-select rounded-lg border border-slate-200 text-sm px-2.5 py-1.5 min-w-[6.5rem]" aria-label="Language"></select>
-      </label>
     </div>
   </header>
 

@@ -1911,7 +1911,10 @@ function handleBackupDbLocal(req, res) {
       ok: true,
       step,
       backup: result.backup,
+      mirrorBackup: result.mirrorBackup || null,
+      mirrorWarning: result.mirrorWarning,
       backupDirectory: result.backupDirectory,
+      mirrorDirectory: result.mirrorDirectory || null,
       output: result.output
     });
     writeDevOpsState(ROOT, { lastBackupAt: new Date().toISOString() });

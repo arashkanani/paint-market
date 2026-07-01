@@ -111,38 +111,66 @@ html.pm-app-scroll-fullscreen body.pm-dash-page {
   }
 }
 
-/* Footer menu — shop showroom + shop dashboard */
-body.pm-shop-page .pm-pfinder-bottom-nav,
-body.pm-dash-page .pm-pfinder-bottom-nav,
-body.pm-account-page .pm-pfinder-bottom-nav {
-  display: flex !important;
-  z-index: 500;
+/* Footer menu — shop showroom + shop dashboard (mobile/tablet only) */
+@media (max-width: 1023.98px) {
+  body.pm-shop-page .pm-pfinder-bottom-nav,
+  body.pm-dash-page .pm-pfinder-bottom-nav,
+  body.pm-account-page .pm-pfinder-bottom-nav {
+    display: flex !important;
+    z-index: 500;
+  }
+
+  body.pm-shop-page,
+  body.pm-dash-page,
+  body.pm-account-page {
+    padding-bottom: calc(5.7rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
-body.pm-shop-page,
-body.pm-dash-page,
-body.pm-account-page {
-  padding-bottom: calc(5.7rem + env(safe-area-inset-bottom, 0px));
+@media (max-width: 1023.98px) {
+  html.pm-app-standalone .pm-pfinder-bottom-nav,
+  html.pm-app-immersive .pm-pfinder-bottom-nav,
+  html.pm-app-scroll-fullscreen .pm-pfinder-bottom-nav,
+  html.pm-app-fullscreen .pm-pfinder-bottom-nav,
+  html:fullscreen .pm-pfinder-bottom-nav,
+  html:-webkit-full-screen .pm-pfinder-bottom-nav {
+    display: flex !important;
+    z-index: 500;
+  }
+
+  html.pm-app-immersive body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+  html.pm-app-scroll-fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+  html.pm-app-fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+  html.pm-app-standalone body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+  html:fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
+  html:-webkit-full-screen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+    box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.04);
+  }
 }
 
-html.pm-app-standalone .pm-pfinder-bottom-nav,
-html.pm-app-immersive .pm-pfinder-bottom-nav,
-html.pm-app-scroll-fullscreen .pm-pfinder-bottom-nav,
-html.pm-app-fullscreen .pm-pfinder-bottom-nav,
-html:fullscreen .pm-pfinder-bottom-nav,
-html:-webkit-full-screen .pm-pfinder-bottom-nav {
-  display: flex !important;
-  z-index: 500;
-}
+/* Desktop: no bottom tab bar */
+@media (min-width: 1024px) {
+  .pm-pfinder-bottom-nav {
+    display: none !important;
+    transform: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
 
-html.pm-app-immersive body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
-html.pm-app-scroll-fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
-html.pm-app-fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
-html.pm-app-standalone body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
-html:fullscreen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav,
-html:-webkit-full-screen body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {
-  transform: none;
-  opacity: 1;
-  pointer-events: auto;
-  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.04);
+  body.pm-shop-page,
+  body.pm-dash-page,
+  body.pm-account-page,
+  body.pm-search-page,
+  body.pm-sr-page,
+  body.pm-pfinder-home {
+    padding-bottom: 0 !important;
+  }
+
+  body.pm-account-page,
+  .pm-account-page {
+    padding-bottom: 0 !important;
+  }
 }

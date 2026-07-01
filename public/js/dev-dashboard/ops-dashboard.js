@@ -139,6 +139,10 @@
 
     setText("opsLiveDbSize", d.liveSizeHuman);
     setText("opsBackupFolder", `${d.backupFolderRel || "backups"}/`);
+    setText(
+      "opsMirrorBackupFolder",
+      d.mirrorBackupConfigured && d.mirrorBackupFolder ? d.mirrorBackupFolder : "Not configured"
+    );
     setText("opsLastBackupTime", d.lastBackupAt ? formatDate(d.lastBackupAt) : "Never");
     setText("opsTotalBackups", String(d.totalBackups ?? 0));
     setText("opsDbConnected", d.connected ? "Database Connected ✅" : "Database Missing ⚠");
@@ -360,10 +364,13 @@
       await apiPost("/backup-db-local", { step: "check" });
       const data = await apiPost("/backup-db-local", { step: "copy" });
       const filename = data.backup?.filename;
-      showToast(
-        `Backup created locally at ${formatDate(data.backup?.createdAt || new Date().toISOString())}. Sync the backups folder with Google Drive for cloud copy.`,
-        "success"
-      );
+      let toastMsg = `Backup created locally at ${formatDate(data.backup?.createdAt || new Date().toISOString())}.`;
+      if (data.mirrorBackup?.localPath) {
+        toastMsg += ` Mirror copy saved to ${data.mirrorBackup.localPath}.`;
+      } else if (data.mirrorWarning) {
+        toastMsg += ` Mirror copy failed: ${data.mirrorWarning}`;
+      }
+      showToast(toastMsg, data.mirrorWarning ? "error" : "success");
       await loadOpsOverview();
       await loadDbBackups({ highlightFilename: filename });
     } catch (e) {

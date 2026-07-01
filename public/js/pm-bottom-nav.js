@@ -39,6 +39,11 @@
     return NAV_PAGES.has(currentPageFile());
   }
 
+  function isIndexPage() {
+    const file = currentPageFile();
+    return file === "" || file === "index.html";
+  }
+
   function detectActiveTab() {
     const body = document.body;
     if (body?.dataset.pmBottomNavActive) return body.dataset.pmBottomNavActive;
@@ -69,6 +74,7 @@
   }
 
   function resolveNavHref(tab) {
+    if (tab === "wishlist") return ACCOUNT_HREF;
     if (tab === "account" && accountLinkEnabled()) return ACCOUNT_HREF;
     return VOID_HREF;
   }
@@ -79,6 +85,10 @@
 
   function iconCategories() {
     return `<svg class="pm-pfinder-bottom-nav__svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.6 4.6l.55 1.65L7 7l-1.85.75-.55 1.65-.55-1.65L2.2 7l1.85-.75.55-1.65z"/><rect x="12.25" y="4.25" width="7.5" height="7.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.65"/><rect x="4.25" y="12.25" width="7.5" height="7.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.65"/><rect x="12.25" y="12.25" width="7.5" height="7.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.65"/></svg>`;
+  }
+
+  function iconWishlist() {
+    return `<svg class="pm-pfinder-bottom-nav__svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
   }
 
   function iconDeals() {
@@ -99,6 +109,8 @@
         return iconHome();
       case "categories":
         return iconCategories();
+      case "wishlist":
+        return iconWishlist();
       case "deals":
         return iconDeals();
       case "map":
@@ -123,6 +135,13 @@
     </a>`;
   }
 
+  function thirdNavItem(active) {
+    if (isIndexPage()) {
+      return navItem("wishlist", "Wishlist", "index_nav_wishlist", active === "wishlist");
+    }
+    return navItem("deals", "Deals", null, active === "deals");
+  }
+
   function buildBottomNavHtml(active) {
     const navId =
       currentPageFile() === "" || currentPageFile() === "index.html" ? ' id="pmBottomNav"' : "";
@@ -130,7 +149,7 @@
     return `<nav${navId} class="pm-pfinder-bottom-nav" aria-label="Main navigation">
     ${navItem("home", "Home", "index_nav_home", active === "home")}
     ${navItem("categories", "Categories", null, active === "categories")}
-    ${navItem("deals", "Deals", null, active === "deals")}
+    ${thirdNavItem(active)}
     ${navItem("map", "Map", null, active === "map")}
     ${navItem("account", "Account", "index_nav_account", active === "account")}
   </nav>`;

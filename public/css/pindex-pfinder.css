@@ -888,18 +888,6 @@ body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {
     display: none !important;
   }
 
-  body.pm-shop-page .pm-pfinder-bottom-nav,
-  body.pm-dash-page .pm-pfinder-bottom-nav,
-  body.pm-account-page .pm-pfinder-bottom-nav,
-  html.pm-app-standalone .pm-pfinder-bottom-nav,
-  html.pm-app-immersive .pm-pfinder-bottom-nav,
-  html.pm-app-scroll-fullscreen .pm-pfinder-bottom-nav,
-  html.pm-app-fullscreen .pm-pfinder-bottom-nav,
-  html:fullscreen .pm-pfinder-bottom-nav,
-  html:-webkit-full-screen .pm-pfinder-bottom-nav {
-    display: flex !important;
-  }
-
   body[data-pm-index-nav-hidden="1"] .pm-pfinder-bottom-nav {
     display: none !important;
   }

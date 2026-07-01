@@ -10,7 +10,7 @@
 const fs = require("fs");
 const path = require("path");
 const { getDbPath } = require("../lib/db-path");
-const { getBackupDir } = require("../lib/backup-path");
+const { getBackupDir, getBackupMirrorDir } = require("../lib/backup-path");
 const { wallClockParts } = require("../lib/app-timezone");
 
 const ROOT = path.join(__dirname, "..");
@@ -61,6 +61,14 @@ function main() {
   const dest = path.join(backupDir, filename);
   fs.copyFileSync(livePath, dest);
   const size = fs.statSync(dest).size;
+
+  const mirrorDir = getBackupMirrorDir(ROOT);
+  if (mirrorDir) {
+    if (!fs.existsSync(mirrorDir)) fs.mkdirSync(mirrorDir, { recursive: true });
+    const mirrorDest = path.join(mirrorDir, filename);
+    fs.copyFileSync(livePath, mirrorDest);
+    console.log(`Mirror backup: ${mirrorDest}`);
+  }
 
   const retentionDays = Number(process.env.BACKUP_RETENTION_DAYS || 0);
   const { pruned } = pruneOldBackups(backupDir, retentionDays);
