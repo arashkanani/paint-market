@@ -2058,11 +2058,28 @@ if (typeof document !== "undefined") {
     (document.head || document.documentElement).appendChild(el);
   }
 
+  function paintMarketBootSiteFooter() {
+    if (typeof paintMarketInitSiteFooter === "function") {
+      paintMarketInitSiteFooter();
+      return;
+    }
+    const src = "/paint/js/pm-site-footer.js?v=20260702b";
+    if (document.querySelector(`script[src*="pm-site-footer.js"]`)) return;
+    const el = document.createElement("script");
+    el.src = src;
+    el.onload = () => {
+      if (typeof paintMarketInitSiteFooter === "function") paintMarketInitSiteFooter();
+    };
+    (document.head || document.documentElement).appendChild(el);
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", paintMarketGeoInit);
     document.addEventListener("DOMContentLoaded", paintMarketBootBottomNav);
+    document.addEventListener("DOMContentLoaded", paintMarketBootSiteFooter);
   } else {
     paintMarketGeoInit();
     paintMarketBootBottomNav();
+    paintMarketBootSiteFooter();
   }
 }

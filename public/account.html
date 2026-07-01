@@ -11,12 +11,22 @@
   <link rel="manifest" href="/paint/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/paint/img/brand/paintik-icon.png" />
   <script src="/paint/js/paint-pwa.js?v=20260601e"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      if (params.get("embed") !== "1") return;
+      document.documentElement.classList.add("pm-account-embed");
+      if (params.get("desktop") === "1") {
+        document.documentElement.classList.add("pm-account-embed-desktop");
+      }
+    })();
+  </script>
   <title>Account</title>
   <link rel="icon" type="image/png" href="/paint/img/brand/paintik-icon.png" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260601h" />
-  <link rel="stylesheet" href="/paint/css/account-page.css?v=20260624a" />
+  <link rel="stylesheet" href="/paint/css/account-page.css?v=20260701g" />
   <link rel="stylesheet" href="/paint/css/paint-app-shell.css?v=20260601k" />
   <style>body { font-family: "DM Sans", system-ui, sans-serif; }</style>
 </head>
@@ -100,10 +110,7 @@
         <div class="pm-account-guest-footer__links">
           <a href="#" data-pm-t="account_footer_terms_use">Terms Of Use</a>
           <span aria-hidden="true">·</span>
-          <a href="#" data-pm-t="account_footer_terms_sale">Terms Of Sale</a>
-          <span aria-hidden="true">·</span>
           <a href="#" data-pm-t="account_footer_privacy">Privacy Policy</a>
-          <a href="#" data-pm-t="account_footer_return">Return Policy</a>
           <span aria-hidden="true">·</span>
           <a href="#" data-pm-t="account_footer_help">Customer Happiness Center</a>
         </div>
@@ -219,10 +226,7 @@
         <div class="pm-account-dashboard-footer__links">
           <a href="#" data-pm-t="account_footer_terms_use">Terms Of Use</a>
           <span aria-hidden="true">·</span>
-          <a href="#" data-pm-t="account_footer_terms_sale">Terms Of Sale</a>
-          <span aria-hidden="true">·</span>
           <a href="#" data-pm-t="account_footer_privacy">Privacy Policy</a>
-          <a href="#" data-pm-t="account_footer_return">Return Policy</a>
           <span aria-hidden="true">·</span>
           <a href="#" data-pm-t="account_footer_help">Customer Happiness Center</a>
         </div>
@@ -242,6 +246,6 @@
 
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>
-  <script src="/paint/js/account-page.js?v=20260624a"></script>
+  <script src="/paint/js/account-page.js?v=20260701g"></script>
 </body>
 </html>

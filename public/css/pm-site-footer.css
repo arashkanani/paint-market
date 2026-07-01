@@ -1,0 +1,92 @@
+/* PAINTIK site footer — all customer pages */
+
+.pm-site-footer-hidden {
+  display: none !important;
+}
+
+.pm-site-footer {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1rem calc(1.4rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #f1f5f9;
+  background: #fff;
+  text-align: center;
+}
+
+.pm-site-footer__social {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.65rem;
+  margin-bottom: 1.1rem;
+}
+
+.pm-site-footer__social a {
+  color: #7c8494;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  min-width: 1.75rem;
+}
+
+.pm-site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem 0.85rem;
+  color: #8b93a3;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.pm-site-footer__links a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.pm-site-footer__links span {
+  color: #b6bdca;
+}
+
+.pm-site-footer__version,
+.pm-site-footer__copy {
+  margin: 1rem 0 0;
+  color: #c5cbd6;
+  font-size: 0.75rem;
+}
+
+.pm-site-footer__copy {
+  margin-top: 0.75rem;
+  color: #8f97a6;
+}
+
+@media (max-width: 1023.98px) {
+  body:has(.pm-pfinder-bottom-nav) .pm-site-footer {
+    padding-bottom: calc(5.7rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .pm-site-footer {
+    padding-bottom: 1.4rem;
+  }
+}
+
+/* Home page — footer lives inside scroll area */
+.pm-pfinder-home .pm-site-footer--in-scroll {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  width: 100%;
+}
+
+@media (max-width: 1023.98px) {
+  .pm-pfinder-home .pm-site-footer--in-scroll {
+    padding-bottom: calc(5.7rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .pm-pfinder-home .pm-site-footer--in-scroll {
+    padding-bottom: 1.5rem;
+  }
+}

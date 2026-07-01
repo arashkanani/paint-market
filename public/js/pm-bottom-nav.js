@@ -31,6 +31,7 @@
   }
 
   function shouldMountBottomNav() {
+    if (document.documentElement.classList.contains("pm-account-embed")) return false;
     const body = document.body;
     if (!body) return false;
     if (body.dataset.pmBottomNav === "off") return false;

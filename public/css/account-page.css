@@ -907,3 +907,60 @@
 .pm-account-hidden {
   display: none !important;
 }
+
+/* Embedded in index login popup (iframe) */
+html.pm-account-embed,
+html.pm-account-embed body.pm-account-page {
+  background: transparent;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+html.pm-account-embed .pm-account-page {
+  padding-bottom: 0 !important;
+  overflow: hidden;
+  background: transparent;
+}
+
+html.pm-account-embed body.pm-account-page .pm-pfinder-bottom-nav {
+  display: none !important;
+  transform: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html.pm-account-embed .pm-account-main {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+html.pm-account-embed #accountLoggedIn {
+  display: none !important;
+}
+
+html.pm-account-embed #accountGuest {
+  display: block !important;
+}
+
+html.pm-account-embed .pm-auth-card {
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  padding: 1.25rem 1rem 0;
+  background: #fff;
+}
+
+html.pm-account-embed .pm-account-guest-footer {
+  margin: 1.35rem 0 0;
+  padding: 1.25rem 1rem 1.15rem;
+  border-radius: 0;
+  background: #fff;
+}

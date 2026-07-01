@@ -21,8 +21,9 @@
   <link rel="stylesheet" href="/paint/css/shop-photo-frame.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-ui.css" />
   <link rel="stylesheet" href="/paint/css/paint-market-brand-icons.css" />
-  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260531g" />
-  <link rel="stylesheet" href="/paint/css/pindex-index-desktop-polish.css?v=20260630m" />
+  <link rel="stylesheet" href="/paint/css/pindex-pfinder.css?v=20260703a" />
+  <link rel="stylesheet" href="/paint/css/pindex-index-desktop-polish.css?v=20260703e" />
+  <link rel="stylesheet" href="/paint/css/index-login-modal.css?v=20260701g" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body { font-family: "DM Sans", system-ui, sans-serif; }
@@ -91,6 +92,7 @@
           href="/paint/account.html"
           class="pm-pfinder-header__nav-login inline-flex items-center gap-1.5 shrink-0"
           aria-label="Login"
+          data-pm-index-open-login
         >
           <svg class="pm-pfinder-header__nav-login-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <circle cx="12" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.75"/>
@@ -195,11 +197,27 @@
         <p class="mt-2 text-sm max-w-md mx-auto" data-pm-t="index_locked_body">While marketing teams onboard shops, the public directory stays hidden. Shop owners can still sign in to build their catalog.</p>
         <div class="mt-5 flex flex-wrap gap-2 justify-center">
           <a class="px-4 py-2 rounded-lg bg-teal-700 text-white text-sm" href="/paint/register.html" data-pm-t="index_locked_register">Register a shop</a>
-          <a class="px-4 py-2 rounded-lg border border-slate-200 text-sm" href="/paint/account.html" data-pm-t="index_locked_login">Shop login</a>
+          <a class="px-4 py-2 rounded-lg border border-slate-200 text-sm" href="/paint/account.html" data-pm-t="index_locked_login" data-pm-index-open-login>Shop login</a>
         </div>
       </section>
 
-      <footer class="mt-6 pb-4 text-xs text-slate-500 text-center" data-pm-t="index_footer">Informational listings only—contact the shop directly to purchase.</footer>
+      <footer class="pm-site-footer pm-site-footer--in-scroll" aria-label="Site footer">
+        <div class="pm-site-footer__social" aria-label="Social links">
+          <a href="#" aria-label="Facebook">f</a>
+          <a href="#" aria-label="X">X</a>
+          <a href="#" aria-label="Instagram">◎</a>
+          <a href="#" aria-label="LinkedIn">in</a>
+        </div>
+        <div class="pm-site-footer__links">
+          <a href="#" data-pm-t="account_footer_terms_use">Terms Of Use</a>
+          <span aria-hidden="true">·</span>
+          <a href="#" data-pm-t="account_footer_privacy">Privacy Policy</a>
+          <span aria-hidden="true">·</span>
+          <a href="#" data-pm-t="account_footer_help">Customer Happiness Center</a>
+        </div>
+        <p class="pm-site-footer__version" data-pm-t="account_footer_version">Version v1.0</p>
+        <p class="pm-site-footer__copy" data-pm-t="account_footer_copy">© 2026 PAINTIK. All rights reserved.</p>
+      </footer>
     </div>
     </div>
   </main>
@@ -219,11 +237,24 @@
     <div id="searchPriceMapCanvas" class="h-[min(70vh,28rem)] w-full"></div>
   </dialog>
 
+  <dialog id="indexLoginModal" class="pm-index-login-modal" aria-label="Login / Register">
+    <div class="pm-index-login-modal__shell">
+      <button type="button" class="pm-index-login-modal__close" id="indexLoginModalClose" aria-label="Close">&times;</button>
+      <iframe
+        id="indexLoginModalFrame"
+        class="pm-index-login-modal__frame"
+        title="Login / Register"
+        src="about:blank"
+        scrolling="no"
+      ></iframe>
+    </div>
+  </dialog>
 
   <script src="/paint/js/paint-i18n.js"></script>
   <script src="/paint/js/common.js"></script>
   <script src="/paint/js/ral-colors.js"></script>
   <script src="/paint/js/theme.js"></script>
+  <script src="/paint/js/index-login-modal.js?v=20260701g"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
     const shopGrid = document.getElementById("shopGrid");
@@ -263,6 +294,10 @@
     const indexPopularStrip = document.getElementById("indexPopularStrip");
     const INDEX_POPULAR_COUNT = 12;
     const INDEX_BRAND_PREVIEW_COUNT = 6;
+    const indexBrandDesktopMq = window.matchMedia("(min-width: 1024px)");
+    function indexBrandDesktopWide() {
+      return indexBrandDesktopMq.matches;
+    }
     let indexPopularProducts = [];
     const INDEX_PANEL_PREVIEW_COUNT = 8;
     let indexBrowseCategories = [];
@@ -277,6 +312,185 @@
     let indexShopsMap = null;
     let indexInlineMapLayers = [];
     let indexMapFocusProductId = null;
+
+    const indexBrandMarquee = {
+      raf: 0,
+      speed: 0.85,
+      dragging: false,
+      loopWidth: 0,
+      offset: 0
+    };
+
+    function pmIndexBrandMarqueeInner() {
+      return indexBrandBar?.querySelector(".pm-index-brand-bar__marquee-inner") || null;
+    }
+
+    function pmIndexBrandMarqueeApplyOffset() {
+      const inner = pmIndexBrandMarqueeInner();
+      if (!inner) return;
+      inner.style.transform = `translate3d(${-indexBrandMarquee.offset}px, 0, 0)`;
+    }
+
+    function pmIndexBrandMarqueeStop() {
+      if (indexBrandMarquee.raf) cancelAnimationFrame(indexBrandMarquee.raf);
+      indexBrandMarquee.raf = 0;
+    }
+
+    function pmIndexBrandMarqueeNormalize() {
+      if (indexBrandMarquee.loopWidth <= 0) return;
+      const w = indexBrandMarquee.loopWidth;
+      let o = indexBrandMarquee.offset;
+      if (o >= w) indexBrandMarquee.offset = o % w;
+      else if (o < 0) indexBrandMarquee.offset = ((o % w) + w) % w;
+      pmIndexBrandMarqueeApplyOffset();
+    }
+
+    function pmIndexBrandMarqueeTick() {
+      if (!indexBrandBar?.classList.contains("pm-index-brand-bar__track--marquee")) {
+        indexBrandMarquee.raf = 0;
+        return;
+      }
+      if (!indexBrandMarquee.dragging && indexBrandMarquee.loopWidth > 0) {
+        indexBrandMarquee.offset += indexBrandMarquee.speed;
+        if (indexBrandMarquee.offset >= indexBrandMarquee.loopWidth) {
+          indexBrandMarquee.offset -= indexBrandMarquee.loopWidth;
+        }
+        pmIndexBrandMarqueeApplyOffset();
+      }
+      indexBrandMarquee.raf = requestAnimationFrame(pmIndexBrandMarqueeTick);
+    }
+
+    function pmIndexBrandMarqueeMeasure() {
+      const inner = pmIndexBrandMarqueeInner();
+      if (!inner) return 0;
+      return inner.scrollWidth / 2;
+    }
+
+    function pmIndexBrandMarqueeRestart() {
+      pmIndexBrandMarqueeStop();
+      if (!indexBrandBar?.classList.contains("pm-index-brand-bar__track--marquee")) return;
+      const reduced =
+        typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function tryStart(attempt) {
+        if (!indexBrandBar?.classList.contains("pm-index-brand-bar__track--marquee")) return;
+        indexBrandMarquee.loopWidth = pmIndexBrandMarqueeMeasure();
+        indexBrandBar.classList.toggle("pm-index-hscroll--pan", indexBrandMarquee.loopWidth > 0);
+        pmIndexBrandMarqueeNormalize();
+        if (indexBrandMarquee.loopWidth > 0) {
+          if (!reduced && !indexBrandMarquee.raf) {
+            indexBrandMarquee.raf = requestAnimationFrame(pmIndexBrandMarqueeTick);
+          }
+          return;
+        }
+        if (attempt < 8) setTimeout(() => tryStart(attempt + 1), 120);
+      }
+
+      requestAnimationFrame(() => requestAnimationFrame(() => tryStart(0)));
+    }
+
+    function pmIndexInitBrandMarquee() {
+      if (!indexBrandBar || indexBrandBar.dataset.pmMarqueeBound) return;
+      indexBrandBar.dataset.pmMarqueeBound = "1";
+      let drag = null;
+
+      indexBrandBar.addEventListener("click", (e) => {
+        if (indexBrandBar.dataset.pmSuppressClick) {
+          e.preventDefault();
+          return;
+        }
+        const chip = e.target.closest(".pm-index-brand-chip");
+        if (!chip?.dataset.brandId) return;
+        window.location.href = paintMarketBrowsePageUrl({ brandId: chip.dataset.brandId });
+      });
+
+      indexBrandBar.addEventListener("mousedown", (e) => {
+        if (e.button !== 0 || !indexBrandBar.classList.contains("pm-index-brand-bar__track--marquee")) return;
+        if (indexBrandMarquee.loopWidth <= 0) return;
+        indexBrandMarquee.dragging = true;
+        drag = { startX: e.clientX, startOffset: indexBrandMarquee.offset, moved: false };
+        indexBrandBar.classList.add("pm-index-hscroll--dragging");
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.startX;
+        if (Math.abs(dx) > 4) drag.moved = true;
+        if (!drag.moved) return;
+        e.preventDefault();
+        indexBrandMarquee.offset = drag.startOffset - dx;
+        pmIndexBrandMarqueeNormalize();
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (!drag) return;
+        if (drag.moved) {
+          indexBrandBar.dataset.pmSuppressClick = "1";
+          requestAnimationFrame(() => {
+            delete indexBrandBar.dataset.pmSuppressClick;
+          });
+        }
+        pmIndexBrandMarqueeNormalize();
+        drag = null;
+        indexBrandMarquee.dragging = false;
+        indexBrandBar.classList.remove("pm-index-hscroll--dragging");
+      });
+    }
+
+    function pmIndexBindMouseDragScroll(hEl) {
+      if (!hEl || hEl.dataset.pmMouseDragBound) return;
+      hEl.dataset.pmMouseDragBound = "1";
+      let drag = null;
+
+      function endDrag() {
+        if (!drag) return;
+        if (drag.moved) {
+          hEl.dataset.pmSuppressClick = "1";
+          requestAnimationFrame(() => {
+            delete hEl.dataset.pmSuppressClick;
+          });
+        }
+        drag = null;
+        hEl.classList.remove("pm-index-hscroll--dragging");
+      }
+
+      hEl.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        if (hEl.scrollWidth <= hEl.clientWidth + 1) return;
+        drag = { startX: e.clientX, scrollLeft: hEl.scrollLeft, moved: false };
+        hEl.classList.add("pm-index-hscroll--dragging");
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.startX;
+        if (Math.abs(dx) > 4) drag.moved = true;
+        if (!drag.moved) return;
+        e.preventDefault();
+        hEl.scrollLeft = drag.scrollLeft - dx;
+      });
+
+      window.addEventListener("mouseup", endDrag);
+
+      hEl.addEventListener(
+        "click",
+        (e) => {
+          if (hEl.dataset.pmSuppressClick) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        },
+        true
+      );
+    }
+
+    function pmIndexSyncCategoryBarPan() {
+      if (!indexCategoryBar) return;
+      requestAnimationFrame(() => {
+        const canPan = indexCategoryBar.scrollWidth > indexCategoryBar.clientWidth + 1;
+        indexCategoryBar.classList.toggle("pm-index-hscroll--pan", canPan);
+      });
+    }
 
     function pmIndexBindHScrollVerticalPass(hEl, pageScrollEl) {
       if (!hEl || !pageScrollEl || hEl.dataset.pmVertPassBound) return;
@@ -331,6 +545,8 @@
       pmIndexBindHScrollVerticalPass(indexPopularStrip, indexPageScroll);
       pmIndexBindHScrollVerticalPass(indexCategoryBar, indexPageScroll);
       pmIndexBindHScrollVerticalPass(document.getElementById("adCarouselStrip"), indexPageScroll);
+      pmIndexBindMouseDragScroll(indexCategoryBar);
+      pmIndexInitBrandMarquee();
     }
 
     pmIndexBindHorizontalScrollTouches();
@@ -1197,40 +1413,61 @@
         chips.push(btn);
       }
       indexCategoryBar.replaceChildren(...chips);
+      pmIndexSyncCategoryBarPan();
+    }
+
+    function pmIndexCreateBrandChip(b, bindClick) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pm-index-brand-chip";
+      btn.setAttribute("role", "tab");
+      btn.dataset.brandId = String(b.id);
+      const name = b.name != null ? String(b.name) : "";
+      const slugKey = b.slug != null ? String(b.slug).trim().toLowerCase() : "";
+      if (slugKey) btn.dataset.brandSlug = slugKey;
+      const iconHtml =
+        typeof paintMarketBrandIconHtml === "function" ? paintMarketBrandIconHtml(b) : esc(name);
+      btn.setAttribute("aria-label", name);
+      btn.title = name;
+      btn.innerHTML = `<span class="pm-index-brand-chip__icon">${iconHtml}</span>`;
+      if (bindClick) {
+        btn.addEventListener("click", () => {
+          window.location.href = paintMarketBrowsePageUrl({ brandId: b.id });
+        });
+      }
+      return btn;
     }
 
     function renderIndexBrandBar() {
       if (!indexBrandBar) return;
-      const chips = [];
-      for (const b of indexBrowseBrands) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pm-index-brand-chip";
-        btn.setAttribute("role", "tab");
-        btn.dataset.brandId = String(b.id);
-        const name = b.name != null ? String(b.name) : "";
-        const slugKey = b.slug != null ? String(b.slug).trim().toLowerCase() : "";
-        if (slugKey) btn.dataset.brandSlug = slugKey;
-        const iconHtml =
-          typeof paintMarketBrandIconHtml === "function" ? paintMarketBrandIconHtml(b) : esc(name);
-        btn.setAttribute("aria-label", name);
-        btn.title = name;
-        btn.innerHTML = `<span class="pm-index-brand-chip__icon">${iconHtml}</span>`;
-        btn.addEventListener("click", () => {
-          window.location.href = paintMarketBrowsePageUrl({ brandId: b.id });
-        });
-        chips.push(btn);
+      const useMarquee = indexBrandDesktopWide();
+      const chips = indexBrowseBrands.map((b) => pmIndexCreateBrandChip(b, !useMarquee));
+      if (useMarquee && chips.length) {
+        const clones = indexBrowseBrands.map((b) => pmIndexCreateBrandChip(b, false));
+        indexBrandBar.replaceChildren();
+        const inner = document.createElement("div");
+        inner.className = "pm-index-brand-bar__marquee-inner";
+        inner.replaceChildren(...chips, ...clones);
+        indexBrandBar.appendChild(inner);
+        indexBrandBar.classList.add("pm-index-brand-bar__track--marquee");
+        indexBrandBar.classList.remove("pm-index-brand-bar__track--expanded");
+        indexBrandMarquee.offset = 0;
+      } else {
+        indexBrandBar.replaceChildren(...chips);
+        indexBrandBar.classList.remove("pm-index-brand-bar__track--marquee");
+        pmIndexBrandMarqueeStop();
+        indexBrandBar.classList.toggle("pm-index-brand-bar__track--expanded", indexBrandsExpanded);
       }
-      indexBrandBar.replaceChildren(...chips);
-      indexBrandBar.classList.toggle("pm-index-brand-bar__track--expanded", indexBrandsExpanded);
       if (typeof paintMarketScheduleFitBrandMarks === "function") {
         paintMarketScheduleFitBrandMarks(indexBrandBar);
       }
+      if (useMarquee && chips.length) pmIndexBrandMarqueeRestart();
       if (indexBrandViewMore) {
         const extra = indexBrowseBrands.length > INDEX_BRAND_PREVIEW_COUNT;
-        indexBrandViewMore.classList.toggle("hidden", !extra);
+        const showViewMore = extra && !indexBrandDesktopWide();
+        indexBrandViewMore.classList.toggle("hidden", !showViewMore);
         const moreCount = Math.max(0, indexBrowseBrands.length - INDEX_BRAND_PREVIEW_COUNT);
-        if (extra && !indexBrandsExpanded && moreCount > 0) {
+        if (showViewMore && !indexBrandsExpanded && moreCount > 0) {
           const label = `${paintMarketT("index_brand_view_more")} (+${moreCount})`;
           indexBrandViewMore.textContent = label;
           indexBrandViewMore.setAttribute("aria-label", label);
@@ -1288,14 +1525,22 @@
     }
 
     let indexBrandFitResizeTimer = 0;
-    window.addEventListener("resize", () => {
+    function indexBrandOnViewportChange() {
       clearTimeout(indexBrandFitResizeTimer);
       indexBrandFitResizeTimer = setTimeout(() => {
-        if (indexBrandBar && typeof paintMarketFitBrandMarks === "function") {
+        if (indexBrowseBrands.length) renderIndexBrandBar();
+        else if (indexBrandBar && typeof paintMarketFitBrandMarks === "function") {
           paintMarketFitBrandMarks(indexBrandBar);
         }
+        pmIndexSyncCategoryBarPan();
       }, 120);
-    });
+    }
+    window.addEventListener("resize", indexBrandOnViewportChange);
+    if (typeof indexBrandDesktopMq.addEventListener === "function") {
+      indexBrandDesktopMq.addEventListener("change", indexBrandOnViewportChange);
+    } else if (typeof indexBrandDesktopMq.addListener === "function") {
+      indexBrandDesktopMq.addListener(indexBrandOnViewportChange);
+    }
 
     async function loadIndexShops() {
       indexShopsExpanded = false;

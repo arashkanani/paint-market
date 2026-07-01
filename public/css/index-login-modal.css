@@ -1,0 +1,89 @@
+/* Index home — Login popup (desktop only, embeds account.html) */
+
+:root {
+  --pm-index-login-radius: 1rem;
+}
+
+.pm-index-login-modal {
+  width: min(32rem, calc(100vw - 1.5rem));
+  max-width: 32rem;
+  margin: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--pm-index-login-radius);
+  background: transparent;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.pm-index-login-modal[open] {
+  display: block;
+}
+
+.pm-index-login-modal::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+html.pm-index-login-modal-open {
+  overflow: hidden;
+}
+
+.pm-index-login-modal__shell {
+  position: relative;
+  width: 100%;
+  border-radius: var(--pm-index-login-radius);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+}
+
+.pm-index-login-modal__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #475569;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.pm-index-login-modal__close:hover {
+  background: #fff;
+  color: #0f172a;
+}
+
+.pm-index-login-modal__frame {
+  display: block;
+  width: 100%;
+  height: 0;
+  min-height: 0;
+  border: none;
+  background: #fff;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+body[data-pm-login-modal-open] .pm-pfinder-bottom-nav {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .pm-index-login-modal {
+    width: min(32rem, calc(100vw - 3rem));
+  }
+
+  .pm-index-login-modal,
+  .pm-index-login-modal::backdrop {
+    z-index: 10050;
+  }
+}

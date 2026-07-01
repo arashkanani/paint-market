@@ -1,3 +1,5 @@
+@import url("/paint/css/pm-site-footer.css?v=20260702a");
+
 /* Full-screen mobile shell — uses --pm-app-height from paint-pwa.js (visual viewport) */
 
 :root {
@@ -118,6 +120,10 @@ html.pm-app-scroll-fullscreen body.pm-dash-page {
   body.pm-account-page .pm-pfinder-bottom-nav {
     display: flex !important;
     z-index: 500;
+  }
+
+  html.pm-account-embed body.pm-account-page .pm-pfinder-bottom-nav {
+    display: none !important;
   }
 
   body.pm-shop-page,

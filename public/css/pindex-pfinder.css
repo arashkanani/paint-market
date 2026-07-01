@@ -4,8 +4,8 @@
   --pm-pfinder-accent: #2563eb;
   --pm-pfinder-accent-soft: #f5f9ff;
   --pm-pfinder-orange: #f97316;
-  --pm-pfinder-bg: #fcfcfd;
-  --pm-shops-bg: #fcfcfd;
+  --pm-pfinder-bg: #fff;
+  --pm-shops-bg: #fff;
   --pm-pfinder-pad-x: 1rem;
   --pm-pfinder-section-gap: 1rem;
   --pm-pfinder-grid-gap: 0.65rem;
@@ -16,7 +16,13 @@
 }
 
 body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] {
-  background: var(--pm-pfinder-bg);
+  --pm-shops-bg: #fff;
+  background: #fff;
+}
+
+body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-main,
+body.pm-pfinder-home[data-pm-page-title="index_metaTitle"] .pm-index-page-scroll {
+  background: #fff;
 }
 
 .pm-pfinder-home .pm-index-main {

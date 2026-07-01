@@ -31,6 +31,40 @@
     return typeof paintMarketT === "function" ? paintMarketT(key) : key;
   }
 
+  function isEmbedMode() {
+    return document.documentElement.classList.contains("pm-account-embed");
+  }
+
+  function notifyEmbedAuthDone(payload) {
+    if (!isEmbedMode()) return;
+    try {
+      if (window.parent !== window) {
+        window.parent.postMessage(
+          { type: "paint-auth-done", role: payload?.role || null },
+          window.location.origin
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function notifyEmbedResize() {
+    if (!isEmbedMode()) return;
+    requestAnimationFrame(() => {
+      try {
+        if (window.parent === window) return;
+        const card = document.querySelector(".pm-auth-card");
+        const height = card
+          ? Math.ceil(card.getBoundingClientRect().height)
+          : Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 0);
+        window.parent.postMessage({ type: "paint-auth-resize", height }, window.location.origin);
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
   function showError(el, msg) {
     if (!el) return;
     if (!msg) {
@@ -88,6 +122,7 @@
     if (confirmPasswordInput) confirmPasswordInput.required = showConfirmPassword;
     const emailInput = authForm?.elements.email;
     if (emailInput) emailInput.required = inputStarted && isEmail;
+    notifyEmbedResize();
   }
 
   function resetAuthForm() {
@@ -104,6 +139,10 @@
       clearErrors();
       oauthRegister?.classList.add("pm-account-hidden");
       resetAuthForm();
+      return;
+    }
+    if (isEmbedMode()) {
+      notifyEmbedAuthDone({ role: user.role });
       return;
     }
     guestEl?.classList.add("pm-account-hidden");
@@ -132,6 +171,10 @@
 
   function afterLogin(data) {
     clearErrors();
+    if (isEmbedMode()) {
+      notifyEmbedAuthDone({ role: data?.user?.role });
+      return;
+    }
     if (data?.user?.role === "admin") {
       window.location.href = "/paint/admin.html";
       return;
@@ -359,5 +402,6 @@
     } catch {
       renderLoggedIn(null);
     }
+    notifyEmbedResize();
   })();
 })();
